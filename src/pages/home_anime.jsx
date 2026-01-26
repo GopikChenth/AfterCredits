@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import AnimeCard from '../components/AnimeCard';
 import NavBar from '../components/NavBar';
+import CategoryPill from '../components/CategoryPill';
 import { getCardDimensions } from '../utils/responsiveCard';
 
 const HomeAnime = () => {
@@ -17,6 +18,9 @@ const HomeAnime = () => {
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
   const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
+  
+  // State for selected category
+  const [selectedCategory, setSelectedCategory] = useState('Trending');
 
   // Listen for screen size changes
   useEffect(() => {
@@ -28,6 +32,13 @@ const HomeAnime = () => {
 
     return () => subscription?.remove();
   }, []);
+  
+  // Handle category change
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    console.log('Selected category:', category);
+    // TODO: Fetch data based on category (trending/popular/new)
+  };
 
   // Sample anime data - replace with API data later
   const animeList = [
@@ -66,11 +77,13 @@ const HomeAnime = () => {
         <View style={styles.grid}>
           {/* Left Column */}
           <View style={styles.column}>
-            {/* ANIME Badge as first item in left column */}
+            {/* Category Pill as first item in left column */}
             <View style={styles.badgeWrapper}>
-              <View style={[styles.badge, { width: cardWidth }]}>
-                <Text style={styles.badgeText}>ANIME</Text>
-              </View>
+              <CategoryPill
+                categories={['Trending', 'Popular', 'New']}
+                onCategoryChange={handleCategoryChange}
+                width={cardWidth}
+              />
             </View>
             
             {leftColumn.map((anime) => (
@@ -167,19 +180,6 @@ const styles = StyleSheet.create({
   },
   badgeWrapper: {
     marginBottom: 16,
-  },
-  badge: {
-    backgroundColor: '#FFC0CB',
-    borderRadius: 20,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-    letterSpacing: 1.5,
   },
   cardWrapper: {
     marginBottom: 16,
