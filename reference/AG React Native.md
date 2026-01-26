@@ -1,4 +1,3 @@
-#Antigravity
 \*\*
 
 ## The 3-Layer Architecture

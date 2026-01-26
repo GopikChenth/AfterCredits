@@ -5,10 +5,12 @@ const AnimeCard = ({
   title = 'TITLE', 
   genres = ['Genre', 'Genre', 'Genre'],
   imageUrl = 'https://via.placeholder.com/300x400',
-  progress = 0 
+  progress = 0,
+  width = 180,
+  height = 260,
 }) => {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { width, height }]}>
       <ImageBackground 
         source={{ uri: imageUrl }}
         style={styles.imageBackground}
@@ -31,8 +33,6 @@ const AnimeCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: 180,
-    height: 260,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: '#000',

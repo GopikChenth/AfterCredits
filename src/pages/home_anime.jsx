@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,16 +6,29 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   SafeAreaView,
-  Dimensions 
+  Dimensions,
 } from 'react-native';
 import AnimeCard from '../components/AnimeCard';
 import NavBar from '../components/NavBar';
-
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
+import { getCardDimensions } from '../utils/responsiveCard';
 
 const HomeAnime = () => {
+  // State for responsive dimensions
+  const dimensions = getCardDimensions();
+  const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
+  const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
+
+  // Listen for screen size changes
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', () => {
+      const { cardWidth: newWidth, cardHeight: newHeight } = getCardDimensions();
+      setCardWidth(newWidth);
+      setCardHeight(newHeight);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
   // Sample anime data - replace with API data later
   const animeList = [
     { id: 1, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1528702748617-c64d49f918af?w=400', progress: 65, height: 200 },
@@ -55,7 +68,7 @@ const HomeAnime = () => {
           <View style={styles.column}>
             {/* ANIME Badge as first item in left column */}
             <View style={styles.badgeWrapper}>
-              <View style={styles.badge}>
+              <View style={[styles.badge, { width: cardWidth }]}>
                 <Text style={styles.badgeText}>ANIME</Text>
               </View>
             </View>
@@ -67,6 +80,8 @@ const HomeAnime = () => {
                   genres={anime.genres}
                   imageUrl={anime.imageUrl}
                   progress={anime.progress}
+                  width={cardWidth}
+                  height={cardHeight}
                 />
               </View>
             ))}
@@ -81,6 +96,8 @@ const HomeAnime = () => {
                   genres={anime.genres}
                   imageUrl={anime.imageUrl}
                   progress={anime.progress}
+                  width={cardWidth}
+                  height={cardHeight}
                 />
               </View>
             ))}
@@ -155,7 +172,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFC0CB',
     borderRadius: 20,
     paddingVertical: 10,
-    width: 180,
     alignItems: 'center',
     justifyContent: 'center',
   },
