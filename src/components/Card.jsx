@@ -1,7 +1,13 @@
 import React from 'react';
 import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import { getMediaTheme } from '../utils/mediaThemes';
 
-const AnimeCard = ({ 
+/**
+ * MediaCard - Reusable card component for different media types
+ * Supports theming for anime, movies, games, comics, and manga
+ */
+const MediaCard = ({ 
+  theme = 'anime',  // anime | movie | game | comic | manga
   title = 'TITLE', 
   genres = ['Genre', 'Genre', 'Genre'],
   imageUrl = 'https://via.placeholder.com/300x400',
@@ -9,6 +15,9 @@ const AnimeCard = ({
   width = 180,
   height = 260,
 }) => {
+  // Get theme configuration
+  const themeConfig = getMediaTheme(theme);
+  
   return (
     <View style={[styles.card, { width, height }]}>
       <ImageBackground 
@@ -24,8 +33,17 @@ const AnimeCard = ({
         </View>
       </ImageBackground>
       
+      {/* Progress bar with theme color */}
       <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
+        <View 
+          style={[
+            styles.progressBar, 
+            { 
+              width: `${progress}%`,
+              backgroundColor: themeConfig.accent,
+            }
+          ]} 
+        />
       </View>
     </View>
   );
@@ -85,9 +103,9 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#007AFF',
     borderRadius: 2,
+    // backgroundColor is now set dynamically via theme
   },
 });
 
-export default AnimeCard;
+export default MediaCard;

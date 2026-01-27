@@ -8,7 +8,7 @@ import {
   SafeAreaView,
   Dimensions,
 } from 'react-native';
-import AnimeCard from '../components/AnimeCard';
+import MediaCard from '../components/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
 import { getCardDimensions } from '../utils/responsiveCard';
@@ -88,7 +88,8 @@ const HomeAnime = () => {
             
             {leftColumn.map((anime) => (
               <View key={anime.id} style={styles.cardWrapper}>
-                <AnimeCard
+                <MediaCard
+                  theme="anime"
                   title={anime.title}
                   genres={anime.genres}
                   imageUrl={anime.imageUrl}
@@ -104,7 +105,8 @@ const HomeAnime = () => {
           <View style={styles.column}>
             {rightColumn.map((anime) => (
               <View key={anime.id} style={styles.cardWrapper}>
-                <AnimeCard
+                <MediaCard
+                  theme="anime"
                   title={anime.title}
                   genres={anime.genres}
                   imageUrl={anime.imageUrl}
