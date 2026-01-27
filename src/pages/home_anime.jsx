@@ -7,10 +7,13 @@ import {
   StyleSheet, 
   SafeAreaView,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import MediaCard from '../components/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
+import SearchBar from '../components/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 
 const HomeAnime = () => {
@@ -56,18 +59,22 @@ const HomeAnime = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>Label</Text>
-        
-        <TouchableOpacity style={styles.profileButton}>
-          <View style={styles.profileIcon} />
-        </TouchableOpacity>
-      </View>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.menuButton}>
+            <Text style={styles.menuIcon}>☰</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitle}>Label</Text>
+          
+          <TouchableOpacity style={styles.profileButton}>
+            <View style={styles.profileIcon} />
+          </TouchableOpacity>
+        </View>
 
       {/* Masonry Grid with Badge integrated */}
       <ScrollView 
@@ -120,8 +127,19 @@ const HomeAnime = () => {
         </View>
       </ScrollView>
 
+      {/* Search Bar - Floating overlay above NavBar */}
+      <View style={styles.searchBarOverlay}>
+        <SearchBar 
+          theme="anime"
+          placeholder="Search anime..."
+          onChangeText={(text) => console.log('Search:', text)}
+          onCancel={() => console.log('Search cancelled')}
+        />
+      </View>
+
       {/* Bottom Navigation */}
       <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -174,7 +192,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingTop: 12,
-    paddingBottom: 20,
+    paddingBottom: 140, // Extra padding for SearchBar + NavBar
   },
   column: {
     flex: 1,
@@ -185,6 +203,14 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     marginBottom: 16,
+  },
+  searchBarOverlay: {
+    position: 'absolute',
+    bottom: 70, // Above NavBar (NavBar is ~60px tall)
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    zIndex: 10, // Float above content
   },
 });
 

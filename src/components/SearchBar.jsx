@@ -1,0 +1,182 @@
+import React, { useState } from 'react';
+import { 
+  View, 
+  TextInput, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Text,
+  Platform 
+} from 'react-native';
+
+/**
+ * SearchBar - Floating overlay search bar with frosted glass effect
+ * Features: theme-aware, blur background, search icon, cancel button
+ * Uses CSS backdrop-filter for web, native blur for mobile
+ */
+const SearchBar = ({ 
+  theme = 'anime',
+  placeholder = 'Search...',
+  onChangeText,
+  onCancel,
+  style,
+}) => {
+  const [searchText, setSearchText] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleChangeText = (text) => {
+    setSearchText(text);
+    if (onChangeText) {
+      onChangeText(text);
+    }
+  };
+
+  const handleCancel = () => {
+    setSearchText('');
+    setIsFocused(false);
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
+  const handleClear = () => {
+    setSearchText('');
+    if (onChangeText) {
+      onChangeText('');
+    }
+  };
+
+  return (
+    <View style={[styles.container, style]}>
+      <View style={styles.blurContainer}>
+        <View style={styles.searchWrapper}>
+          {/* Search Icon */}
+          <View style={styles.iconWrapper}>
+            <Text style={styles.searchIcon}>🔍</Text>
+          </View>
+
+          {/* Input Field */}
+          <TextInput
+            style={styles.input}
+            placeholder={placeholder}
+            placeholderTextColor="rgba(255, 255, 255, 0.5)"
+            value={searchText}
+            onChangeText={handleChangeText}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            clearButtonMode="never"
+            autoCapitalize="none"
+            autoCorrect={false}
+            underlineColorAndroid="transparent"
+          />
+
+          {/* Clear Button (shows when there's text) */}
+          {searchText.length > 0 && (
+            <TouchableOpacity 
+              style={styles.clearButton}
+              onPress={handleClear}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.clearIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Cancel Button (shows when focused) */}
+          {isFocused && (
+            <TouchableOpacity 
+              style={styles.cancelButton}
+              onPress={handleCancel}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+      },
+    }),
+  },
+  blurContainer: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      },
+    }),
+  },
+  searchWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  iconWrapper: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    fontSize: 20,
+    color: '#fff',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#fff',
+    height: '100%',
+    paddingVertical: 0,
+    backgroundColor: 'transparent', // Remove white background on mobile
+    outlineStyle: 'none', // Remove web input outline
+  },
+  clearButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  clearIcon: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  cancelText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '500',
+  },
+});
+
+export default SearchBar;
