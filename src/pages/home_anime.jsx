@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12, // SafeAreaView handles status bar now
+    paddingVertical: 4, // Minimal spacing
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },

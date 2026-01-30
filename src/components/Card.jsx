@@ -32,19 +32,6 @@ const MediaCard = ({
           <Text style={styles.genres}>{genres.join(', ')}</Text>
         </View>
       </ImageBackground>
-      
-      {/* Progress bar with theme color */}
-      <View style={styles.progressContainer}>
-        <View 
-          style={[
-            styles.progressBar, 
-            { 
-              width: `${progress}%`,
-              backgroundColor: themeConfig.accent,
-            }
-          ]} 
-        />
-      </View>
     </View>
   );
 };
@@ -92,19 +79,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
-  },
-  progressContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 2,
-    // backgroundColor is now set dynamically via theme
   },
 });
 

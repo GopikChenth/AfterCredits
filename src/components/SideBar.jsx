@@ -219,8 +219,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12, // Increased from 10
-    paddingHorizontal: 16, // Increased from 14
-    paddingLeft: 14, // Increased from 12
+    paddingHorizontal: 20, // Increased from 16
+    paddingLeft: 16, // Increased from 14
+    minWidth: 120, // Minimum width for pills
   },
   pillContentActive: {
     backgroundColor: 'rgba(175, 82, 222, 0.25)',
