@@ -5,10 +5,10 @@ import {
   ScrollView, 
   TouchableOpacity, 
   StyleSheet, 
-  SafeAreaView,
   Dimensions,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
@@ -62,7 +62,7 @@ const HomeAnime = () => {
   const rightColumn = animeList.filter((_, index) => index % 2 !== 0);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Header */}
       <View style={styles.header}>
@@ -168,8 +168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 40, // Extra space from status bar (16 + 16)
-    paddingBottom: 12,
+    paddingVertical: 12, // SafeAreaView handles status bar now
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
