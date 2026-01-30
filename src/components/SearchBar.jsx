@@ -7,11 +7,12 @@ import {
   Text,
   Platform 
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 /**
  * SearchBar - Floating overlay search bar with frosted glass effect
  * Features: theme-aware, blur background, search icon, cancel button
- * Uses CSS backdrop-filter for web, native blur for mobile
+ * Uses BlurView for mobile, CSS backdrop-filter for web
  */
 const SearchBar = ({ 
   theme = 'anime',
@@ -45,9 +46,21 @@ const SearchBar = ({
     }
   };
 
+  // Render blur container based on platform
+  const BlurContainer = ({ children }) => {
+    if (Platform.OS === 'web') {
+      return <View style={styles.blurContainerWeb}>{children}</View>;
+    }
+    return (
+      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
+        {children}
+      </BlurView>
+    );
+  };
+
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.blurContainer}>
+      <BlurContainer>
         <View style={styles.searchWrapper}>
           {/* Search Icon */}
           <View style={styles.iconWrapper}>
@@ -67,6 +80,7 @@ const SearchBar = ({
             autoCapitalize="none"
             autoCorrect={false}
             underlineColorAndroid="transparent"
+            selectionColor="#fff"
           />
 
           {/* Clear Button (shows when there's text) */}
@@ -91,7 +105,7 @@ const SearchBar = ({
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </BlurContainer>
     </View>
   );
 };
@@ -117,17 +131,18 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  blurContainer: {
+  blurContainerWeb: {
     flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    ...Platform.select({
-      web: {
-        backdropFilter: 'blur(20px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-      },
-    }),
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+  },
+  blurContainerNative: {
+    flex: 1,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   searchWrapper: {
     flex: 1,
@@ -152,8 +167,18 @@ const styles = StyleSheet.create({
     color: '#fff',
     height: '100%',
     paddingVertical: 0,
-    backgroundColor: 'transparent', // Remove white background on mobile
-    outlineStyle: 'none', // Remove web input outline
+    paddingHorizontal: 0,
+    margin: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+      android: {
+        textAlignVertical: 'center',
+      },
+    }),
   },
   clearButton: {
     width: 24,

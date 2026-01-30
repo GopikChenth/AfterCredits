@@ -7,12 +7,12 @@ import {
   StyleSheet, 
   SafeAreaView,
   Dimensions,
-  KeyboardAvoidingView,
-  Platform,
+  StatusBar,
 } from 'react-native';
 import MediaCard from '../components/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
+import SideBar from '../components/SideBar';
 import SearchBar from '../components/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 
@@ -24,6 +24,10 @@ const HomeAnime = () => {
   
   // State for selected category
   const [selectedCategory, setSelectedCategory] = useState('Trending');
+  
+  // State for sidebar
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [activeSection, setActiveSection] = useState('anime');
 
   // Listen for screen size changes
   useEffect(() => {
@@ -59,22 +63,22 @@ const HomeAnime = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.menuButton}>
-            <Text style={styles.menuIcon}>☰</Text>
-          </TouchableOpacity>
-          
-          <Text style={styles.headerTitle}>Label</Text>
-          
-          <TouchableOpacity style={styles.profileButton}>
-            <View style={styles.profileIcon} />
-          </TouchableOpacity>
-        </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => setIsSidebarVisible(!isSidebarVisible)}
+        >
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.headerTitle}>Label</Text>
+        
+        <TouchableOpacity style={styles.profileButton}>
+          <View style={styles.profileIcon} />
+        </TouchableOpacity>
+      </View>
 
       {/* Masonry Grid with Badge integrated */}
       <ScrollView 
@@ -139,7 +143,17 @@ const HomeAnime = () => {
 
       {/* Bottom Navigation */}
       <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
-      </KeyboardAvoidingView>
+      
+      {/* Sidebar */}
+      <SideBar 
+        isVisible={isSidebarVisible}
+        onClose={() => setIsSidebarVisible(false)}
+        activeSection={activeSection}
+        onSectionChange={(section) => {
+          setActiveSection(section);
+          console.log('Section changed:', section);
+        }}
+      />
     </SafeAreaView>
   );
 };
@@ -154,7 +168,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 40, // Extra space from status bar (16 + 16)
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
@@ -192,7 +207,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingTop: 12,
-    paddingBottom: 140, // Extra padding for SearchBar + NavBar
+    paddingBottom: 80, // Space for SearchBar
   },
   column: {
     flex: 1,
@@ -206,11 +221,12 @@ const styles = StyleSheet.create({
   },
   searchBarOverlay: {
     position: 'absolute',
-    bottom: 70, // Above NavBar (NavBar is ~60px tall)
+    bottom: 93, // NavBar height (77px) + 16px spacing
     left: 0,
     right: 0,
     paddingHorizontal: 16,
-    zIndex: 10, // Float above content
+    zIndex: 10,
+    backgroundColor: 'transparent',
   },
 });
 
