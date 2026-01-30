@@ -132,6 +132,8 @@ const SideBar = ({
               style={styles.pill}
               onPress={() => handleSectionPress(section.id)}
               activeOpacity={0.7}
+              android_ripple={null}
+              underlayColor="transparent"
             >
               <PillBlur isActive={activeSection === section.id}>
                 <View
@@ -189,6 +191,7 @@ const styles = StyleSheet.create({
   pill: {
     borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 0, // Remove any borders
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -201,6 +204,7 @@ const styles = StyleSheet.create({
       },
       web: {
         boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.3)',
+        outline: 'none', // Remove web focus outline
       },
     }),
   },

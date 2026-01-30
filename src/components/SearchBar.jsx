@@ -128,6 +128,7 @@ const styles = StyleSheet.create({
       },
       web: {
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+        outline: 'none', // Remove web focus outline
       },
     }),
   },
