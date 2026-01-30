@@ -9,12 +9,14 @@ import {
   TouchableOpacity,
   FlatList
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import StatsPill from '../components/StatsPill';
 import GenrePill from '../components/GenrePill';
 import CrewMember from '../components/CrewMember';
 import ReviewCard from '../components/ReviewCard';
 import RelatedShowCard from '../components/RelatedShowCard';
 import { getMediaTheme } from '../utils/mediaThemes';
+
 
 const { width, height } = Dimensions.get('window');
 
@@ -81,10 +83,13 @@ const AnimeDetail = ({ route, navigation }) => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header Section - positioned over hero */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>anime-Card Detailed</Text>
-      </View>
+      {/* Back Button - positioned over hero */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation?.navigate('HomeAnime')}
+      >
+        <Ionicons name="arrow-back" size={20} color="#fff"/>
+      </TouchableOpacity>
 
       {/* Hero/Poster Section */}
       <View style={styles.heroSection}>
@@ -161,7 +166,7 @@ const AnimeDetail = ({ route, navigation }) => {
             style={styles.addReviewButton}
             onPress={() => navigation?.navigate('AnimeReview')}
           >
-            <Text style={styles.addReviewIcon}>+</Text>
+            <Ionicons name="add" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
         
@@ -218,22 +223,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  header: {
+  backButton: {
     position: 'absolute',
     top: 50,
     left: 20,
-    right: 20,
     zIndex: 10,
-  },
-  headerTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '400',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroSection: {
     position: 'relative',
@@ -392,11 +392,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addReviewIcon: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   
   seeAllText: {
