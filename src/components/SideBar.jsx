@@ -134,6 +134,8 @@ const SideBar = ({
               activeOpacity={0.7}
               android_ripple={null}
               underlayColor="transparent"
+              hitSlop={{top: 0, bottom: 0, left: 0, right: 0}}
+              pressRetentionOffset={{top: 0, bottom: 0, left: 0, right: 0}}
             >
               <PillBlur isActive={activeSection === section.id}>
                 <View
@@ -187,6 +189,7 @@ const styles = StyleSheet.create({
   },
   pillWrapper: {
     marginBottom: 12,
+    borderWidth: 0, // No borders
   },
   pill: {
     borderRadius: 20,
@@ -218,6 +221,7 @@ const styles = StyleSheet.create({
   },
   pillNative: {
     overflow: 'hidden',
+    borderWidth: 0, // No borders
   },
   pillContent: {
     flexDirection: 'row',
@@ -226,6 +230,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, // Increased from 16
     paddingLeft: 16, // Increased from 14
     minWidth: 120, // Minimum width for pills
+    borderWidth: 0, // No borders
   },
   pillContentActive: {
     backgroundColor: 'rgba(175, 82, 222, 0.25)',

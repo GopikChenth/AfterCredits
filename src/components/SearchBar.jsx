@@ -139,11 +139,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     backdropFilter: 'blur(20px) saturate(180%)',
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    borderWidth: 0, // No borders
   },
   blurContainerNative: {
     flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 0, // No borders
   },
   searchWrapper: {
     flex: 1,
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 12,
+    borderWidth: 0, // No borders
   },
   iconWrapper: {
     width: 24,
