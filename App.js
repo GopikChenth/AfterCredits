@@ -5,8 +5,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 import HomeAnime from './src/pages/home_anime';
-import AnimeDetail from './src/pages/AnimeDetail';
-import AnimeReview from './src/pages/AnimeReview';
+import DetailsAnime from './src/pages/details_anime';
+import ReviewAnime from './src/pages/review_anime';
 
 // Initialize font loading system
 initializeFonts();
@@ -24,7 +24,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="AnimeDetail"
+          initialRouteName="DetailsAnime"
           screenOptions={{
             headerShown: false,
             gestureEnabled: true,
@@ -32,8 +32,8 @@ export default function App() {
           }}
         >
           <Stack.Screen name="HomeAnime" component={HomeAnime} />
-          <Stack.Screen name="AnimeDetail" component={AnimeDetail} />
-          <Stack.Screen name="AnimeReview" component={AnimeReview} />
+          <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
+          <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
         </Stack.Navigator>
         <StatusBar style="auto" />
       </NavigationContainer>
