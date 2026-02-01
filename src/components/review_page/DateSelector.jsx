@@ -1,0 +1,143 @@
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
+import { getMediaTheme } from '../../utils/mediaThemes';
+
+const DateSelector = ({ date, onDateChange }) => {
+  const theme = getMediaTheme('anime');
+  const [show, setShow] = useState(false);
+
+  // Toggle picker visibility
+  const togglePicker = () => {
+    setShow((prev) => !prev);
+  };
+
+  const handleChange = (event, selectedDate) => {
+    // On Android, dismissing gives 'dismissed' action and undefined date
+    if (event.type === 'dismissed') {
+      setShow(false);
+      return;
+    }
+
+    const currentDate = selectedDate || date;
+    
+    if (Platform.OS === 'android') {
+      setShow(false); // Android picker closes automatically
+    }
+    
+    // Update parent state
+    if (currentDate) {
+      onDateChange(currentDate);
+    }
+  };
+
+  // Format date similar to reference: "Sunday 1 February, 2026"
+  const formattedDate = date.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <View style={styles.container}>
+      {/* Date Row UI */}
+      <View style={styles.row}>
+        <Text style={[styles.label, { fontFamily: theme.contentFont }]}>Date</Text>
+        
+        <TouchableOpacity 
+          style={styles.datePill} 
+          onPress={togglePicker}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.dateValue, { fontFamily: theme.contentFont }]}>
+            {formattedDate}
+          </Text>
+          {/* Calendar or Edit Icon */}
+          <Ionicons name="calendar-outline" size={16} color="#999" style={{ marginLeft: 8 }} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Render Picker */}
+      {show && (
+        <View style={Platform.OS === 'ios' ? styles.iosPickerContainer : undefined}>
+          <DateTimePicker
+            testID="dateTimePicker"
+            value={date}
+            mode="date"
+            is24Hour={true}
+            display={Platform.OS === 'ios' ? 'inline' : 'default'} // iOS inline calendar style
+            onChange={handleChange}
+            accentColor={theme.accent} // iOS accent color
+            themeVariant="light"
+            style={Platform.OS === 'ios' ? styles.iosPicker : undefined}
+          />
+          
+          {/* iOS needs a manual Close button if using inline picker in a custom view */}
+          {Platform.OS === 'ios' && (
+            <TouchableOpacity 
+              style={[styles.closeButton, { backgroundColor: theme.accent }]} 
+              onPress={() => setShow(false)}
+            >
+              <Text style={styles.closeButtonText}>Done</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  label: {
+    fontSize: 16,
+    color: '#666',
+  },
+  datePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  dateValue: {
+    fontSize: 16,
+    color: '#333',
+  },
+  iosPickerContainer: {
+    marginTop: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    overflow: 'hidden',
+  },
+  iosPicker: {
+    width: '100%',
+    backgroundColor: '#fff',
+  },
+  closeButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  closeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
+export default DateSelector;

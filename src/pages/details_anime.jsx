@@ -271,7 +271,12 @@ const AnimeDetail = ({ route, navigation }) => {
           <Text style={styles.sectionLabel}>REVIEWS</Text>
           <TouchableOpacity 
             style={styles.addReviewButton}
-            onPress={() => navigation?.navigate('ReviewAnime')}
+            onPress={() => navigation?.navigate('ReviewAnime', { 
+              animeId: animeData.id,
+              id: animeData.id,
+              title: animeData.title,
+              coverImage: animeData.coverImage 
+            })}
           >
             <Ionicons name="add" size={20} color="#fff" />
           </TouchableOpacity>
