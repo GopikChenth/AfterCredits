@@ -7,6 +7,7 @@ import {
   StyleSheet, 
   Dimensions,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/Card';
@@ -15,8 +16,9 @@ import CategoryPill from '../components/CategoryPill';
 import SideBar from '../components/SideBar';
 import { KeyboardAwareSearchBar } from '../components/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
+import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
 
-const HomeAnime = () => {
+const HomeAnime = ({ navigation }) => {
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
@@ -29,6 +31,11 @@ const HomeAnime = () => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('anime');
 
+  // State for anime data
+  const [animeList, setAnimeList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Listen for screen size changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', () => {
@@ -39,23 +46,48 @@ const HomeAnime = () => {
 
     return () => subscription?.remove();
   }, []);
+
+  // Fetch anime data based on category
+  const fetchAnimeData = async (category) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      let response;
+      switch (category) {
+        case 'Popular':
+          response = await getPopularAnime(1, 20);
+          break;
+        case 'New':
+          response = await getNewAnime(1, 20);
+          break;
+        case 'Trending':
+        default:
+          response = await getTrendingAnime(1, 20);
+          break;
+      }
+      
+      // Format the anime data for display
+      const formattedAnime = response.media.map(anime => formatAnimeData(anime));
+      setAnimeList(formattedAnime);
+    } catch (err) {
+      console.error('Error fetching anime:', err);
+      setError('Failed to load anime. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch trending anime on mount
+  useEffect(() => {
+    fetchAnimeData(selectedCategory);
+  }, []);
   
   // Handle category change
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-    console.log('Selected category:', category);
-    // TODO: Fetch data based on category (trending/popular/new)
+    fetchAnimeData(category);
   };
-
-  // Sample anime data - replace with API data later
-  const animeList = [
-    { id: 1, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1528702748617-c64d49f918af?w=400', progress: 65, height: 200 },
-    { id: 2, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', progress: 40, height: 240 },
-    { id: 3, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400', progress: 80, height: 200 },
-    { id: 4, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', progress: 20, height: 180 },
-    { id: 5, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', progress: 55, height: 220 },
-    { id: 6, title: 'Title', genres: ['Genre', 'Genre', 'Genre'], imageUrl: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400', progress: 90, height: 200 },
-  ];
 
   // Split into two columns for masonry layout
   const leftColumn = animeList.filter((_, index) => index % 2 === 0);
@@ -85,50 +117,73 @@ const HomeAnime = () => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.grid}>
-          {/* Left Column */}
-          <View style={styles.column}>
-            {/* Category Pill as first item in left column */}
-            <View style={styles.badgeWrapper}>
-              <CategoryPill
-                categories={['Trending', 'Popular', 'New']}
-                onCategoryChange={handleCategoryChange}
-                width={cardWidth}
-              />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FF69B4" />
+            <Text style={styles.loadingText}>Loading anime...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => fetchAnimeData(selectedCategory)}
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {/* Left Column */}
+            <View style={styles.column}>
+              {/* Category Pill as first item in left column */}
+              <View style={styles.badgeWrapper}>
+                <CategoryPill
+                  categories={['Trending', 'Popular', 'New']}
+                  onCategoryChange={handleCategoryChange}
+                  width={cardWidth}
+                />
+              </View>
+              
+              {leftColumn.map((anime) => (
+                <TouchableOpacity 
+                  key={anime.id} 
+                  style={styles.cardWrapper}
+                  onPress={() => navigation?.navigate('DetailsAnime', { animeId: anime.id })}
+                >
+                  <MediaCard
+                    theme="anime"
+                    title={anime.title}
+                    year={anime.year}
+                    imageUrl={anime.coverImage}
+                    width={cardWidth}
+                    height={cardHeight}
+                  />
+                </TouchableOpacity>
+              ))}
             </View>
-            
-            {leftColumn.map((anime) => (
-              <View key={anime.id} style={styles.cardWrapper}>
-                <MediaCard
-                  theme="anime"
-                  title={anime.title}
-                  genres={anime.genres}
-                  imageUrl={anime.imageUrl}
-                  progress={anime.progress}
-                  width={cardWidth}
-                  height={cardHeight}
-                />
-              </View>
-            ))}
-          </View>
 
-          {/* Right Column */}
-          <View style={styles.column}>
-            {rightColumn.map((anime) => (
-              <View key={anime.id} style={styles.cardWrapper}>
-                <MediaCard
-                  theme="anime"
-                  title={anime.title}
-                  genres={anime.genres}
-                  imageUrl={anime.imageUrl}
-                  progress={anime.progress}
-                  width={cardWidth}
-                  height={cardHeight}
-                />
-              </View>
-            ))}
+            {/* Right Column */}
+            <View style={styles.column}>
+              {rightColumn.map((anime) => (
+                <TouchableOpacity 
+                  key={anime.id} 
+                  style={styles.cardWrapper}
+                  onPress={() => navigation?.navigate('DetailsAnime', { animeId: anime.id })}
+                >
+                  <MediaCard
+                    theme="anime"
+                    title={anime.title}
+                    year={anime.year}
+                    imageUrl={anime.coverImage}
+                    width={cardWidth}
+                    height={cardHeight}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
 
       {/* Bottom Navigation - rendered first */}
@@ -217,6 +272,40 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     marginBottom: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff6b6b',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#FF69B4',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
