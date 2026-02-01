@@ -11,7 +11,7 @@ const GenrePill = ({ genre }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#ffffff',
     borderRadius: 15,
     paddingVertical: 6,
     paddingHorizontal: 12,

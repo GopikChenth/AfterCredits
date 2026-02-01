@@ -28,7 +28,7 @@ const ReviewCard = ({ name, rating, text, avatar }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#e8e8e8',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,

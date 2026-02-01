@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     // No margin - parent controls spacing
   },
   pill: {
-    backgroundColor: '#FFC0CB',
+    backgroundColor: '#FFB3C6', // Pastel Cherry Blossom
     borderRadius: 20,
     paddingVertical: 18,
     paddingHorizontal: 20,

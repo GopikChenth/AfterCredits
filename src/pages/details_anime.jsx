@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import StatsPill from '../components/StatsPill';
-import GenrePill from '../components/GenrePill';
-import CrewMember from '../components/CrewMember';
-import ReviewCard from '../components/ReviewCard';
+import StatsPill from '../components/details_page/StatsPill';
+import GenrePill from '../components/details_page/GenrePill';
+import CrewMember from '../components/details_page/CrewMember';
+import ReviewCard from '../components/details_page/ReviewCard';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 
@@ -58,8 +58,8 @@ const AnimeDetail = ({ route, navigation }) => {
 
   // Format API data for display
   const formatAnimeDetails = (data) => {
-    // Generate avatar colors for voice actors
-    const avatarColors = ['#00ffff', '#ff6b6b', '#51cf66', '#74c0fc', '#ffd43b', '#ff8cc8', '#69db7c', '#91a7ff', '#ffa8a8', '#d0bfff'];
+    // Generate avatar colors for voice actors (Pastel Palette)
+    const avatarColors = ['#FFB3C6', '#FFDAC1', '#B5EAD7', '#C7CEEA', '#FFF0E4', '#E2F0CB', '#FF9AA2', '#A0C4FF', '#FFB7B2', '#E2F0CB'];
     
     // Extract voice actors from characters
     const voiceActors = data.characters?.edges
@@ -122,7 +122,7 @@ const AnimeDetail = ({ route, navigation }) => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF69B4" />
+        <ActivityIndicator size="large" color={theme.accent} />
         <Text style={styles.loadingText}>Loading anime details...</Text>
       </View>
     );
@@ -133,11 +133,11 @@ const AnimeDetail = ({ route, navigation }) => {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchAnimeDetails}>
+        <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.retryButton, { marginTop: 10, backgroundColor: '#666' }]} 
+          style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]} 
           onPress={() => navigation?.goBack()}
         >
           <Text style={styles.retryText}>Go Back</Text>
@@ -152,7 +152,7 @@ const AnimeDetail = ({ route, navigation }) => {
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>No anime data available.</Text>
         <TouchableOpacity 
-          style={styles.retryButton} 
+          style={[styles.retryButton, { backgroundColor: theme.accent }]} 
           onPress={() => navigation?.goBack()}
         >
           <Text style={styles.retryText}>Go Back</Text>
@@ -186,7 +186,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Description Section */}
-      <View style={styles.descriptionSection}>
+      <View style={[styles.descriptionSection, { backgroundColor: theme.accentLight }]}>
         <View style={styles.titleYearRow}>
           <Text style={styles.mainTitle}>{animeData.title}</Text>
           <Text style={styles.year}>{animeData.year}</Text>
@@ -213,13 +213,13 @@ const AnimeDetail = ({ route, navigation }) => {
 
       {/* Stats Section */}
       <View style={styles.statsSection}>
-        <StatsPill label="Popularity" count={animeData.stats.members} color="#ff6b6b" />
-        <StatsPill label="Reviews" count={animeData.stats.reviews} color="#51cf66" />
-        <StatsPill label="Score" count={`${animeData.stats.score}%`} color="#74c0fc" />
+        <StatsPill label="Popularity" count={animeData.stats.members} color="#FF9AA2" />
+        <StatsPill label="Reviews" count={animeData.stats.reviews} color="#B5EAD7" />
+        <StatsPill label="Score" count={`${animeData.stats.score}%`} color="#A0C4FF" />
       </View>
 
       {/* Genre and Voice Actors Section */}
-      <View style={styles.genreCrewSection}>
+      <View style={[styles.genreCrewSection, { backgroundColor: theme.accentLight }]}>
         <View style={styles.genreRow}>
           <Text style={styles.sectionLabel}>GENRE</Text>
           <View style={styles.genreList}>
@@ -266,7 +266,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Reviews Section */}
-      <View style={styles.reviewsSection}>
+      <View style={[styles.reviewsSection, { backgroundColor: theme.accentLight }]}>
         <View style={styles.reviewsHeader}>
           <Text style={styles.sectionLabel}>REVIEWS</Text>
           <TouchableOpacity 

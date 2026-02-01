@@ -45,41 +45,41 @@ export const initializeFonts = () => {
 export const MEDIA_THEMES = {
   anime: {
     name: 'Anime',
-    accent: '#007AFF',      // iOS Blue - vibrant and modern
-    accentLight: 'rgba(0, 122, 255, 0.15)',
-    accentGlow: 'rgba(0, 122, 255, 0.3)',
+    accent: '#FFB3C6',      // Pastel Cherry Blossom
+    accentLight: '#FFE5EC', // Light Pastel Pink
+    accentGlow: 'rgba(255, 179, 198, 0.6)',
     headingFont: 'Midorima',
     contentFont: 'Agdasima',
   },
   movie: {
     name: 'Movies',
-    accent: '#FF3B30',      // Cinematic Red
-    accentLight: 'rgba(255, 59, 48, 0.15)',
-    accentGlow: 'rgba(255, 59, 48, 0.3)',
+    accent: '#FF9AA2',      // Pastel Red/Coral
+    accentLight: '#FFDAC1', // Pastel Peach
+    accentGlow: 'rgba(255, 154, 162, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },
   game: {
     name: 'Games',
-    accent: '#34C759',      // Gaming Green
-    accentLight: 'rgba(52, 199, 89, 0.15)',
-    accentGlow: 'rgba(52, 199, 89, 0.3)',
+    accent: '#B5EAD7',      // Pastel Mint Green
+    accentLight: '#E2F0CB', // Pastel Yellow-Green
+    accentGlow: 'rgba(181, 234, 215, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },
   comic: {
     name: 'Comics',
-    accent: '#FF9500',      // Comic Orange
-    accentLight: 'rgba(255, 149, 0, 0.15)',
-    accentGlow: 'rgba(255, 149, 0, 0.3)',
+    accent: '#FFDAC1',      // Pastel Peach/Orange
+    accentLight: '#FFF0E4', // Very Light Peach
+    accentGlow: 'rgba(255, 218, 193, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },
   manga: {
     name: 'Manga',
-    accent: '#AF52DE',      // Manga Purple
-    accentLight: 'rgba(175, 82, 222, 0.15)',
-    accentGlow: 'rgba(175, 82, 222, 0.3)',
+    accent: '#C7CEEA',      // Pastel Periwinkle
+    accentLight: '#E8DFF5', // Pastel Lavender
+    accentGlow: 'rgba(199, 206, 234, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },
