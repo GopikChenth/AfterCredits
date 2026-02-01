@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MediaCard from '../components/Card';
+import MediaCard from '../components/homepage/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
 import SideBar from '../components/SideBar';

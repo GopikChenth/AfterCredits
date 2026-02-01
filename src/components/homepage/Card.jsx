@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ImageBackground, StyleSheet } from 'react-native';
-import { getMediaTheme } from '../utils/mediaThemes';
+import { getMediaTheme } from '../../utils/mediaThemes';
 
 /**
  * MediaCard - Reusable card component for different media types
