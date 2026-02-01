@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/homepage/Card';
-import NavBar from '../components/NavBar';
-import CategoryPill from '../components/CategoryPill';
-import SideBar from '../components/SideBar';
-import { KeyboardAwareSearchBar } from '../components/SearchBar';
+import NavBar from '../components/homepage/NavBar';
+import CategoryPill from '../components/homepage/CategoryPill';
+import SideBar from '../components/homepage/SideBar';
+import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
 
