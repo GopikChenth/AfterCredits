@@ -49,67 +49,57 @@ const SearchBar = ({
     }
   };
 
-  // Render blur container based on platform
-  const BlurContainer = ({ children }) => {
-    if (Platform.OS === 'web') {
-      return <View style={styles.blurContainerWeb}>{children}</View>;
-    }
+  // Content to render inside the blur container
+  const inputContent = (
+    <View style={styles.searchWrapper}>
+      {/* Search Icon */}
+      <View style={styles.iconWrapper}>
+        <Text style={styles.searchIcon}>🔍</Text>
+      </View>
+
+      {/* Input Field */}
+      <TextInput
+        ref={inputRef}
+        style={styles.input}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+        value={searchText}
+        onChangeText={handleChangeText}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+
+      {/* Clear Button (shows when there's text) */}
+      {searchText.length > 0 && (
+        <TouchableOpacity 
+          style={styles.clearButton}
+          onPress={handleClear}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.clearIcon}>✕</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  // Render based on platform - no pointerEvents anywhere
+  if (Platform.OS === 'web') {
     return (
-      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
-        {children}
-      </BlurView>
+      <View style={[styles.container, style]}>
+        <View style={styles.blurContainerWeb}>
+          {inputContent}
+        </View>
+      </View>
     );
-  };
+  }
 
   return (
     <View style={[styles.container, style]}>
-      <BlurContainer>
-        <View style={styles.searchWrapper}>
-          {/* Search Icon */}
-          <View style={styles.iconWrapper}>
-            <Text style={styles.searchIcon}>🔍</Text>
-          </View>
-
-          {/* Input Field */}
-          <TextInput
-            ref={inputRef}
-            style={styles.input}
-            placeholder={placeholder}
-            placeholderTextColor="rgba(255, 255, 255, 0.5)"
-            value={searchText}
-            onChangeText={handleChangeText}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            clearButtonMode="never"
-            autoCapitalize="none"
-            autoCorrect={false}
-            underlineColorAndroid="transparent"
-            selectionColor="#fff"
-          />
-
-          {/* Clear Button (shows when there's text) */}
-          {searchText.length > 0 && (
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={handleClear}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.clearIcon}>✕</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Cancel Button (shows when focused) */}
-          {isFocused && (
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={handleCancel}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </BlurContainer>
+      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
+        {inputContent}
+      </BlurView>
     </View>
   );
 };

@@ -46,6 +46,34 @@ Before writing a script, check for the required Libraries
 - **Verify result**: Check alignment after fix
 - **Example**: When asked "make X same size as Y" → Check Y's dimensions → Apply to X → Done
 - **Avoid**: Trial-and-error with padding/margins when dimension mismatch is the root cause
+  **6. Keep it simple! Avoid defining components inside other components**
+  When in doubt, use the most direct rendering approach possible:
+- **Never define wrapper components inside render**: Creating a component function inside another component (e.g., `const BlurContainer = ({ children }) => ...`) creates new instances on every render, causing touch events to be lost, focus to reset, and keyboard issues.
+- **Use direct rendering**: Instead of wrapper functions, render components directly in the JSX tree.
+- **Example of what NOT to do**:
+  ```jsx
+  // ❌ BAD - Creates new component on every render
+  const MyComponent = () => {
+    const Wrapper = ({ children }) => <View>{children}</View>;
+    return (
+      <Wrapper>
+        <TextInput />
+      </Wrapper>
+    );
+  };
+  ```
+- **Example of correct approach**:
+  ```jsx
+  // ✅ GOOD - Direct rendering
+  const MyComponent = () => {
+    return (
+      <View>
+        <TextInput />
+      </View>
+    );
+  };
+  ```
+- **If you need reusable wrappers**: Define them OUTSIDE the component or in separate files.
 
 ## Self-annealing loop
 

@@ -131,7 +131,10 @@ const HomeAnime = () => {
         </View>
       </ScrollView>
 
-      {/* Search Bar - Keyboard-aware, moves above keyboard */}
+      {/* Bottom Navigation - rendered first */}
+      <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
+
+      {/* Search Bar - rendered AFTER NavBar for higher stacking on Android */}
       <KeyboardAwareSearchBar 
         theme="anime"
         placeholder="Search anime..."
@@ -140,9 +143,6 @@ const HomeAnime = () => {
         defaultBottom={93}
         keyboardOffset={24}
       />
-
-      {/* Bottom Navigation */}
-      <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
       
       {/* Sidebar */}
       <SideBar 
