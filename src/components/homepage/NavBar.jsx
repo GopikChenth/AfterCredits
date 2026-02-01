@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   activeLabel: {
-    color: '#007AFF',
+    color: '#FFB3C6', // Pastel Pink
     fontWeight: '600',
   },
   indicator: {
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     top: 0,
     width: 40,
     height: 3,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FFB3C6', // Pastel Pink
     borderRadius: 2,
   },
 });

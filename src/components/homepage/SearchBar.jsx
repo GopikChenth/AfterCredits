@@ -62,7 +62,7 @@ const SearchBar = ({
         ref={inputRef}
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor="rgba(0, 0, 0, 0.5)"
+        placeholderTextColor="rgba(255, 255, 255, 0.5)"
         value={searchText}
         onChangeText={handleChangeText}
         onFocus={() => setIsFocused(true)}
@@ -97,7 +97,7 @@ const SearchBar = ({
 
   return (
     <View style={[styles.container, style]}>
-      <BlurView intensity={80} tint="light" style={styles.blurContainerNative}>
+      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
         {inputContent}
       </BlurView>
     </View>
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     backdropFilter: 'blur(20px) saturate(180%)',
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
     borderWidth: 0, // No borders
@@ -157,12 +157,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     fontSize: 20,
-    color: '#4A4A4A',
+    color: '#fff',
   },
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: '#fff',
     height: '100%',
     paddingVertical: 0,
     paddingHorizontal: 0,
@@ -182,13 +182,13 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   clearIcon: {
     fontSize: 14,
-    color: '#4A4A4A',
+    color: '#fff',
     fontWeight: 'bold',
   },
   cancelButton: {

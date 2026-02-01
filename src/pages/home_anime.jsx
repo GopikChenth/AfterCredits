@@ -17,8 +17,10 @@ import SideBar from '../components/homepage/SideBar';
 import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
+import { getMediaTheme } from '../utils/mediaThemes';
 
 const HomeAnime = ({ navigation }) => {
+  const theme = getMediaTheme('anime');
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
@@ -119,7 +121,7 @@ const HomeAnime = ({ navigation }) => {
       >
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FF69B4" />
+            <ActivityIndicator size="large" color={theme.accent} />
             <Text style={styles.loadingText}>Loading anime...</Text>
           </View>
         ) : error ? (
@@ -297,7 +299,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#FF69B4',
+    backgroundColor: '#FFB3C6', // Theme accent
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,

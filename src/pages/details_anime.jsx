@@ -186,7 +186,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Description Section */}
-      <View style={[styles.descriptionSection, { backgroundColor: theme.accentLight }]}>
+      <View style={[styles.descriptionSection, { backgroundColor: theme.accent }]}>
         <View style={styles.titleYearRow}>
           <Text style={styles.mainTitle}>{animeData.title}</Text>
           <Text style={styles.year}>{animeData.year}</Text>
@@ -219,7 +219,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Genre and Voice Actors Section */}
-      <View style={[styles.genreCrewSection, { backgroundColor: theme.accentLight }]}>
+      <View style={[styles.genreCrewSection, { backgroundColor: theme.accent }]}>
         <View style={styles.genreRow}>
           <Text style={styles.sectionLabel}>GENRE</Text>
           <View style={styles.genreList}>
@@ -266,7 +266,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Reviews Section */}
-      <View style={[styles.reviewsSection, { backgroundColor: theme.accentLight }]}>
+      <View style={[styles.reviewsSection, { backgroundColor: theme.accent }]}>
         <View style={styles.reviewsHeader}>
           <Text style={styles.sectionLabel}>REVIEWS</Text>
           <TouchableOpacity 
