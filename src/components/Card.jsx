@@ -9,7 +9,7 @@ import { getMediaTheme } from '../utils/mediaThemes';
 const MediaCard = ({ 
   theme = 'anime',  // anime | movie | game | comic | manga
   title = 'TITLE', 
-  genres = ['Genre', 'Genre', 'Genre'],
+  year = null,
   imageUrl = 'https://via.placeholder.com/300x400',
   progress = 0,
   width = 180,
@@ -29,7 +29,7 @@ const MediaCard = ({
         
         <View style={styles.content}>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.genres}>{genres.join(', ')}</Text>
+          {year && <Text style={styles.year}>{year}</Text>}
         </View>
       </ImageBackground>
     </View>
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   title: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#fff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
     marginBottom: 4,
   },
-  genres: {
+  year: {
     fontSize: 11,
     color: '#fff',
     opacity: 0.9,
