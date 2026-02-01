@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   TextInput, 
   StyleSheet, 
   TouchableOpacity, 
   Text,
-  Platform 
+  Platform,
+  Keyboard,
+  Animated,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 
@@ -23,6 +25,7 @@ const SearchBar = ({
 }) => {
   const [searchText, setSearchText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef(null);
 
   const handleChangeText = (text) => {
     setSearchText(text);
@@ -69,6 +72,7 @@ const SearchBar = ({
 
           {/* Input Field */}
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder={placeholder}
             placeholderTextColor="rgba(255, 255, 255, 0.5)"
@@ -207,5 +211,58 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+/**
+ * KeyboardAwareSearchBar - Wrapper that handles keyboard positioning
+ * Uses Animated.Value and actual keyboard height for positioning
+ */
+export const KeyboardAwareSearchBar = ({ 
+  defaultBottom = 93, // Default position above NavBar
+  keyboardOffset = 16, // Offset above the keyboard
+  ...props 
+}) => {
+  const bottomAnim = useRef(new Animated.Value(defaultBottom)).current;
+
+  useEffect(() => {
+    const keyboardShowEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const keyboardHideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(keyboardShowEvent, (event) => {
+      // Get keyboard height and position SearchBar above it
+      const keyboardHeight = event.endCoordinates.height;
+      Animated.timing(bottomAnim, {
+        toValue: keyboardHeight + keyboardOffset,
+        duration: Platform.OS === 'ios' ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener(keyboardHideEvent, () => {
+      Animated.timing(bottomAnim, {
+        toValue: defaultBottom,
+        duration: Platform.OS === 'ios' ? 250 : 100,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [defaultBottom, keyboardOffset]);
+
+  return (
+    <Animated.View style={{
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: bottomAnim,
+      paddingHorizontal: 16,
+      zIndex: 10,
+    }}>
+      <SearchBar {...props} />
+    </Animated.View>
+  );
+};
 
 export default SearchBar;

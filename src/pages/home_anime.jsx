@@ -13,7 +13,7 @@ import MediaCard from '../components/Card';
 import NavBar from '../components/NavBar';
 import CategoryPill from '../components/CategoryPill';
 import SideBar from '../components/SideBar';
-import SearchBar from '../components/SearchBar';
+import { KeyboardAwareSearchBar } from '../components/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 
 const HomeAnime = () => {
@@ -131,15 +131,15 @@ const HomeAnime = () => {
         </View>
       </ScrollView>
 
-      {/* Search Bar - Floating overlay above NavBar */}
-      <View style={styles.searchBarOverlay}>
-        <SearchBar 
-          theme="anime"
-          placeholder="Search anime..."
-          onChangeText={(text) => console.log('Search:', text)}
-          onCancel={() => console.log('Search cancelled')}
-        />
-      </View>
+      {/* Search Bar - Keyboard-aware, moves above keyboard */}
+      <KeyboardAwareSearchBar 
+        theme="anime"
+        placeholder="Search anime..."
+        onChangeText={(text) => console.log('Search:', text)}
+        onCancel={() => console.log('Search cancelled')}
+        defaultBottom={93}
+        keyboardOffset={24}
+      />
 
       {/* Bottom Navigation */}
       <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
@@ -217,15 +217,6 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     marginBottom: 16,
-  },
-  searchBarOverlay: {
-    position: 'absolute',
-    bottom: 93, // NavBar height (77px) + 16px spacing
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    zIndex: 10,
-    backgroundColor: 'transparent',
   },
 });
 

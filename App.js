@@ -24,7 +24,7 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="DetailsAnime"
+          initialRouteName="HomeAnime"
           screenOptions={{
             headerShown: false,
             gestureEnabled: true,
