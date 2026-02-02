@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# project documentation (local only)
+FILE_ORGANIZATION.md
+WISHLIST.md
