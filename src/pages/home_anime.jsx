@@ -109,7 +109,10 @@ const HomeAnime = ({ navigation }) => {
         
         <Text style={styles.headerTitle}>Label</Text>
         
-        <TouchableOpacity style={styles.profileButton}>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('ProfilePage')}
+        >
           <View style={styles.profileIcon} />
         </TouchableOpacity>
       </View>
@@ -189,7 +192,13 @@ const HomeAnime = ({ navigation }) => {
       </ScrollView>
 
       {/* Bottom Navigation - rendered first */}
-      <NavBar activeTab="home" onTabChange={(tab) => console.log('Tab changed:', tab)} />
+      <NavBar 
+        activeTab="home" 
+        onTabChange={(tab) => {
+          if (tab === 'profile') navigation.navigate('ProfilePage');
+          else if (tab === 'search') console.log('Search tab pressed');
+        }} 
+      />
 
       {/* Search Bar - rendered AFTER NavBar for higher stacking on Android */}
       <KeyboardAwareSearchBar 

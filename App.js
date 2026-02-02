@@ -7,6 +7,7 @@ import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 import HomeAnime from './src/pages/home_anime';
 import DetailsAnime from './src/pages/details_anime';
 import ReviewAnime from './src/pages/review_anime';
+import ProfilePage from './src/pages/profile_page';
 
 // Initialize font loading system
 initializeFonts();
@@ -34,6 +35,7 @@ export default function App() {
           <Stack.Screen name="HomeAnime" component={HomeAnime} />
           <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
           <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
+          <Stack.Screen name="ProfilePage" component={ProfilePage} />
         </Stack.Navigator>
         <StatusBar style="auto" />
       </NavigationContainer>
