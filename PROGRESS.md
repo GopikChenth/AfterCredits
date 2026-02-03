@@ -1,4 +1,4 @@
- # AfterCredits - Development Progress
+# AfterCredits - Development Progress
 
 ## Project Overview
 
@@ -346,6 +346,7 @@ _"Build systematically. Fix methodically. Document thoroughly."_
 **Purpose**: Comprehensive anime detail view with sequential modular design
 
 **Features**:
+
 - **Immersive Hero Section**: Full-width backdrop image merging with app top
 - **Overlapping Design**: Poster extends behind description module with gradient transition
 - **Sequential Modules**: Title/Poster → Description → Stats → Genre/Crew → Reviews → Related Shows
@@ -354,6 +355,7 @@ _"Build systematically. Fix methodically. Document thoroughly."_
 - **Module Spacing**: Consistent 8px-based spacing (24px, 32px margins)
 
 **Technical Achievements**:
+
 - **Negative Margins**: `-60px` bottom margin on hero for natural overlap
 - **Absolute Positioning**: Header floats over hero image with shadow text
 - **FlatList Integration**: Horizontal scrolling for related content
@@ -369,22 +371,25 @@ _"Build systematically. Fix methodically. Document thoroughly."_
 **Purpose**: Centralized theme and font management system
 
 **Features**:
+
 - **Multi-Media Support**: Anime, Movies, Games, Comics, Manga themes
 - **Custom Font Loading**: Expo Font integration with splash screen management
 - **Font Utilities**: Built-in heading/content font functions
 - **Dynamic Theming**: Easy switching between media-specific typography
 
 **Font Configuration**:
+
 - **Anime Fonts**: "Midorima" (headings), "Agdasima" (content)
 - **Other Media**: "Arial" fallbacks for movies, games, comics, manga
 - **Bold Support**: "Agdasima-Bold" automatic handling
 - **Weight Management**: Normal/bold weight system
 
 **API Design**:
+
 ```javascript
-const theme = getMediaTheme('anime');
-theme.fonts.heading('bold')  // Midorima bold
-theme.fonts.content()        // Agdasima normal
+const theme = getMediaTheme("anime");
+theme.fonts.heading("bold"); // Midorima bold
+theme.fonts.content(); // Agdasima normal
 ```
 
 ---
@@ -396,6 +401,7 @@ theme.fonts.content()        // Agdasima normal
 **Purpose**: Circular statistics display for Members/Reviews/Lists
 
 **Features**:
+
 - Dynamic background colors (red, green, blue)
 - Anime typography integration
 - Flexible count display
@@ -406,6 +412,7 @@ theme.fonts.content()        // Agdasima normal
 **Purpose**: Genre tag display with consistent styling
 
 **Features**:
+
 - Rounded pill design
 - Agdasima font integration
 - Flexible genre text
@@ -415,6 +422,7 @@ theme.fonts.content()        // Agdasima normal
 **Purpose**: Staff member display with avatar and role
 
 **Features**:
+
 - Color-coded avatars
 - Name (Midorima) and role (Agdasima) typography
 - Compact horizontal layout
@@ -424,6 +432,7 @@ theme.fonts.content()        // Agdasima normal
 **Purpose**: User review display with rating system
 
 **Features**:
+
 - **Layout**: Avatar + Name/Rating on same row (rating right-aligned)
 - **Star Rating**: 5-star system with filled/empty states
 - **Typography**: Midorima names, Agdasima review text
@@ -434,14 +443,13 @@ theme.fonts.content()        // Agdasima normal
 **Purpose**: Related content cards for horizontal scrolling
 
 **Features**:
+
 - Image backgrounds with text overlays
 - Midorima titles, Agdasima subtitles
 - Touch-ready interaction
 - 150×200 sizing for horizontal lists
 
 ---
-
-
 
 ### ✅ UI/UX Enhancements
 
@@ -473,16 +481,19 @@ theme.fonts.content()        // Agdasima normal
 #### **Centralized Font Management**:
 
 **Loading System**:
+
 - `useMediaFonts()`: Custom hook for font loading
 - `initializeFonts()`: Splash screen management
 - Font files: Midorima-PersonalUse-Regular.ttf, Agdasima-Regular.ttf, Agdasima-Bold.ttf
 
 **Integration Points**:
+
 - **App.js**: Font loading at app initialization
 - **mediaThemes.js**: Theme-based font utilities
 - **All Components**: Consistent font application
 
 **Performance Benefits**:
+
 - Single font load at startup
 - Theme-based font switching
 - Memory efficient management
@@ -492,7 +503,7 @@ theme.fonts.content()        // Agdasima normal
 
 ### ✅ Technical Problem Solving
 
-#### 1. **Font Integration Optimization** 
+#### 1. **Font Integration Optimization**
 
 **Problem**: Multiple font utility functions cluttering API
 **Solution**: Integrated font utilities directly into `getMediaTheme()`
@@ -531,7 +542,7 @@ theme.fonts.content()        // Agdasima normal
 ├── /src
 │   ├── /components
 │   │   ├── AnimeCard.jsx           ✅ (Session 1)
-│   │   ├── NavBar.jsx              ✅ (Session 1)  
+│   │   ├── NavBar.jsx              ✅ (Session 1)
 │   │   ├── CategoryPill.jsx        ✅ (Session 1)
 │   │   ├── StatsPill.jsx           ✅ NEW - Statistics display
 │   │   ├── GenrePill.jsx           ✅ NEW - Genre tags
@@ -580,6 +591,7 @@ theme.fonts.content()        // Agdasima normal
 ### 🚀 Current State & Next Priorities
 
 **Completed Infrastructure**:
+
 - ✅ Complete AnimeDetail page with all modules
 - ✅ Font theming system for all media types
 - ✅ Comprehensive component library
@@ -587,6 +599,7 @@ theme.fonts.content()        // Agdasima normal
 - ✅ Immersive UI with overlapping design
 
 **Ready for Next Development**:
+
 1. Add navigation system between screens
 2. Create AnimeReview page for user review submission
 3. Implement API integration for real anime data
@@ -608,3 +621,130 @@ theme.fonts.content()        // Agdasima normal
 ---
 
 _"The Universal Frame provides consistency. Thematic Adaptation provides personality. Together, they create the AfterCredits experience."_
+
+---
+
+## Session 3: Feb 03, 2026
+
+### ✅ Authentication & User System
+
+#### **Authentication Flow** (`/src/pages/auth_page.jsx`)
+
+**Purpose**: Secure and user-friendly sign-up/login experience
+
+**Features**:
+
+- **Dual Mode**: Toggle between Sign Up and Login
+- **Field Validation**: Real-time checking for empty fields and password matching
+- **Visual Feedback**: Loading states, error alerts, and success messages
+- **Supabase Integration**: Direct connection to Supabase Auth
+- **Callsign System**: Unique "Callsign" (username) enforced at sign-up
+- **OAuth Handling**: Hidden/Disabled placeholders for future Google/Apple implementation
+
+**Technical Details**:
+
+- **Keyboard Handling**: `KeyboardAvoidingView` for form usability
+- **Error Grace**: Friendly error messages (e.g., "Auth session missing" handled quietly)
+- **Callsign Check**: Logic to ensure unique gamertags before registration
+
+---
+
+### ✅ Profile & Privacy System
+
+#### **Profile Page** (`/src/pages/profile_page.jsx`)
+
+**Purpose**: User identity management and privacy controls
+
+**Features**:
+
+- **"Spy" Empty State**: Fun, thematic "Who Goes There?" screen for non-logged-in users
+- **Privacy Toggle**: "Anonymous Mode" switch
+  - **ON**: Displays "Callsign" publicly (e.g., "Shadow_Ninja")
+  - **OFF**: Displays "Real Name" publicly (e.g., "John Doe")
+- **Persistent Settings**: Privacy preference saved to Supabase profile
+- **Dynamic Header**: Shows Real Name vs Callsign based on toggle state
+
+#### **Edit Profile Config** (`/src/components/profile/EditProfileModal.jsx`)
+
+**Purpose**: Modular editing experience
+
+**Features**:
+
+- **Slide-up Modal**: Native-feel interaction
+- **Image Picker**: Integration with device gallery for Avatar updates
+- **Smart Placeholders**: Shows current values as placeholders
+- **Validation**:
+  - Name length checks
+  - "Keep previous value" logic if fields are left empty
+- **Deprecation Fixes**: Updated `ImagePicker` API usage (MediaType array)
+
+---
+
+### ✅ Database & Backend
+
+#### **Supabase Schema** (`/supabase_setup.sql`)
+
+**Updates**:
+
+- **Concept Swap**:
+  - `username` column → Stores **Real Name** (Non-unique)
+  - `display_name` column → Stores **Callsign** (Unique)
+- **Profiles Table**: Added `use_display_name` boolean for privacy toggle
+- **RLS Policies**: Secured row-level security for user data protection
+
+---
+
+### ✅ Technical Achievements
+
+#### **1. Handling "Auth Session Missing"**
+
+**Problem**: App crashed or showed red screens when session was lost/null.
+**Solution**: Implemented graceful error catching in `profile.js` service. Returns `notLoggedIn: true` state instead of throwing, allowing UI to show the "Spy" empty state safely.
+
+#### **2. Profile Logic Swap**
+
+**Problem**: Initial logic treated `username` as the unique ID, but user wanted "Real Name" to be the standard `username` and "Gamertag" to be the optional display.
+**Solution**: Refactored `userUtils.js`, `auth.js`, and database schema. `display_name` now acts as the unique "Callsign", while `username` is the "Real Name".
+
+#### **3. Image Picker Modernization**
+
+**Problem**: `ImagePicker.MediaTypeOptions` deprecated warning.
+**Solution**: Updated to use new `mediaTypes: ['images']` array format continuously.
+
+#### **4. Sidebar Filtering Logic**
+
+**Problem**: User wanted to hide unused page categories from the sidebar.
+**Solution**: Implemented `SettingsService` with MMKV persistence and updated `SideBar.jsx` to filter menu items dynamically based on user preferences.
+
+---
+
+### 📊 Session 3 Statistics
+
+**New Components**: 1 (`EditProfileModal`)
+**Pages Updated**: 2 (`AuthPage`, `ProfilePage`)
+**Services Created**: 2 (`profile.js`, `settings.js`)
+**Database Updates**: Complete schema overhaul
+**Key Features**: Authentication, Privacy Toggle, Avatar Upload, Sidebar Customization
+**Time Invested**: ~3.0 hours
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Full Auth System (Sign Up/Login/Logout)
+- ✅ Profile Management (Edit Name/Callsign/Avatar)
+- ✅ Privacy Settings (Anonymous vs Real Name)
+- ✅ Sidebar Navigation Customization (Hide/Show items)
+- ✅ Thematic "Spy" Empty States
+
+**Next Priorities**:
+
+- 1. Connect "Sync" and "Backlog" sections in Profile
+- 2. Start on "Movies" and "Games" pages
+- 3. Implement real API data fetching for Home Page
+
+---
+
+_"Identity is a choice. In AfterCredits, you decide who sees the real you."_

@@ -8,6 +8,7 @@ import HomeAnime from './src/pages/home_anime';
 import DetailsAnime from './src/pages/details_anime';
 import ReviewAnime from './src/pages/review_anime';
 import ProfilePage from './src/pages/profile_page';
+import AuthPage from './src/pages/auth_page';
 
 // Initialize font loading system
 initializeFonts();
@@ -36,6 +37,7 @@ export default function App() {
           <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
           <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
           <Stack.Screen name="ProfilePage" component={ProfilePage} />
+          <Stack.Screen name="AuthPage" component={AuthPage} />
         </Stack.Navigator>
         <StatusBar style="auto" />
       </NavigationContainer>

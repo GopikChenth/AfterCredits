@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -6,25 +6,91 @@ import {
   ScrollView, 
   Image, 
   TouchableOpacity,
-  StatusBar
+  StatusBar,
+  Switch,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getMediaTheme } from '../utils/mediaThemes';
+import { getUserProfile, updateAnonymousMode, updateProfile } from '../services/profile';
+import { signOut } from '../services/auth';
+import { getPublicName, getFirstName } from '../utils/userUtils';
+import EditProfileModal from '../components/profile/EditProfileModal';
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
+  const [useDisplayName, setUseDisplayName] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  // Static data for UI display
-  const streakDays = [
-    { day: 'S', active: true },
-    { day: 'M', active: true },
-    { day: 'T', active: false },
-    { day: 'W', active: false },
-    { day: 'T', active: false },
-    { day: 'F', active: false },
-    { day: 'S', active: false },
-  ];
+  // Load user profile on mount
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    const result = await getUserProfile();
+    if (result.success && result.profile) {
+      setProfile(result.profile);
+      setUseDisplayName(result.profile.use_display_name || false);
+    }
+    setLoading(false);
+  };
+
+  // Handle toggle change
+  const handleToggleChange = async (value) => {
+    setUseDisplayName(value);
+    
+    const result = await updateAnonymousMode(value);
+    
+    if (!result.success) {
+      // Revert on error
+      setUseDisplayName(!value);
+      Alert.alert('Error', 'Failed to update privacy settings');
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = async () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await signOut();
+            if (result.success) {
+              setProfile(null);
+              setUseDisplayName(false);
+              navigation.navigate('AuthPage');
+            } else {
+              Alert.alert('Error', 'Failed to log out');
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  // Handle Save Profile
+  const handleSaveProfile = async (updates) => {
+    const result = await updateProfile(updates);
+    
+    if (result.success) {
+      // Reload profile to get updated data
+      await loadProfile();
+    }
+    
+    return result;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,100 +101,117 @@ const ProfilePage = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
+        {/* Header - ALWAYS SHOW */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { fontFamily: theme.headingFont }]}>Settings</Text>
-          <TouchableOpacity style={[styles.premiumButton, { backgroundColor: theme.accent }]}>
-            <Ionicons name="sparkles" size={16} color="#fff" />
-            <Text style={styles.premiumButtonText}>Get Plus+</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
+          <View style={{ width: 24 }} />
         </View>
+
+        {/* Show Empty State if not logged in */}
+        {!profile && !loading ? (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyStateIconContainer}>
+              <Ionicons name="person-circle-outline" size={120} color={theme.accent} style={styles.emptyStateIcon} />
+              <View style={[styles.questionMark, { backgroundColor: theme.accent }]}>
+                <Text style={styles.questionMarkText}>?</Text>
+              </View>
+            </View>
+            
+            <Text style={styles.emptyStateTitle}>Who Goes There? 🕵️</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              Looks like you're ghosting us! {'\n'}
+              Sign in to unlock your secret agent profile.
+            </Text>
+            
+            <TouchableOpacity 
+              style={[styles.signInButton, { backgroundColor: theme.accent }]}
+              onPress={() => navigation.navigate('AuthPage')}
+            >
+              <Ionicons name="finger-print" size={24} color="#fff" />
+              <Text style={styles.signInButtonText}>Identify Yourself</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.emptyStateFooter}>
+              No ID yet? No problem! {'\n'}
+              Create your callsign and join the mission. 🎯
+            </Text>
+          </View>
+        ) : loading ? (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading profile...</Text>
+          </View>
+        ) : (
+          <>
 
         {/* Profile Avatar Section */}
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Image 
-              source={{ uri: 'https://api.dicebear.com/7.x/avataaars/png?seed=user123' }}
+              source={{ uri: profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/png?seed=user123' }}
               style={[styles.avatar, { borderColor: theme.accent }]}
             />
             {/* Edit Button */}
-            <TouchableOpacity style={[styles.avatarActionLeft, { backgroundColor: theme.accent }]}>
+            <TouchableOpacity 
+              style={[styles.avatarActionLeft, { backgroundColor: theme.accent }]}
+              onPress={() => setShowEditModal(true)}
+            >
               <Ionicons name="pencil" size={14} color="#fff" />
             </TouchableOpacity>
-            {/* Verified Badge */}
-            <TouchableOpacity style={styles.avatarActionRight}>
-              <Ionicons name="checkmark-circle" size={24} color={theme.accent} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Stats Pills */}
-          <View style={styles.statsRow}>
-            <View style={styles.statPill}>
-              <Ionicons name="people-outline" size={16} color="#666" />
-              <Text style={styles.statText}>5</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Ionicons name="trophy-outline" size={16} color="#666" />
-              <Text style={styles.statText}>4</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Ionicons name="time-outline" size={16} color="#666" />
-              <Text style={styles.statText}>146h</Text>
-            </View>
-            <View style={styles.statPill}>
-              <Ionicons name="logo-apple" size={18} color="#666" />
-            </View>
-          </View>
-        </View>
-
-        {/* Streak Section */}
-        <View style={[styles.card, { backgroundColor: theme.accent + '15' }]}>
-          <View style={styles.cardHeader}>
-            <View style={styles.streakTitle}>
-              <Text style={styles.fireEmoji}>🔥</Text>
-              <Text style={[styles.cardTitleText, { fontFamily: theme.contentFont }]}>1 Week Streak</Text>
-              <Ionicons name="information-circle-outline" size={16} color="#999" />
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
           </View>
           
-          <View style={styles.streakDays}>
-            {streakDays.map((item, index) => (
-              <View key={index} style={styles.streakDayItem}>
-                <Text style={styles.streakEmoji}>{item.active ? '🔥' : '⚪'}</Text>
-                <Text style={[styles.dayLabel, item.active && { color: theme.accent, fontWeight: '600' }]}>
-                  {item.day}
+          {/* User Name */}
+          {profile && (
+            <View style={styles.nameContainer}>
+              <Text style={styles.displayName}>{getPublicName(profile)}</Text>
+              {profile.display_name && (
+                <Text style={styles.subtitle}>
+                  {useDisplayName ? `Real name: ${profile.username}` : `Callsign: ${profile.display_name}`}
                 </Text>
-              </View>
-            ))}
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Privacy Section */}
+        <Text style={styles.sectionTitle}>Privacy</Text>
+        
+        <View style={styles.menuCard}>
+          {/* Use Display Name Toggle */}
+          <View style={styles.menuItem}>
+            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name="eye-outline" size={20} color={theme.accent} />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuTitle}>Anonymous Mode</Text>
+              <Text style={styles.menuSubtitle}>
+                {useDisplayName 
+                  ? 'Others will see your callsign (anonymous)' 
+                  : 'Others will see your real name'}
+              </Text>
+            </View>
+            <Switch
+              value={useDisplayName}
+              onValueChange={handleToggleChange}
+              trackColor={{ false: '#E0E0E0', true: theme.accent + '40' }}
+              thumbColor={useDisplayName ? theme.accent : '#fff'}
+            />
           </View>
         </View>
 
         {/* Sync Section */}
-        <Text style={[styles.sectionTitle, { fontFamily: theme.headingFont }]}>Sync</Text>
+        <Text style={styles.sectionTitle}>Sync</Text>
         
         <View style={styles.menuCard}>
-          {/* Cloud Sync */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-              <Ionicons name="cloud-outline" size={20} color={theme.accent} />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={[styles.menuTitle, { fontFamily: theme.contentFont }]}>Cloud Sync</Text>
-              <Text style={styles.menuSubtitle}>Premium feature - Upgrade to unlock</Text>
-            </View>
-            <Ionicons name="lock-closed" size={18} color="#ccc" />
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
           {/* Connect Account */}
           <TouchableOpacity style={styles.menuItem}>
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
               <Ionicons name="key-outline" size={20} color={theme.accent} />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={[styles.menuTitle, { fontFamily: theme.contentFont }]}>Connect Account</Text>
+              <Text style={styles.menuTitle}>Connect Account</Text>
               <Text style={styles.menuSubtitle}>Connect account and sync your library</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
@@ -136,23 +219,9 @@ const ProfilePage = ({ navigation }) => {
         </View>
 
         {/* Backlog Section */}
-        <Text style={[styles.sectionTitle, { fontFamily: theme.headingFont }]}>Backlog</Text>
+        <Text style={styles.sectionTitle}>Backlog</Text>
         
         <View style={styles.menuCard}>
-          {/* Backlog Settings */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-              <Ionicons name="settings-outline" size={20} color={theme.accent} />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={[styles.menuTitle, { fontFamily: theme.contentFont }]}>Backlog Settings</Text>
-              <Text style={styles.menuSubtitle}>Manage backlog preferences</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
           {/* Custom Statuses */}
           <TouchableOpacity style={styles.menuItem}>
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
@@ -160,7 +229,7 @@ const ProfilePage = ({ navigation }) => {
             </View>
             <View style={styles.menuTextContainer}>
               <View style={styles.menuTitleRow}>
-                <Text style={[styles.menuTitle, { fontFamily: theme.contentFont }]}>Custom Statuses</Text>
+                <Text style={styles.menuTitle}>Custom Statuses</Text>
                 <View style={[styles.newBadge, { backgroundColor: theme.accent }]}>
                   <Text style={styles.newBadgeText}>NEW</Text>
                 </View>
@@ -172,7 +241,7 @@ const ProfilePage = ({ navigation }) => {
         </View>
 
         {/* App Info Section */}
-        <Text style={[styles.sectionTitle, { fontFamily: theme.headingFont }]}>App</Text>
+        <Text style={styles.sectionTitle}>App</Text>
         
         <View style={styles.menuCard}>
           {/* About */}
@@ -181,7 +250,7 @@ const ProfilePage = ({ navigation }) => {
               <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={[styles.menuTitle, { fontFamily: theme.contentFont }]}>About</Text>
+              <Text style={styles.menuTitle}>About</Text>
               <Text style={styles.menuSubtitle}>Version 1.0.0</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
@@ -190,12 +259,15 @@ const ProfilePage = ({ navigation }) => {
           <View style={styles.menuDivider} />
 
           {/* Logout */}
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={[styles.menuIconContainer, { backgroundColor: '#FFE5E5' }]}>
-              <Ionicons name="log-out-outline" size={20} color="#FF6B6B" />
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={handleLogout}
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name="log-out-outline" size={20} color={theme.accent} />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={[styles.menuTitle, { fontFamily: theme.contentFont, color: '#FF6B6B' }]}>Log Out</Text>
+              <Text style={styles.menuTitle}>Log Out</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </TouchableOpacity>
@@ -203,8 +275,19 @@ const ProfilePage = ({ navigation }) => {
 
         {/* Bottom Spacing */}
         <View style={{ height: 100 }} />
+        </>
+        )}
 
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        profile={profile}
+        onSave={handleSaveProfile}
+      />
+      
     </SafeAreaView>
   );
 };
@@ -226,23 +309,93 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
   },
+  backButton: {
+    padding: 4,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#000',
   },
-  premiumButton: {
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 60,
+  },
+  emptyStateIconContainer: {
+    position: 'relative',
+    marginBottom: 24,
+  },
+  emptyStateIcon: {
+    opacity: 0.8,
+  },
+  questionMark: {
+    position: 'absolute',
+    bottom: 10,
+    right: -5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  questionMarkText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  emptyStateTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  signInButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
+    gap: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  premiumButtonText: {
+  signInButtonText: {
     color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  emptyStateFooter: {
     fontSize: 14,
-    fontWeight: '600',
+    color: '#999',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#999',
   },
   avatarSection: {
     alignItems: 'center',
@@ -275,6 +428,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     right: 0,
   },
+  nameContainer: {
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  displayName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 10,
@@ -292,45 +460,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-  },
-  card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  streakTitle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  fireEmoji: {
-    fontSize: 20,
-  },
-  cardTitleText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  streakDays: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  streakDayItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  streakEmoji: {
-    fontSize: 24,
-  },
-  dayLabel: {
-    fontSize: 12,
-    color: '#999',
   },
   sectionTitle: {
     fontSize: 18,
