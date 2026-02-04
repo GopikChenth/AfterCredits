@@ -295,7 +295,7 @@ const ProfilePage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1a1a1a',
   },
   scrollView: {
     flex: 1,
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
   },
   emptyState: {
     flex: 1,
@@ -351,13 +351,13 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
   },
   emptyStateSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#999',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitle: {
@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   statPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#252525',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
@@ -459,17 +459,17 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#FFFFFF',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFFFFF',
     marginBottom: 12,
     marginTop: 8,
   },
   menuCard: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#252525',
     borderRadius: 16,
     marginBottom: 20,
     overflow: 'hidden',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: '#FFFFFF',
   },
   menuSubtitle: {
     fontSize: 13,
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#333',
     marginLeft: 70,
   },
   newBadge: {

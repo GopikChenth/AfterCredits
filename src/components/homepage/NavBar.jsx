@@ -44,16 +44,15 @@ const NavBar = ({ activeTab = 'Home', onTabChange }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    paddingBottom: 10,
-    paddingTop: 10,
+    backgroundColor: '#1a1a1a',
+    borderTopWidth: 0,
+    paddingBottom: 8,
+    paddingTop: 8,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   tab: {
     flex: 1,
@@ -68,11 +67,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    color: '#666',
+    color: '#999',
     fontWeight: '500',
   },
   activeLabel: {
-    color: '#FFB3C6', // Pastel Pink
+    color: '#FFB3C6',
     fontWeight: '600',
   },
   indicator: {
@@ -80,7 +79,7 @@ const styles = StyleSheet.create({
     top: 0,
     width: 40,
     height: 3,
-    backgroundColor: '#FFB3C6', // Pastel Pink
+    backgroundColor: '#FFB3C6',
     borderRadius: 2,
   },
 });

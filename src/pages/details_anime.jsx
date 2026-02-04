@@ -345,11 +345,11 @@ const AnimeDetail = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 3,
   },
   descriptionSection: {
-    backgroundColor: '#ffb3d9',
+    backgroundColor: '#252525',
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: 'bold',
     fontFamily: 'Midorima',
-    color: '#000',
+    color: '#FFFFFF',
   },
   year: {
     fontSize: 16,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#000',
+    color: '#FFFFFF',
     lineHeight: 20,
     marginBottom: 8,
   },
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#000',
+    color: '#FFFFFF',
     fontWeight: '500',
   },
   statsSection: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   genreCrewSection: {
-    backgroundColor: '#ffb3d9',
+    backgroundColor: '#252525',
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: 'bold',
     fontFamily: 'Midorima',
-    color: '#000',
+    color: '#FFFFFF',
     marginBottom: 10,
   },
   genreList: {

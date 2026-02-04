@@ -97,7 +97,15 @@ const HomeAnime = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+      
+      {/* Organic Background Shapes */}
+      <View style={styles.backgroundShapes}>
+        <View style={styles.blobShape1} />
+        <View style={styles.blobShape2} />
+        <View style={styles.blobShape3} />
+      </View>
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
@@ -107,7 +115,7 @@ const HomeAnime = ({ navigation }) => {
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         
-        <Text style={styles.headerTitle}>Label</Text>
+        <Text style={styles.headerTitle}>AfterCredits</Text>
         
         <TouchableOpacity 
           style={styles.profileButton}
@@ -117,11 +125,25 @@ const HomeAnime = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Masonry Grid with Badge integrated */}
+      {/* Content */}
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
+        {/* Hero Section with Neumorphic Design */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroCard}>
+            <View style={styles.heroRow}>
+              <CategoryPill
+                categories={['Trending', 'Popular', 'New']}
+                onCategoryChange={handleCategoryChange}
+                width={160}
+              />
+              <Text style={styles.animeText}>ANIME</Text>
+            </View>
+          </View>
+        </View>
+
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.accent} />
@@ -138,52 +160,26 @@ const HomeAnime = ({ navigation }) => {
             </TouchableOpacity>
           </View>
         ) : (
-          <View style={styles.grid}>
-            {/* Left Column */}
-            <View style={styles.column}>
-              {/* Category Pill as first item in left column */}
-              <View style={styles.badgeWrapper}>
-                <CategoryPill
-                  categories={['Trending', 'Popular', 'New']}
-                  onCategoryChange={handleCategoryChange}
-                  width={cardWidth}
-                />
-              </View>
-              
-              {leftColumn.map((anime) => (
+          <View style={styles.contentWrapper}>
+            {/* Neumorphic Grid */}
+            <View style={styles.neumorphicGrid}>
+              {animeList.map((anime) => (
                 <TouchableOpacity 
                   key={anime.id} 
-                  style={styles.cardWrapper}
+                  style={styles.neumorphicCard}
                   onPress={() => navigation?.navigate('DetailsAnime', { animeId: anime.id })}
+                  activeOpacity={0.8}
                 >
-                  <MediaCard
-                    theme="anime"
-                    title={anime.title}
-                    year={anime.year}
-                    imageUrl={anime.coverImage}
-                    width={cardWidth}
-                    height={cardHeight}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Right Column */}
-            <View style={styles.column}>
-              {rightColumn.map((anime) => (
-                <TouchableOpacity 
-                  key={anime.id} 
-                  style={styles.cardWrapper}
-                  onPress={() => navigation?.navigate('DetailsAnime', { animeId: anime.id })}
-                >
-                  <MediaCard
-                    theme="anime"
-                    title={anime.title}
-                    year={anime.year}
-                    imageUrl={anime.coverImage}
-                    width={cardWidth}
-                    height={cardHeight}
-                  />
+                  <View style={styles.cardInner}>
+                    <MediaCard
+                      theme="anime"
+                      title={anime.title}
+                      year={anime.year}
+                      imageUrl={anime.coverImage}
+                      width={(Dimensions.get('window').width - 56) / 2}
+                      height={cardHeight}
+                    />
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -217,6 +213,7 @@ const HomeAnime = ({ navigation }) => {
         activeSection={activeSection}
         onSectionChange={(section) => {
           setActiveSection(section);
+          if (section === 'movie') navigation.navigate('HomeMovies');
           console.log('Section changed:', section);
         }}
       />
@@ -227,71 +224,161 @@ const HomeAnime = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1a1a1a',
+  },
+  backgroundShapes: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 400,
+    overflow: 'hidden',
+  },
+  blobShape1: {
+    position: 'absolute',
+    top: -48,
+    right: -80,
+    width: 304,
+    height: 304,
+    backgroundColor: '#FF6B9D',
+    borderRadius: 152,
+    opacity: 0.15,
+    transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
+  },
+  blobShape2: {
+    position: 'absolute',
+    top: 96,
+    left: -96,
+    width: 248,
+    height: 248,
+    backgroundColor: '#FFB3C6',
+    borderRadius: 124,
+    opacity: 0.1,
+    transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
+  },
+  blobShape3: {
+    position: 'absolute',
+    top: 200,
+    right: 48,
+    width: 200,
+    height: 200,
+    backgroundColor: '#FFC0CB',
+    borderRadius: 100,
+    opacity: 0.08,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 4, // Minimal spacing
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: 8,
+    zIndex: 10,
   },
   menuButton: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#252525',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   menuIcon: {
-    fontSize: 24,
-    color: '#000',
+    fontSize: 20,
+    color: '#E0E0E0',
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   profileButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   profileIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E5E5',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFB3C6',
   },
   scrollView: {
     flex: 1,
   },
-  grid: {
+  heroSection: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  heroCard: {
+    backgroundColor: '#252525',
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: -8, height: -8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  heroRow: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingTop: 12,
-    paddingBottom: 80, // Space for SearchBar
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  column: {
-    flex: 1,
-    paddingHorizontal: 8,
+  animeText: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 3,
   },
-  badgeWrapper: {
-    marginBottom: 16,
+  contentWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 96,
   },
-  cardWrapper: {
-    marginBottom: 16,
+  neumorphicGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 4,
+  },
+  neumorphicCard: {
+    width: '48%',
+    marginBottom: 4,
+    borderRadius: 16,
+    backgroundColor: '#252525',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: -8, height: -8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cardInner: {
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 96,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 8,
     fontSize: 16,
     color: '#666',
   },
@@ -299,7 +386,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 100,
+    paddingTop: 96,
   },
   errorText: {
     fontSize: 16,
@@ -308,9 +395,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#FFB3C6', // Theme accent
+    backgroundColor: '#FFB3C6',
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderRadius: 8,
   },
   retryText: {
