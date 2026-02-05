@@ -1,10 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, View, StyleSheet, Dimensions } from 'react-native';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import MediaCard from './Card';
 
 const AnimeCardItem = React.memo(({ anime, onPress, cardHeight }) => {
-  const cardWidth = (Dimensions.get('window').width - 56) / 2;
-  
   return (
     <TouchableOpacity 
       style={styles.neumorphicCard}
@@ -17,7 +15,7 @@ const AnimeCardItem = React.memo(({ anime, onPress, cardHeight }) => {
           title={anime.title}
           year={anime.year}
           imageUrl={anime.coverImage}
-          width={cardWidth}
+          width={'100%'}
           height={cardHeight}
         />
       </View>
@@ -29,8 +27,8 @@ AnimeCardItem.displayName = 'AnimeCardItem';
 
 const styles = StyleSheet.create({
   neumorphicCard: {
-    width: '48%',
-    marginBottom: 4,
+    flex: 1,
+    margin: 2,
     borderRadius: 16,
     backgroundColor: '#252525',
     padding: 8,

@@ -6,11 +6,13 @@ import { useEffect } from 'react';
 /**
  * Font Loading Configuration
  * Centralized font management for all media types
+ * 
+ * NOTE: Custom fonts temporarily disabled - uncomment when font files are added to src/assets/fonts/
  */
 const FONT_MAP = {
-  'Midorima': require('../assets/fonts/Midorima-PersonalUse-Regular.ttf'),
-  'Agdasima': require('../assets/fonts/Agdasima-Regular.ttf'),
-  'Agdasima-Bold': require('../assets/fonts/Agdasima-Bold.ttf'),
+  // 'Midorima': require('../assets/fonts/Midorima-PersonalUse-Regular.ttf'),
+  // 'Agdasima': require('../assets/fonts/Agdasima-Regular.ttf'),
+  // 'Agdasima-Bold': require('../assets/fonts/Agdasima-Bold.ttf'),
 };
 
 /**
@@ -18,6 +20,11 @@ const FONT_MAP = {
  * @returns {boolean} Whether fonts are loaded
  */
 export const useMediaFonts = () => {
+  // Temporarily return true since we're using system fonts
+  return true;
+  
+  /* 
+  // Uncomment when custom fonts are available:
   const [fontsLoaded] = useFonts(FONT_MAP);
 
   useEffect(() => {
@@ -27,6 +34,7 @@ export const useMediaFonts = () => {
   }, [fontsLoaded]);
 
   return fontsLoaded;
+  */
 };
 
 /**
@@ -34,7 +42,8 @@ export const useMediaFonts = () => {
  * Call this before rendering any components
  */
 export const initializeFonts = () => {
-  SplashScreen.preventAutoHideAsync();
+  // Temporarily disabled - using system fonts
+  // SplashScreen.preventAutoHideAsync();
 };
 
 /**
@@ -48,8 +57,11 @@ export const MEDIA_THEMES = {
     accent: '#FFB3C6',      // Pastel Cherry Blossom
     accentLight: '#FFE5EC', // Light Pastel Pink
     accentGlow: 'rgba(255, 179, 198, 0.6)',
-    headingFont: 'Midorima',
-    contentFont: 'Agdasima',
+    // Temporarily using system fonts - switch to custom when available:
+    // headingFont: 'Midorima',
+    // contentFont: 'Agdasima',
+    headingFont: 'System',
+    contentFont: 'System',
   },
   movie: {
     name: 'Movies',
