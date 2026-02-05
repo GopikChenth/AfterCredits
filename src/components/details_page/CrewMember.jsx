@@ -1,10 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
-const CrewMember = ({ name, role, avatar }) => {
+const CrewMember = ({ name, role, avatar, image }) => {
   return (
     <View style={styles.container}>
-      <View style={[styles.avatar, { backgroundColor: avatar }]} />
+      {image ? (
+        <Image 
+          source={{ uri: image }} 
+          style={styles.avatar}
+        />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: avatar || '#666' }]} />
+      )}
       <View style={styles.info}>
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.role}>{role}</Text>
@@ -33,13 +40,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#000',
+    color: '#ffffffff',
   },
   role: {
     fontSize: 12,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#666',
+    color: '#838383ff',
   },
 });
 

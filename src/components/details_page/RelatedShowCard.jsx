@@ -1,54 +1,39 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
+import MediaCard from '../homepage/Card';
 
-const RelatedShowCard = ({ title, subtitle, image, onPress }) => {
+/**
+ * RelatedShowCard - Wrapper for MediaCard used in related shows section
+ * Reuses the same card design from home page for consistency
+ * Uses Pressable for better touch handling in horizontal scroll
+ */
+const RelatedShowCard = ({ title, image, onPress }) => {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Image source={{ uri: image }} style={styles.image} />
-      <View style={styles.overlay}>
-        <Text style={styles.title}>{title}</Text>
-        {/* <Text style={styles.subtitle}>{subtitle}</Text> */}
-      </View>
-    </TouchableOpacity>
+    <Pressable 
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed
+      ]}
+    >
+      <MediaCard
+        theme="anime"
+        title={title}
+        imageUrl={image}
+        width={150}
+        height={200}
+      />
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    width: 150,
-    height: 200,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
+    marginRight: 12,
   },
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+  pressed: {
+    opacity: 0.7,
   },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 10,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 12,
-    letterSpacing: 1,
-    fontWeight: 'bold',
-    fontFamily: 'agdasima',
-    marginBottom: 2,
-  },
-  // subtitle: {
-  //   color: '#fff',
-  //   fontSize: 10,
-  //   letterSpacing: 1,
-  //   fontFamily: 'Agdasima',
-  //   opacity: 0.8,
-  // },
 });
 
 export default RelatedShowCard;

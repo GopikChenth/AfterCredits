@@ -3,17 +3,21 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   Image,
   StyleSheet,
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
+import RelatedShowCard from '../components/details_page/RelatedShowCard';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 
@@ -121,9 +125,18 @@ const AnimeDetail = ({ route, navigation }) => {
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.accent} />
-        <Text style={styles.loadingText}>Loading anime details...</Text>
+      <View style={styles.container}>
+        {/* Organic Background Shapes */}
+        <View style={styles.backgroundShapes}>
+          <View style={styles.blobShape1} />
+          <View style={styles.blobShape2} />
+          <View style={styles.blobShape3} />
+        </View>
+        
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+          <Text style={styles.loadingText}>Loading anime details...</Text>
+        </View>
       </View>
     );
   }
@@ -131,17 +144,26 @@ const AnimeDetail = ({ route, navigation }) => {
   // Error state
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]} 
-          onPress={() => navigation?.goBack()}
-        >
-          <Text style={styles.retryText}>Go Back</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        {/* Organic Background Shapes */}
+        <View style={styles.backgroundShapes}>
+          <View style={styles.blobShape1} />
+          <View style={styles.blobShape2} />
+          <View style={styles.blobShape3} />
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]} 
+            onPress={() => navigation?.goBack()}
+          >
+            <Text style={styles.retryText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -149,27 +171,48 @@ const AnimeDetail = ({ route, navigation }) => {
   // No data state
   if (!animeData) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>No anime data available.</Text>
-        <TouchableOpacity 
-          style={[styles.retryButton, { backgroundColor: theme.accent }]} 
-          onPress={() => navigation?.goBack()}
-        >
-          <Text style={styles.retryText}>Go Back</Text>
-        </TouchableOpacity>
+      <View style={styles.container}>
+        {/* Organic Background Shapes */}
+        <View style={styles.backgroundShapes}>
+          <View style={styles.blobShape1} />
+          <View style={styles.blobShape2} />
+          <View style={styles.blobShape3} />
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>No anime data available.</Text>
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: theme.accent }]} 
+            onPress={() => navigation?.goBack()}
+          >
+            <Text style={styles.retryText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Back Button - positioned over hero */}
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => navigation?.goBack()}
+    <View style={styles.container}>
+      {/* Organic Background Shapes - Fixed, non-scrollable */}
+      <View style={styles.backgroundShapes}>
+        <View style={styles.blobShape1} />
+        <View style={styles.blobShape2} />
+        <View style={styles.blobShape3} />
+      </View>
+
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        directionalLockEnabled={true}
       >
-        <Ionicons name="arrow-back" size={20} color="#fff"/>
-      </TouchableOpacity>
+        {/* Back Button - positioned over hero */}
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation?.goBack()}
+        >
+          <Ionicons name="arrow-back" size={20} color="#fff"/>
+        </TouchableOpacity>
 
       {/* Hero/Banner Section */}
       <View style={styles.heroSection}>
@@ -178,38 +221,62 @@ const AnimeDetail = ({ route, navigation }) => {
           style={styles.backdropImage} 
           resizeMode="cover"
         />
-        <View style={styles.gradientOverlay} />
-        <View style={styles.titleOverlay}>
-          <Text style={styles.title}>{animeData.title}</Text>
-          <Text style={styles.subtitle}>{animeData.subtitle}</Text>
-        </View>
       </View>
 
       {/* Description Section */}
-      <View style={[styles.descriptionSection, { backgroundColor: theme.accent }]}>
-        <View style={styles.titleYearRow}>
-          <Text style={styles.mainTitle}>{animeData.title}</Text>
-          <Text style={styles.year}>{animeData.year}</Text>
+      {Platform.OS === 'web' ? (
+        <View style={styles.descriptionSectionWeb}>
+          <View style={styles.titleYearRow}>
+            <Text style={styles.mainTitle}>{animeData.title}</Text>
+            <Text style={styles.year}>{animeData.year}</Text>
+          </View>
+          <Text style={styles.subtitleText}>{animeData.subtitle}</Text>
+          <Text style={styles.studioInfo}>{animeData.studio}</Text>
+          <Text 
+            style={styles.description} 
+            numberOfLines={isDescriptionExpanded ? undefined : 4}
+          >
+            {animeData.description}
+          </Text>
+          {animeData.description && animeData.description.length > 150 && (
+            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+              <Text style={styles.expandDescriptionText}>
+                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.episodeStatusRow}>
+            <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
+            <Text style={styles.status}>Status: {animeData.status}</Text>
+          </View>
         </View>
-        <Text style={styles.studioInfo}>{animeData.studio}</Text>
-        <Text 
-          style={styles.description} 
-          numberOfLines={isDescriptionExpanded ? undefined : 4}
-        >
-          {animeData.description}
-        </Text>
-        {animeData.description && animeData.description.length > 150 && (
-          <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-            <Text style={styles.expandDescriptionText}>
-              {isDescriptionExpanded ? 'Show Less' : 'Read More'}
-            </Text>
-          </TouchableOpacity>
-        )}
-        <View style={styles.episodeStatusRow}>
-          <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
-          <Text style={styles.status}>Status: {animeData.status}</Text>
-        </View>
-      </View>
+      ) : (
+        <BlurView intensity={80} tint="dark" style={styles.descriptionSectionNative}>
+          <View style={styles.titleYearRow}>
+            <Text style={styles.mainTitle}>{animeData.title}</Text>
+            <Text style={styles.year}>{animeData.year}</Text>
+          </View>
+          <Text style={styles.subtitleText}>{animeData.subtitle}</Text>
+          <Text style={styles.studioInfo}>{animeData.studio}</Text>
+          <Text 
+            style={styles.description} 
+            numberOfLines={isDescriptionExpanded ? undefined : 4}
+          >
+            {animeData.description}
+          </Text>
+          {animeData.description && animeData.description.length > 150 && (
+            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+              <Text style={styles.expandDescriptionText}>
+                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+              </Text>
+            </TouchableOpacity>
+          )}
+          <View style={styles.episodeStatusRow}>
+            <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
+            <Text style={styles.status}>Status: {animeData.status}</Text>
+          </View>
+        </BlurView>
+      )}
 
       {/* Stats Section */}
       <View style={styles.statsSection}>
@@ -218,127 +285,219 @@ const AnimeDetail = ({ route, navigation }) => {
         <StatsPill label="Score" count={`${animeData.stats.score}%`} color="#A0C4FF" />
       </View>
 
-      {/* Genre and Voice Actors Section */}
-      <View style={[styles.genreCrewSection, { backgroundColor: theme.accent }]}>
-        <View style={styles.genreRow}>
-          <Text style={styles.sectionLabel}>GENRE</Text>
-          <View style={styles.genreList}>
-            {animeData.genres.length > 0 ? (
-              animeData.genres.map((genre, index) => (
-                <GenrePill key={index} genre={genre} />
-              ))
-            ) : (
-              <Text style={styles.noDataText}>No genres available</Text>
-            )}
+      {/* Genre and Cast & Crew Section */}
+      {Platform.OS === 'web' ? (
+        <View style={styles.genreCrewSectionWeb}>
+          <View style={styles.genreRow}>
+            <Text style={styles.sectionLabel}>GENRE</Text>
+            <View style={styles.genreList}>
+              {animeData.genres.length > 0 ? (
+                animeData.genres.map((genre, index) => (
+                  <GenrePill key={index} genre={genre} />
+                ))
+              ) : (
+                <Text style={styles.noDataText}>No genres available</Text>
+              )}
+            </View>
+          </View>
+          
+          <View style={styles.crewRow}>
+            <Text style={styles.sectionLabel}>CAST & CREW</Text>
+            <View style={styles.crewList}>
+              {animeData.voiceActors.length > 0 ? (
+                <>
+                  {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
+                    <CrewMember 
+                      key={index} 
+                      name={member.name} 
+                      role={member.role} 
+                      avatar={member.avatar}
+                      image={member.image}
+                    />
+                  ))}
+                  {animeData.voiceActors.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.expandButton} 
+                      onPress={() => setIsCrewExpanded(!isCrewExpanded)}
+                    >
+                      <Text style={styles.expandButtonText}>
+                        {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.noDataText}>No voice actor information available</Text>
+              )}
+            </View>
           </View>
         </View>
-        
-        <View style={styles.crewRow}>
-          <Text style={styles.sectionLabel}>VOICE ACTORS</Text>
-          <View style={styles.crewList}>
-            {animeData.voiceActors.length > 0 ? (
-              <>
-                {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
-                  <CrewMember 
-                    key={index} 
-                    name={member.name} 
-                    role={member.role} 
-                    avatar={member.avatar}
-                    image={member.image}
-                  />
-                ))}
-                {animeData.voiceActors.length > 5 && (
-                  <TouchableOpacity 
-                    style={styles.expandButton} 
-                    onPress={() => setIsCrewExpanded(!isCrewExpanded)}
-                  >
-                    <Text style={styles.expandButtonText}>
-                      {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : (
-              <Text style={styles.noDataText}>No voice actor information available</Text>
-            )}
+      ) : (
+        <BlurView intensity={80} tint="dark" style={styles.genreCrewSectionNative}>
+          <View style={styles.genreRow}>
+            <Text style={styles.sectionLabel}>GENRE</Text>
+            <View style={styles.genreList}>
+              {animeData.genres.length > 0 ? (
+                animeData.genres.map((genre, index) => (
+                  <GenrePill key={index} genre={genre} />
+                ))
+              ) : (
+                <Text style={styles.noDataText}>No genres available</Text>
+              )}
+            </View>
           </View>
-        </View>
-      </View>
+          
+          <View style={styles.crewRow}>
+            <Text style={styles.sectionLabel}>CAST & CREW</Text>
+            <View style={styles.crewList}>
+              {animeData.voiceActors.length > 0 ? (
+                <>
+                  {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
+                    <CrewMember 
+                      key={index} 
+                      name={member.name} 
+                      role={member.role} 
+                      avatar={member.avatar}
+                      image={member.image}
+                    />
+                  ))}
+                  {animeData.voiceActors.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.expandButton} 
+                      onPress={() => setIsCrewExpanded(!isCrewExpanded)}
+                    >
+                      <Text style={styles.expandButtonText}>
+                        {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : (
+                <Text style={styles.noDataText}>No voice actor information available</Text>
+              )}
+            </View>
+          </View>
+        </BlurView>
+      )}
 
       {/* Reviews Section */}
-      <View style={[styles.reviewsSection, { backgroundColor: theme.accent }]}>
-        <View style={styles.reviewsHeader}>
-          <Text style={styles.sectionLabel}>REVIEWS</Text>
-          <TouchableOpacity 
-            style={styles.addReviewButton}
-            onPress={() => navigation?.navigate('ReviewAnime', { 
-              animeId: animeData.id,
-              id: animeData.id,
-              title: animeData.title,
-              coverImage: animeData.coverImage 
-            })}
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-          </TouchableOpacity>
+      {Platform.OS === 'web' ? (
+        <View style={styles.reviewsSectionWeb}>
+          <View style={styles.reviewsHeader}>
+            <Text style={styles.sectionLabel}>REVIEWS</Text>
+            <TouchableOpacity 
+              style={styles.addReviewButton}
+              onPress={() => navigation?.navigate('ReviewAnime', { 
+                animeId: animeData.id,
+                id: animeData.id,
+                title: animeData.title,
+                coverImage: animeData.coverImage 
+              })}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          
+          {animeData.reviews.length > 0 ? (
+            <>
+              {(isReviewExpanded ? animeData.reviews : animeData.reviews.slice(0, 5)).map((review, index) => (
+                <ReviewCard 
+                  key={index}
+                  name={review.name}
+                  rating={review.rating}
+                  text={review.text}
+                  avatar={review.avatar}
+                />
+              ))}
+              
+              {animeData.reviews.length > 5 && (
+                <TouchableOpacity 
+                  style={styles.expandButton} 
+                  onPress={() => setIsReviewExpanded(!isReviewExpanded)}
+                >
+                  <Text style={styles.expandButtonText}>
+                    {isReviewExpanded ? 'Show Less' : `Show All (${animeData.reviews.length})`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
+          )}
         </View>
-        
-        {animeData.reviews.length > 0 ? (
-          <>
-            {(isReviewExpanded ? animeData.reviews : animeData.reviews.slice(0, 5)).map((review, index) => (
-              <ReviewCard 
-                key={index}
-                name={review.name}
-                rating={review.rating}
-                text={review.text}
-                avatar={review.avatar}
-              />
-            ))}
-            
-            {animeData.reviews.length > 5 && (
-              <TouchableOpacity 
-                style={styles.expandButton} 
-                onPress={() => setIsReviewExpanded(!isReviewExpanded)}
-              >
-                <Text style={styles.expandButtonText}>
-                  {isReviewExpanded ? 'Show Less' : `Show All (${animeData.reviews.length})`}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </>
-        ) : (
-          <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
-        )}
-      </View>
+      ) : (
+        <BlurView intensity={80} tint="dark" style={styles.reviewsSectionNative}>
+          <View style={styles.reviewsHeader}>
+            <Text style={styles.sectionLabel}>REVIEWS</Text>
+            <TouchableOpacity 
+              style={styles.addReviewButton}
+              onPress={() => navigation?.navigate('ReviewAnime', { 
+                animeId: animeData.id,
+                id: animeData.id,
+                title: animeData.title,
+                coverImage: animeData.coverImage 
+              })}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          
+          {animeData.reviews.length > 0 ? (
+            <>
+              {(isReviewExpanded ? animeData.reviews : animeData.reviews.slice(0, 5)).map((review, index) => (
+                <ReviewCard 
+                  key={index}
+                  name={review.name}
+                  rating={review.rating}
+                  text={review.text}
+                  avatar={review.avatar}
+                />
+              ))}
+              
+              {animeData.reviews.length > 5 && (
+                <TouchableOpacity 
+                  style={styles.expandButton} 
+                  onPress={() => setIsReviewExpanded(!isReviewExpanded)}
+                >
+                  <Text style={styles.expandButtonText}>
+                    {isReviewExpanded ? 'Show Less' : `Show All (${animeData.reviews.length})`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
+          )}
+        </BlurView>
+      )}
 
       {/* Related Shows Section */}
       <View style={styles.relatedSection}>
         <Text style={styles.sectionLabel}>Related Shows</Text>
         {animeData.recommendations.length > 0 ? (
-          <ScrollView 
-            horizontal={true}
+          <FlatList
+            data={animeData.recommendations}
+            horizontal
             showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <RelatedShowCard
+                title={item.title}
+                image={item.image}
+                onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
+              />
+            )}
             contentContainerStyle={styles.relatedShowsList}
             nestedScrollEnabled={true}
-          >
-            {animeData.recommendations.map((item) => (
-              <TouchableOpacity 
-                key={item.id}
-                style={styles.relatedShowItem}
-                onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
-                activeOpacity={0.7}
-              >
-                <Image source={{ uri: item.image }} style={styles.relatedShowImage} />
-                <View style={styles.relatedShowOverlay}>
-                  <Text style={styles.relatedShowTitle}>{item.title}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            scrollEnabled={true}
+            removeClippedSubviews={false}
+          />
         ) : (
           <Text style={styles.noDataText}>No related shows available</Text>
         )}
       </View>
     </ScrollView>
+    </View>
   );
 };
 
@@ -347,9 +506,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#1a1a1a',
   },
+  scrollView: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -361,7 +522,6 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -392,6 +552,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
+  backgroundShapes: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 400,
+    overflow: 'hidden',
+  },
+  blobShape1: {
+    position: 'absolute',
+    top: -48,
+    right: -80,
+    width: 304,
+    height: 304,
+    backgroundColor: '#FF6B9D',
+    borderRadius: 152,
+    opacity: 0.15,
+    transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
+  },
+  blobShape2: {
+    position: 'absolute',
+    top: 96,
+    left: -96,
+    width: 248,
+    height: 248,
+    backgroundColor: '#FFB3C6',
+    borderRadius: 124,
+    opacity: 0.1,
+    transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
+  },
+  blobShape3: {
+    position: 'absolute',
+    top: 200,
+    right: 48,
+    width: 200,
+    height: 200,
+    backgroundColor: '#FFC0CB',
+    borderRadius: 100,
+    opacity: 0.08,
+  },
   backButton: {
     position: 'absolute',
     top: 50,
@@ -416,74 +616,94 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  titleOverlay: {
-    position: 'absolute',
-    bottom: 80,
-    left: 20,
-    right: 20,
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 150,
-    background: 'linear-gradient(transparent, rgba(0,0,0,0.8))',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 24,
-    letterSpacing: 2,
-    fontWeight: 'bold',
-    fontFamily: 'Midorima',
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  subtitle: {
-    color: '#fff',
-    fontSize: 14,
-    opacity: 0.9,
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  descriptionSection: {
-    backgroundColor: '#252525',
+  descriptionSectionWeb: {
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
     zIndex: 5,
     position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+      },
+    }),
+  },
+  descriptionSectionNative: {
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    zIndex: 5,
+    position: 'relative',
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   titleYearRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    flexWrap: 'wrap',
   },
   mainTitle: {
     fontSize: 18,
     letterSpacing: 1,
     fontWeight: 'bold',
-    fontFamily: 'Midorima',
     color: '#FFFFFF',
+    flex: 1,
+    marginRight: 12,
   },
   year: {
     fontSize: 16,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#666',
+    color: '#fff',
+    flexShrink: 0,
+  },
+  subtitleText: {
+    fontSize: 14,
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+    color: '#fff',
+    opacity: 0.9,
+    marginBottom: 8,
   },
   studioInfo: {
     fontSize: 16,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#666',
+    color: '#ffb3d9',
     marginBottom: 12,
   },
   description: {
@@ -497,7 +717,7 @@ const styles = StyleSheet.create({
   expandDescriptionText: {
     fontSize: 14,
     fontFamily: 'Agdasima',
-    color: '#666',
+    color: '#ffb3d9',
     fontWeight: '600',
     marginBottom: 15,
   },
@@ -509,6 +729,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
     fontWeight: '500',
+    color: '#fff',
   },
   status: {
     fontSize: 16,
@@ -524,12 +745,54 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 10,
   },
-  genreCrewSection: {
-    backgroundColor: '#252525',
+  genreCrewSectionWeb: {
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+      },
+    }),
+  },
+  genreCrewSectionNative: {
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   genreRow: {
     marginBottom: 20,
@@ -538,7 +801,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 1,
     fontWeight: 'bold',
-    fontFamily: 'Midorima',
+    fontFamily: 'Agdasima',
     color: '#FFFFFF',
     marginBottom: 10,
   },
@@ -551,12 +814,54 @@ const styles = StyleSheet.create({
   crewList: {
     gap: 8,
   },
-  reviewsSection: {
-    backgroundColor: '#ffb3d9',
+  reviewsSectionWeb: {
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,
     marginBottom: 24,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      web: {
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
+      },
+    }),
+  },
+  reviewsSectionNative: {
+    marginHorizontal: 20,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
+    borderRightWidth: 2,
+    borderRightColor: 'rgba(0, 0, 0, 0.3)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   reviewsHeader: {
     flexDirection: 'row',
@@ -595,33 +900,6 @@ const styles = StyleSheet.create({
   relatedRow: {
     justifyContent: 'space-between',
     paddingHorizontal: 5,
-  },
-  relatedShowItem: {
-    width: 140,
-    height: 190,
-    marginRight: 12,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-  },
-  relatedShowImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  relatedShowOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 8,
-  },
-  relatedShowTitle: {
-    color: '#fff',
-    fontSize: 11,
-    fontFamily: 'Agdasima',
-    fontWeight: 'bold',
   },
   expandButton: {
     paddingVertical: 8,

@@ -23,14 +23,14 @@ const styles = StyleSheet.create({
   label: {
     color: '#000',
     letterSpacing: 1,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
     marginBottom: 2,
   },
   count: {
     color: '#000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
   },
