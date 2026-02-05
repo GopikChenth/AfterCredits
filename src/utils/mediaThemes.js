@@ -6,13 +6,10 @@ import { useEffect } from 'react';
 /**
  * Font Loading Configuration
  * Centralized font management for all media types
- * 
- * NOTE: Custom fonts temporarily disabled - uncomment when font files are added to src/assets/fonts/
  */
 const FONT_MAP = {
-  // 'Midorima': require('../assets/fonts/Midorima-PersonalUse-Regular.ttf'),
-  // 'Agdasima': require('../assets/fonts/Agdasima-Regular.ttf'),
-  // 'Agdasima-Bold': require('../assets/fonts/Agdasima-Bold.ttf'),
+  'Agdasima': require('../../assets/font/Agdasima-Regular.ttf'),
+  'Agdasima-Bold': require('../../assets/font/Agdasima-Bold.ttf'),
 };
 
 /**

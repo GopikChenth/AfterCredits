@@ -28,7 +28,7 @@ AnimeCardItem.displayName = 'AnimeCardItem';
 const styles = StyleSheet.create({
   neumorphicCard: {
     flex: 1,
-    margin: 2,
+    margin: 8,
     borderRadius: 16,
     backgroundColor: '#252525',
     padding: 8,

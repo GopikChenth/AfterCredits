@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  FlatList,
   Image,
   StyleSheet,
   Dimensions,
@@ -11,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import StatsPill from '../components/details_page/StatsPill';
@@ -26,8 +26,8 @@ const { width, height } = Dimensions.get('window');
 
 const AnimeDetail = ({ route, navigation }) => {
   const [isCrewExpanded, setIsCrewExpanded] = useState(false);
-  const [isReviewExpanded, setIsReviewExpanded] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const [animeData, setAnimeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -400,26 +400,75 @@ const AnimeDetail = ({ route, navigation }) => {
           
           {animeData.reviews.length > 0 ? (
             <>
-              {(isReviewExpanded ? animeData.reviews : animeData.reviews.slice(0, 5)).map((review, index) => (
-                <ReviewCard 
-                  key={index}
-                  name={review.name}
-                  rating={review.rating}
-                  text={review.text}
-                  avatar={review.avatar}
-                />
-              ))}
-              
-              {animeData.reviews.length > 5 && (
-                <TouchableOpacity 
-                  style={styles.expandButton} 
-                  onPress={() => setIsReviewExpanded(!isReviewExpanded)}
-                >
-                  <Text style={styles.expandButtonText}>
-                    {isReviewExpanded ? 'Show Less' : `Show All (${animeData.reviews.length})`}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              {(() => {
+                const REVIEWS_PER_PAGE = 10;
+                const totalPages = Math.ceil(animeData.reviews.length / REVIEWS_PER_PAGE);
+                const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
+                const endIndex = startIndex + REVIEWS_PER_PAGE;
+                const currentReviews = animeData.reviews.slice(startIndex, endIndex);
+                
+                console.log('Total reviews:', animeData.reviews.length, 'Should show pagination:', animeData.reviews.length > REVIEWS_PER_PAGE);
+                
+                return (
+                  <>
+                    {currentReviews.map((review, index) => (
+                      <ReviewCard 
+                        key={startIndex + index}
+                        name={review.name}
+                        rating={review.rating}
+                        text={review.text}
+                        avatar={review.avatar}
+                      />
+                    ))}
+                    
+                    {animeData.reviews.length > REVIEWS_PER_PAGE && (
+                      <View style={styles.paginationContainer}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.paginationButton,
+                            currentReviewPage === 1 && styles.paginationButtonDisabled
+                          ]}
+                          onPress={() => setCurrentReviewPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentReviewPage === 1}
+                        >
+                          <Ionicons 
+                            name="chevron-back" 
+                            size={20} 
+                            color={currentReviewPage === 1 ? '#666' : '#fff'} 
+                          />
+                          <Text style={[
+                            styles.paginationButtonText,
+                            currentReviewPage === 1 && styles.paginationButtonTextDisabled
+                          ]}>Previous</Text>
+                        </TouchableOpacity>
+                        
+                        <Text style={styles.pageIndicator}>
+                          Page {currentReviewPage} of {totalPages}
+                        </Text>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.paginationButton,
+                            currentReviewPage === totalPages && styles.paginationButtonDisabled
+                          ]}
+                          onPress={() => setCurrentReviewPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentReviewPage === totalPages}
+                        >
+                          <Text style={[
+                            styles.paginationButtonText,
+                            currentReviewPage === totalPages && styles.paginationButtonTextDisabled
+                          ]}>Next</Text>
+                          <Ionicons 
+                            name="chevron-forward" 
+                            size={20} 
+                            color={currentReviewPage === totalPages ? '#666' : '#fff'} 
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
             </>
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
@@ -444,26 +493,75 @@ const AnimeDetail = ({ route, navigation }) => {
           
           {animeData.reviews.length > 0 ? (
             <>
-              {(isReviewExpanded ? animeData.reviews : animeData.reviews.slice(0, 5)).map((review, index) => (
-                <ReviewCard 
-                  key={index}
-                  name={review.name}
-                  rating={review.rating}
-                  text={review.text}
-                  avatar={review.avatar}
-                />
-              ))}
-              
-              {animeData.reviews.length > 5 && (
-                <TouchableOpacity 
-                  style={styles.expandButton} 
-                  onPress={() => setIsReviewExpanded(!isReviewExpanded)}
-                >
-                  <Text style={styles.expandButtonText}>
-                    {isReviewExpanded ? 'Show Less' : `Show All (${animeData.reviews.length})`}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              {(() => {
+                const REVIEWS_PER_PAGE = 10;
+                const totalPages = Math.ceil(animeData.reviews.length / REVIEWS_PER_PAGE);
+                const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
+                const endIndex = startIndex + REVIEWS_PER_PAGE;
+                const currentReviews = animeData.reviews.slice(startIndex, endIndex);
+                
+                console.log('Total reviews:', animeData.reviews.length, 'Should show pagination:', animeData.reviews.length > REVIEWS_PER_PAGE);
+                
+                return (
+                  <>
+                    {currentReviews.map((review, index) => (
+                      <ReviewCard 
+                        key={startIndex + index}
+                        name={review.name}
+                        rating={review.rating}
+                        text={review.text}
+                        avatar={review.avatar}
+                      />
+                    ))}
+                    
+                    {animeData.reviews.length > REVIEWS_PER_PAGE && (
+                      <View style={styles.paginationContainer}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.paginationButton,
+                            currentReviewPage === 1 && styles.paginationButtonDisabled
+                          ]}
+                          onPress={() => setCurrentReviewPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentReviewPage === 1}
+                        >
+                          <Ionicons 
+                            name="chevron-back" 
+                            size={20} 
+                            color={currentReviewPage === 1 ? '#666' : '#fff'} 
+                          />
+                          <Text style={[
+                            styles.paginationButtonText,
+                            currentReviewPage === 1 && styles.paginationButtonTextDisabled
+                          ]}>Previous</Text>
+                        </TouchableOpacity>
+                        
+                        <Text style={styles.pageIndicator}>
+                          Page {currentReviewPage} of {totalPages}
+                        </Text>
+                        
+                        <TouchableOpacity 
+                          style={[
+                            styles.paginationButton,
+                            currentReviewPage === totalPages && styles.paginationButtonDisabled
+                          ]}
+                          onPress={() => setCurrentReviewPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentReviewPage === totalPages}
+                        >
+                          <Text style={[
+                            styles.paginationButtonText,
+                            currentReviewPage === totalPages && styles.paginationButtonTextDisabled
+                          ]}>Next</Text>
+                          <Ionicons 
+                            name="chevron-forward" 
+                            size={20} 
+                            color={currentReviewPage === totalPages ? '#666' : '#fff'} 
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
             </>
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
@@ -475,7 +573,7 @@ const AnimeDetail = ({ route, navigation }) => {
       <View style={styles.relatedSection}>
         <Text style={styles.sectionLabel}>Related Shows</Text>
         {animeData.recommendations.length > 0 ? (
-          <FlatList
+          <FlashList
             data={animeData.recommendations}
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -487,10 +585,8 @@ const AnimeDetail = ({ route, navigation }) => {
                 onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
               />
             )}
+            estimatedItemSize={150}
             contentContainerStyle={styles.relatedShowsList}
-            nestedScrollEnabled={true}
-            scrollEnabled={true}
-            removeClippedSubviews={false}
           />
         ) : (
           <Text style={styles.noDataText}>No related shows available</Text>
@@ -915,6 +1011,45 @@ const styles = StyleSheet.create({
   },
   relatedShowsList: {
     paddingRight: 20,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  paginationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 179, 217, 0.2)',
+    gap: 5,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    opacity: 0.5,
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+    color: '#fff',
+    fontWeight: '500',
+  },
+  paginationButtonTextDisabled: {
+    color: '#666',
+  },
+  pageIndicator: {
+    fontSize: 14,
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+    color: '#fff',
+    fontWeight: '500',
   },
 });
 
