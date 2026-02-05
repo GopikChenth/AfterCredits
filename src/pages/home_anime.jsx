@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -9,8 +9,10 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/homepage/Card';
+import AnimeCardItem from '../components/homepage/AnimeCardItem';
 import NavBar from '../components/homepage/NavBar';
 import CategoryPill from '../components/homepage/CategoryPill';
 import SideBar from '../components/homepage/SideBar';
@@ -50,7 +52,7 @@ const HomeAnime = ({ navigation }) => {
   }, []);
 
   // Fetch anime data based on category
-  const fetchAnimeData = async (category) => {
+  const fetchAnimeData = useCallback(async (category) => {
     setIsLoading(true);
     setError(null);
     
@@ -78,7 +80,7 @@ const HomeAnime = ({ navigation }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Fetch trending anime on mount
   useEffect(() => {
@@ -86,14 +88,20 @@ const HomeAnime = ({ navigation }) => {
   }, []);
   
   // Handle category change
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
     fetchAnimeData(category);
-  };
+  }, [fetchAnimeData]);
 
-  // Split into two columns for masonry layout
-  const leftColumn = animeList.filter((_, index) => index % 2 === 0);
-  const rightColumn = animeList.filter((_, index) => index % 2 !== 0);
+  // Handle navigation to anime details
+  const handleAnimePress = useCallback((animeId) => {
+    navigation?.navigate('DetailsAnime', { animeId });
+  }, [navigation]);
+
+  // Memoized card width calculation
+  const calculatedCardWidth = useMemo(() => {
+    return (Dimensions.get('window').width - 56) / 2;
+  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -161,28 +169,22 @@ const HomeAnime = ({ navigation }) => {
           </View>
         ) : (
           <View style={styles.contentWrapper}>
-            {/* Neumorphic Grid */}
-            <View style={styles.neumorphicGrid}>
-              {animeList.map((anime) => (
-                <TouchableOpacity 
-                  key={anime.id} 
-                  style={styles.neumorphicCard}
-                  onPress={() => navigation?.navigate('DetailsAnime', { animeId: anime.id })}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.cardInner}>
-                    <MediaCard
-                      theme="anime"
-                      title={anime.title}
-                      year={anime.year}
-                      imageUrl={anime.coverImage}
-                      width={(Dimensions.get('window').width - 56) / 2}
-                      height={cardHeight}
-                    />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Virtualized Grid with FlashList */}
+            <FlashList
+              data={animeList}
+              renderItem={({ item }) => (
+                <AnimeCardItem
+                  anime={item}
+                  onPress={() => handleAnimePress(item.id)}
+                  cardHeight={cardHeight}
+                />
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              estimatedItemSize={cardHeight + 16}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.flashListContent}
+            />
           </View>
         )}
       </ScrollView>
@@ -346,30 +348,11 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
   },
   contentWrapper: {
+    flex: 1,
     paddingHorizontal: 16,
+  },
+  flashListContent: {
     paddingBottom: 96,
-  },
-  neumorphicGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 4,
-  },
-  neumorphicCard: {
-    width: '48%',
-    marginBottom: 4,
-    borderRadius: 16,
-    backgroundColor: '#252525',
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: -8, height: -8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  cardInner: {
-    borderRadius: 16,
-    overflow: 'hidden',
   },
   loadingContainer: {
     flex: 1,

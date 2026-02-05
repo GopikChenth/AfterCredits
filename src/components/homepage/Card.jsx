@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { getMediaTheme } from '../../utils/mediaThemes';
 
 /**
@@ -20,18 +21,19 @@ const MediaCard = ({
   
   return (
     <View style={[styles.card, { width, height }]}>
-      <ImageBackground 
+      <Image 
         source={{ uri: imageUrl }}
         style={styles.imageBackground}
-        imageStyle={styles.image}
-      >
-        <View style={styles.overlay} />
-        
-        <View style={styles.content}>
-          <Text style={styles.title}>{title}</Text>
-          {year && <Text style={styles.year}>{year}</Text>}
-        </View>
-      </ImageBackground>
+        contentFit="cover"
+        transition={200}
+        cachePolicy="memory-disk"
+      />
+      <View style={styles.overlay} />
+      
+      <View style={styles.content}>
+        <Text style={styles.title}>{title}</Text>
+        {year ? <Text style={styles.year}>{year}</Text> : null}
+      </View>
     </View>
   );
 };
@@ -46,20 +48,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    position: 'relative',
   },
   imageBackground: {
     width: '100%',
     height: '100%',
-    justifyContent: 'flex-end',
-  },
-  image: {
     borderRadius: 16,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 16,
   },
   content: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 12,
     paddingBottom: 8,
   },
