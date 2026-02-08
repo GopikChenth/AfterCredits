@@ -17,11 +17,6 @@ const FONT_MAP = {
  * @returns {boolean} Whether fonts are loaded
  */
 export const useMediaFonts = () => {
-  // Temporarily return true since we're using system fonts
-  return true;
-  
-  /* 
-  // Uncomment when custom fonts are available:
   const [fontsLoaded] = useFonts(FONT_MAP);
 
   useEffect(() => {
@@ -31,7 +26,6 @@ export const useMediaFonts = () => {
   }, [fontsLoaded]);
 
   return fontsLoaded;
-  */
 };
 
 /**
@@ -39,8 +33,7 @@ export const useMediaFonts = () => {
  * Call this before rendering any components
  */
 export const initializeFonts = () => {
-  // Temporarily disabled - using system fonts
-  // SplashScreen.preventAutoHideAsync();
+  SplashScreen.preventAutoHideAsync();
 };
 
 /**
@@ -54,11 +47,8 @@ export const MEDIA_THEMES = {
     accent: '#FFB3C6',      // Pastel Cherry Blossom
     accentLight: '#FFE5EC', // Light Pastel Pink
     accentGlow: 'rgba(255, 179, 198, 0.6)',
-    // Temporarily using system fonts - switch to custom when available:
-    // headingFont: 'Midorima',
-    // contentFont: 'Agdasima',
-    headingFont: 'System',
-    contentFont: 'System',
+    headingFont: 'Agdasima',
+    contentFont: 'Agdasima',
   },
   movie: {
     name: 'Movies',

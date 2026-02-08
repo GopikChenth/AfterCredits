@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,16 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Pressable,
+  Animated,
 } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
-import RelatedShowCard from '../components/details_page/RelatedShowCard';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 
@@ -28,9 +29,14 @@ const AnimeDetail = ({ route, navigation }) => {
   const [isCrewExpanded, setIsCrewExpanded] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
+  const [currentRelatedPage, setCurrentRelatedPage] = useState(1);
   const [animeData, setAnimeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Gesture and animation refs
+  const translateX = useRef(new Animated.Value(0)).current;
+  const gestureStartX = useRef(0);
   
   // Get anime ID from route params
   const animeId = route?.params?.animeId;
@@ -51,6 +57,14 @@ const AnimeDetail = ({ route, navigation }) => {
     
     try {
       const data = await getAnimeDetails(animeId);
+      
+      // Check if anime contains Hentai genre
+      if (data?.genres?.includes('Hentai')) {
+        setError('This content is not available.');
+        setAnimeData(null);
+        return;
+      }
+      
       setAnimeData(formatAnimeDetails(data));
     } catch (err) {
       console.error('Error fetching anime details:', err);
@@ -85,14 +99,19 @@ const AnimeDetail = ({ route, navigation }) => {
       userAvatar: review.user?.avatar?.medium,
     })) || [];
 
-    // Format recommendations
+    // Format recommendations - Filter out Hentai content
     const recommendations = data.recommendations?.nodes
       ?.filter(node => node.mediaRecommendation)
+      ?.filter(node => {
+        const genres = node.mediaRecommendation.genres || [];
+        return !genres.includes('Hentai');
+      })
       ?.map(node => ({
         id: node.mediaRecommendation.id,
         title: node.mediaRecommendation.title?.english || node.mediaRecommendation.title?.romaji,
         subtitle: node.mediaRecommendation.genres?.slice(0, 3).join(', ') || '',
         image: node.mediaRecommendation.coverImage?.large,
+        genres: node.mediaRecommendation.genres,
       })) || [];
 
     return {
@@ -204,7 +223,6 @@ const AnimeDetail = ({ route, navigation }) => {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
-        directionalLockEnabled={true}
       >
         {/* Back Button - positioned over hero */}
         <TouchableOpacity 
@@ -571,23 +589,108 @@ const AnimeDetail = ({ route, navigation }) => {
 
       {/* Related Shows Section */}
       <View style={styles.relatedSection}>
-        <Text style={styles.sectionLabel}>Related Shows</Text>
-        {animeData.recommendations.length > 0 ? (
-          <FlashList
-            data={animeData.recommendations}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <RelatedShowCard
-                title={item.title}
-                image={item.image}
-                onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
-              />
-            )}
-            estimatedItemSize={150}
-            contentContainerStyle={styles.relatedShowsList}
-          />
+        <Text style={styles.sectionLabel}>RELATED SHOWS</Text>
+        {animeData.recommendations && animeData.recommendations.length > 0 ? (
+          <>
+            {(() => {
+              const SHOWS_PER_PAGE = 3;
+              const totalPages = Math.ceil(animeData.recommendations.length / SHOWS_PER_PAGE);
+              const startIndex = (currentRelatedPage - 1) * SHOWS_PER_PAGE;
+              const currentShows = animeData.recommendations.slice(startIndex, startIndex + SHOWS_PER_PAGE);
+              
+              // Pan gesture handler
+              const panGesture = Gesture.Pan()
+                .onStart(() => {
+                  gestureStartX.current = translateX._value;
+                })
+                .onUpdate((event) => {
+                  // Update translateX based on gesture
+                  const newValue = gestureStartX.current + event.translationX;
+                  // Limit the translation to prevent excessive dragging
+                  const maxTranslate = 50;
+                  const clampedValue = Math.max(-maxTranslate, Math.min(maxTranslate, newValue));
+                  translateX.setValue(clampedValue);
+                })
+                .onEnd((event) => {
+                  const SWIPE_THRESHOLD = 50;
+                  const velocity = event.velocityX;
+                  
+                  // Determine if swipe was significant enough
+                  if (Math.abs(event.translationX) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
+                    if (event.translationX > 0 && currentRelatedPage > 1) {
+                      // Swipe right - go to previous page
+                      setCurrentRelatedPage(prev => prev - 1);
+                    } else if (event.translationX < 0 && currentRelatedPage < totalPages) {
+                      // Swipe left - go to next page
+                      setCurrentRelatedPage(prev => prev + 1);
+                    }
+                  }
+                  
+                  // Reset position with animation
+                  Animated.spring(translateX, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    tension: 50,
+                    friction: 7,
+                  }).start();
+                });
+              
+              return (
+                <>
+                  <GestureDetector gesture={panGesture}>
+                    <Animated.View 
+                      style={[
+                        styles.relatedCarousel,
+                        {
+                          transform: [{ translateX }]
+                        }
+                      ]}
+                    >
+                      {currentShows.map((item) => (
+                        <View key={item.id.toString()} style={styles.relatedCardWrapper}>
+                          <Pressable 
+                            onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
+                            style={({ pressed }) => [
+                              styles.relatedCard,
+                              pressed && styles.relatedCardPressed
+                            ]}
+                          >
+                            <Image 
+                              source={{ uri: item.image }} 
+                              style={styles.relatedCardImage}
+                              resizeMode="cover"
+                            />
+                            <View style={styles.relatedCardOverlay}>
+                              <Text style={styles.relatedCardTitle} numberOfLines={2}>
+                                {item.title}
+                              </Text>
+                            </View>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </Animated.View>
+                  </GestureDetector>
+                  
+                  {totalPages > 1 && (
+                    <View style={styles.relatedPaginationContainer}>
+                      <View style={styles.dotsContainer}>
+                        {Array.from({ length: totalPages }).map((_, index) => (
+                          <TouchableOpacity
+                            key={index}
+                            onPress={() => setCurrentRelatedPage(index + 1)}
+                            style={[
+                              styles.dot,
+                              currentRelatedPage === index + 1 && styles.dotActive
+                            ]}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </>
+              );
+            })()}
+          </>
         ) : (
           <Text style={styles.noDataText}>No related shows available</Text>
         )}
@@ -985,17 +1088,75 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 32,
   },
-  relatedTitle: {
-    fontSize: 16,
-    letterSpacing: 1,
-    fontWeight: 'bold',
-    fontFamily: 'Midorima',
-    color: '#000',
-    marginBottom: 15,
-  },
-  relatedRow: {
+  relatedCarousel: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 5,
+    marginTop: 10,
+    gap: 8,
+  },
+  relatedCardWrapper: {
+    flex: 1,
+    maxWidth: '32%',
+  },
+  relatedCard: {
+    width: '100%',
+    aspectRatio: 0.7,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#252525',
+  },
+  relatedCardPressed: {
+    opacity: 0.7,
+  },
+  relatedCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  relatedCardOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  relatedCardTitle: {
+    fontSize: 12,
+    fontFamily: 'Agdasima',
+    color: '#fff',
+    fontWeight: '600',
+  },
+  relatedPaginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 15,
+    gap: 20,
+  },
+  relatedPaginationButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 179, 217, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  dotActive: {
+    width: 24,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFB3D9',
   },
   expandButton: {
     paddingVertical: 8,
@@ -1008,9 +1169,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: '#666',
     fontWeight: '500',
-  },
-  relatedShowsList: {
-    paddingRight: 20,
   },
   paginationContainer: {
     flexDirection: 'row',

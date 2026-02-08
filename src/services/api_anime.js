@@ -220,7 +220,7 @@ const MEDIA_DETAIL_FRAGMENT = `
  */
 export const getTrendingAnime = async (page = 1, perPage = 20) => {
   const query = `
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $excludedGenres: [String]) {
       Page(page: $page, perPage: $perPage) {
         pageInfo {
           total
@@ -228,7 +228,7 @@ export const getTrendingAnime = async (page = 1, perPage = 20) => {
           lastPage
           hasNextPage
         }
-        media(type: ANIME, sort: TRENDING_DESC) {
+        media(type: ANIME, sort: TRENDING_DESC, genre_not_in: $excludedGenres) {
           ...MediaFields
         }
       }
@@ -236,7 +236,7 @@ export const getTrendingAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage });
+  const response = await executeQuery(query, { page, perPage, excludedGenres: ['Hentai'] });
   return response.data.Page;
 };
 
@@ -248,7 +248,7 @@ export const getTrendingAnime = async (page = 1, perPage = 20) => {
  */
 export const getPopularAnime = async (page = 1, perPage = 20) => {
   const query = `
-    query ($page: Int, $perPage: Int) {
+    query ($page: Int, $perPage: Int, $excludedGenres: [String]) {
       Page(page: $page, perPage: $perPage) {
         pageInfo {
           total
@@ -256,7 +256,7 @@ export const getPopularAnime = async (page = 1, perPage = 20) => {
           lastPage
           hasNextPage
         }
-        media(type: ANIME, sort: POPULARITY_DESC) {
+        media(type: ANIME, sort: POPULARITY_DESC, genre_not_in: $excludedGenres) {
           ...MediaFields
         }
       }
@@ -264,12 +264,12 @@ export const getPopularAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage });
+  const response = await executeQuery(query, { page, perPage, excludedGenres: ['Hentai'] });
   return response.data.Page;
 };
 
 /**
- * Get newly released anime (current season)
+ * Get new/recently added anime
  * @param {number} page - Page number (default: 1)
  * @param {number} perPage - Items per page (default: 20)
  * @returns {Promise<object>} - New anime list
@@ -287,7 +287,7 @@ export const getNewAnime = async (page = 1, perPage = 20) => {
   else season = 'FALL';
 
   const query = `
-    query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int) {
+    query ($page: Int, $perPage: Int, $season: MediaSeason, $seasonYear: Int, $excludedGenres: [String]) {
       Page(page: $page, perPage: $perPage) {
         pageInfo {
           total
@@ -295,7 +295,7 @@ export const getNewAnime = async (page = 1, perPage = 20) => {
           lastPage
           hasNextPage
         }
-        media(type: ANIME, season: $season, seasonYear: $seasonYear, sort: START_DATE_DESC) {
+        media(type: ANIME, season: $season, seasonYear: $seasonYear, sort: START_DATE_DESC, genre_not_in: $excludedGenres) {
           ...MediaFields
         }
       }
@@ -303,7 +303,7 @@ export const getNewAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage, season, seasonYear: currentYear });
+  const response = await executeQuery(query, { page, perPage, season, seasonYear: currentYear, excludedGenres: ['Hentai'] });
   return response.data.Page;
 };
 
@@ -335,7 +335,7 @@ export const getAnimeDetails = async (id) => {
  */
 export const searchAnime = async (searchTerm, page = 1, perPage = 20) => {
   const query = `
-    query ($search: String, $page: Int, $perPage: Int) {
+    query ($search: String, $page: Int, $perPage: Int, $excludedGenres: [String]) {
       Page(page: $page, perPage: $perPage) {
         pageInfo {
           total
@@ -343,7 +343,7 @@ export const searchAnime = async (searchTerm, page = 1, perPage = 20) => {
           lastPage
           hasNextPage
         }
-        media(type: ANIME, search: $search, sort: SEARCH_MATCH) {
+        media(type: ANIME, search: $search, sort: SEARCH_MATCH, genre_not_in: $excludedGenres) {
           ...MediaFields
         }
       }
@@ -351,7 +351,7 @@ export const searchAnime = async (searchTerm, page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { search: searchTerm, page, perPage });
+  const response = await executeQuery(query, { search: searchTerm, page, perPage, excludedGenres: ['Hentai'] });
   return response.data.Page;
 };
 
@@ -513,6 +513,25 @@ export const getAnimeReviews = async (mediaId, page = 1, perPage = 10) => {
 // ===========================================
 
 /**
+ * Check if anime contains Hentai genre
+ * @param {object} media - Raw AniList media object or formatted anime
+ * @returns {boolean} - True if contains Hentai
+ */
+export const isHentai = (media) => {
+  const genres = media.genres || [];
+  return genres.includes('Hentai');
+};
+
+/**
+ * Filter out Hentai anime from array
+ * @param {array} animeList - Array of anime objects
+ * @returns {array} - Filtered anime list
+ */
+export const filterHentai = (animeList) => {
+  return animeList.filter(anime => !isHentai(anime));
+};
+
+/**
  * Format anime data for app consumption
  * @param {object} media - Raw AniList media object
  * @returns {object} - Formatted anime object
@@ -593,4 +612,6 @@ export default {
   formatAnimeData,
   getStatusText,
   getFormatText,
+  isHentai,
+  filterHentai,
 };
