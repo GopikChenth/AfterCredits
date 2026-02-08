@@ -16,6 +16,7 @@ import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile, updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
 import { getPublicName, getFirstName } from '../utils/userUtils';
+import { getSettings, updateSettings } from '../services/settings';
 import EditProfileModal from '../components/profile/EditProfileModal';
 
 const ProfilePage = ({ navigation }) => {
@@ -24,11 +25,26 @@ const ProfilePage = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    showAnime: true,
+    showMovies: true,
+    showGames: true,
+    showComics: true,
+    showManga: true,
+  });
 
-  // Load user profile on mount
+  // Load user profile and settings on mount
   useEffect(() => {
     loadProfile();
+    loadSettings();
   }, []);
+  
+  const loadSettings = () => {
+    const userSettings = getSettings();
+    setSettings(userSettings);
+  };
 
   const loadProfile = async () => {
     const result = await getUserProfile();
@@ -92,6 +108,15 @@ const ProfilePage = ({ navigation }) => {
     return result;
   };
 
+  // Handle Media Visibility Toggle
+  const handleMediaToggle = (mediaType, value) => {
+    const key = `show${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}`;
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    
+    updateSettings(newSettings);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
@@ -112,33 +137,187 @@ const ProfilePage = ({ navigation }) => {
 
         {/* Show Empty State if not logged in */}
         {!profile && !loading ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyStateIconContainer}>
-              <Ionicons name="person-circle-outline" size={120} color={theme.accent} style={styles.emptyStateIcon} />
-              <View style={[styles.questionMark, { backgroundColor: theme.accent }]}>
-                <Text style={styles.questionMarkText}>?</Text>
+          <>
+            {/* Login Prompt Card */}
+            <View style={styles.loginPromptCard}>
+              <View style={styles.emptyStateIconContainer}>
+                <Ionicons name="person-circle-outline" size={80} color={theme.accent} />
+                <View style={[styles.questionMark, { backgroundColor: theme.accent }]}>
+                  <Text style={styles.questionMarkText}>?</Text>
+                </View>
+              </View>
+              
+              <Text style={styles.loginPromptTitle}>Who Goes There? 🕵️</Text>
+              <Text style={styles.loginPromptSubtitle}>
+                Sign in to unlock your profile, stats & library
+              </Text>
+              
+              <TouchableOpacity 
+                style={[styles.signInButton, { backgroundColor: theme.accent }]}
+                onPress={() => navigation.navigate('AuthPage')}
+              >
+                <Ionicons name="finger-print" size={20} color="#fff" />
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Media Visibility Settings */}
+            <Text style={styles.sectionTitle}>Sidebar</Text>
+            
+            <View style={styles.menuCard}>
+              {/* Anime Toggle */}
+              <View style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Text style={styles.mediaIcon}>🎌</Text>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Anime</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {settings.showAnime ? 'Visible' : 'Hidden'}
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.showAnime}
+                  onValueChange={(value) => handleMediaToggle('anime', value)}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={settings.showAnime ? theme.accent : '#999'}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
+              {/* Movies Toggle */}
+              <View style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Text style={styles.mediaIcon}>🎬</Text>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Movies</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {settings.showMovies ? 'Visible' : 'Hidden'}
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.showMovies}
+                  onValueChange={(value) => handleMediaToggle('movies', value)}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={settings.showMovies ? theme.accent : '#999'}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
+              {/* Games Toggle */}
+              <View style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Text style={styles.mediaIcon}>🎮</Text>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Games</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {settings.showGames ? 'Visible' : 'Hidden'}
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.showGames}
+                  onValueChange={(value) => handleMediaToggle('games', value)}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={settings.showGames ? theme.accent : '#999'}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
+              {/* Comics Toggle */}
+              <View style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Text style={styles.mediaIcon}>📚</Text>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Comics</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {settings.showComics ? 'Visible' : 'Hidden'}
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.showComics}
+                  onValueChange={(value) => handleMediaToggle('comics', value)}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={settings.showComics ? theme.accent : '#999'}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
+              {/* Manga Toggle */}
+              <View style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Text style={styles.mediaIcon}>📖</Text>
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Manga</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {settings.showManga ? 'Visible' : 'Hidden'}
+                  </Text>
+                </View>
+                <Switch
+                  value={settings.showManga}
+                  onValueChange={(value) => handleMediaToggle('manga', value)}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={settings.showManga ? theme.accent : '#999'}
+                />
               </View>
             </View>
-            
-            <Text style={styles.emptyStateTitle}>Who Goes There? 🕵️</Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Looks like you're ghosting us! {'\n'}
-              Sign in to unlock your secret agent profile.
-            </Text>
-            
-            <TouchableOpacity 
-              style={[styles.signInButton, { backgroundColor: theme.accent }]}
-              onPress={() => navigation.navigate('AuthPage')}
-            >
-              <Ionicons name="finger-print" size={24} color="#fff" />
-              <Text style={styles.signInButtonText}>Identify Yourself</Text>
-            </TouchableOpacity>
 
-            <Text style={styles.emptyStateFooter}>
-              No ID yet? No problem! {'\n'}
-              Create your callsign and join the mission. 🎯
-            </Text>
-          </View>
+
+
+            {/* App Settings - Available without login */}
+            <Text style={styles.sectionTitle}>App Settings</Text>
+            
+            <View style={styles.menuCard}>
+              {/* Theme (Future) */}
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Ionicons name="color-palette-outline" size={20} color={theme.accent} />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Theme</Text>
+                  <Text style={styles.menuSubtitle}>Dark</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              {/* Language (Future) */}
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Ionicons name="language-outline" size={20} color={theme.accent} />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Language</Text>
+                  <Text style={styles.menuSubtitle}>English</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+
+              <View style={styles.menuDivider} />
+
+              {/* About */}
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>About</Text>
+                  <Text style={styles.menuSubtitle}>Version 1.0.0</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Bottom Spacing */}
+            <View style={{ height: 100 }} />
+          </>
         ) : loading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading profile...</Text>
@@ -324,29 +503,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 60,
   },
+  loginPromptCard: {
+    backgroundColor: '#252525',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 16,
+    marginVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   emptyStateIconContainer: {
     position: 'relative',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   emptyStateIcon: {
     opacity: 0.8,
   },
   questionMark: {
     position: 'absolute',
-    bottom: 10,
+    bottom: 5,
     right: -5,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: '#252525',
   },
   questionMarkText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  loginPromptTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loginPromptSubtitle: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
   },
   emptyStateTitle: {
     fontSize: 26,
@@ -495,6 +701,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  mediaIcon: {
+    fontSize: 18,
+  },
   menuTitle: {
     fontSize: 16,
     fontWeight: '500',
@@ -523,3 +732,4 @@ const styles = StyleSheet.create({
 });
 
 export default ProfilePage;
+
