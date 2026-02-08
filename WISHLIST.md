@@ -72,6 +72,55 @@ npx expo install react-native-reanimated
 - Refresh anime list on pull down
 - Custom animation matching app theme
 
+### 6. Upgrade to MMKV Storage (Production Build Only)
+
+**Current Implementation**: AsyncStorage (for Expo Go compatibility)
+**Enhancement**: Switch to MMKV for production builds
+
+**Why upgrade?**
+
+- ✅ **60-100x faster** than AsyncStorage
+- ✅ Synchronous operations (no async/await overhead)
+- ✅ Lower memory footprint
+- ✅ Built-in encryption support
+- ✅ Type-safe APIs
+- ✅ Battle-tested (used by Facebook/Meta)
+
+**Performance Comparison**:
+
+| Operation | AsyncStorage | MMKV   | Improvement |
+| --------- | ------------ | ------ | ----------- |
+| Read      | 3-5ms        | 0.05ms | **60-100x** |
+| Write     | 5-10ms       | 0.1ms  | **50-100x** |
+
+**Implementation Details**:
+
+```javascript
+// Current (AsyncStorage)
+const settings = await getSettings(); // ~3-5ms
+
+// Future (MMKV)
+const settings = getSettings(); // ~0.05ms (synchronous!)
+```
+
+**Dependencies Required**:
+
+```bash
+npm install react-native-mmkv
+npx expo prebuild  # Generate native code
+```
+
+**Requirements**:
+
+- ⚠️ Requires native build (won't work in Expo Go)
+- Must use `expo prebuild` or EAS Build
+- Need to remove AsyncStorage and update all async calls to sync
+
+**Estimated Complexity**: Low (2-3 hours - code already written, just needs native build)
+**Priority**: Medium (only needed for production, AsyncStorage works fine for development)
+
+**Note**: MMKV code is already implemented in `minor-changes` branch, just needs expo prebuild for native modules.
+
 ---
 
 ## Priority: Low

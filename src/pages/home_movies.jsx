@@ -32,7 +32,7 @@ const HomeMovies = ({ navigation }) => {
   
   // State for sidebar
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [activeSection, setActiveSection] = useState('movies');
+  const [activeSection, setActiveSection] = useState('movie');
 
   // State for movie data
   const [movieList, setMovieList] = useState([]);
@@ -220,9 +220,19 @@ const HomeMovies = ({ navigation }) => {
         activeSection={activeSection}
         onSectionChange={(section) => {
           setActiveSection(section);
-          if (section === 'anime') navigation.navigate('HomeAnime');
-          // if (section === 'games') navigation.navigate('HomeGames');
-          console.log('Section changed:', section);
+          // Navigate to the appropriate page based on section
+          if (section === 'movie') {
+            // Already on movie page, just close sidebar
+            setIsSidebarVisible(false);
+          } else if (section === 'anime') {
+            navigation.navigate('HomeAnime');
+          } else if (section === 'game') {
+            navigation.navigate('HomeGames');
+          } else if (section === 'comic') {
+            navigation.navigate('HomeComics');
+          } else if (section === 'manga') {
+            navigation.navigate('HomeManga');
+          }
         }}
       />
     </SafeAreaView>

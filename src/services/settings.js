@@ -1,10 +1,6 @@
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const storage = new MMKV({
-  id: 'aftercredits-settings',
-});
-
-const SETTINGS_KEY = 'settings';
+const SETTINGS_KEY = '@aftercredits_settings';
 
 /**
  * Default settings for the app
@@ -21,11 +17,11 @@ const DEFAULT_SETTINGS = {
 
 /**
  * Get all user settings
- * @returns {Object} Settings object
+ * @returns {Promise<Object>} Settings object
  */
-export const getSettings = () => {
+export const getSettings = async () => {
   try {
-    const settingsJson = storage.getString(SETTINGS_KEY);
+    const settingsJson = await AsyncStorage.getItem(SETTINGS_KEY);
     
     if (settingsJson) {
       const settings = JSON.parse(settingsJson);
@@ -43,14 +39,14 @@ export const getSettings = () => {
 /**
  * Update specific settings
  * @param {Object} updates - Settings to update
- * @returns {Object} Updated settings object
+ * @returns {Promise<Object>} Updated settings object
  */
-export const updateSettings = (updates) => {
+export const updateSettings = async (updates) => {
   try {
-    const currentSettings = getSettings();
+    const currentSettings = await getSettings();
     const newSettings = { ...currentSettings, ...updates };
     
-    storage.set(SETTINGS_KEY, JSON.stringify(newSettings));
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     
     return { success: true, settings: newSettings };
   } catch (error) {
@@ -63,19 +59,19 @@ export const updateSettings = (updates) => {
  * Toggle a specific media type visibility
  * @param {string} mediaType - 'anime', 'movies', 'games', 'comics', 'manga'
  * @param {boolean} value - true to show, false to hide
- * @returns {Object} Result object
+ * @returns {Promise<Object>} Result object
  */
-export const toggleMediaVisibility = (mediaType, value) => {
+export const toggleMediaVisibility = async (mediaType, value) => {
   const key = `show${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}`;
-  return updateSettings({ [key]: value });
+  return await updateSettings({ [key]: value });
 };
 
 /**
  * Get visible media types
- * @returns {string[]} Array of visible media type IDs
+ * @returns {Promise<string[]>} Array of visible media type IDs
  */
-export const getVisibleMediaTypes = () => {
-  const settings = getSettings();
+export const getVisibleMediaTypes = async () => {
+  const settings = await getSettings();
   const visibleTypes = [];
   
   if (settings.showAnime) visibleTypes.push('anime');
@@ -89,11 +85,11 @@ export const getVisibleMediaTypes = () => {
 
 /**
  * Reset settings to default
- * @returns {Object} Result object
+ * @returns {Promise<Object>} Result object
  */
-export const resetSettings = () => {
+export const resetSettings = async () => {
   try {
-    storage.set(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
     return { success: true, settings: DEFAULT_SETTINGS };
   } catch (error) {
     console.error('Error resetting settings:', error);

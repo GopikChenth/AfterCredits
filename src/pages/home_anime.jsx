@@ -215,8 +215,19 @@ const HomeAnime = ({ navigation }) => {
         activeSection={activeSection}
         onSectionChange={(section) => {
           setActiveSection(section);
-          if (section === 'movie') navigation.navigate('HomeMovies');
-          console.log('Section changed:', section);
+          // Navigate to the appropriate page based on section
+          if (section === 'anime') {
+            // Already on anime page, just close sidebar
+            setIsSidebarVisible(false);
+          } else if (section === 'movie') {
+            navigation.navigate('HomeMovies');
+          } else if (section === 'game') {
+            navigation.navigate('HomeGames');
+          } else if (section === 'comic') {
+            navigation.navigate('HomeComics');
+          } else if (section === 'manga') {
+            navigation.navigate('HomeManga');
+          }
         }}
       />
     </SafeAreaView>

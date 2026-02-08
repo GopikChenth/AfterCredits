@@ -38,8 +38,8 @@ const SideBar = ({
     }
   }, [isVisible]);
   
-  const loadVisibleSections = () => {
-    const settings = getSettings();
+  const loadVisibleSections = async () => {
+    const settings = await getSettings();
     const filtered = allSections.filter(section => settings[section.settingKey]);
     setVisibleSections(filtered);
   };

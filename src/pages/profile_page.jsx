@@ -41,8 +41,8 @@ const ProfilePage = ({ navigation }) => {
     loadSettings();
   }, []);
   
-  const loadSettings = () => {
-    const userSettings = getSettings();
+  const loadSettings = async () => {
+    const userSettings = await getSettings();
     setSettings(userSettings);
   };
 
@@ -109,12 +109,12 @@ const ProfilePage = ({ navigation }) => {
   };
 
   // Handle Media Visibility Toggle
-  const handleMediaToggle = (mediaType, value) => {
+  const handleMediaToggle = async (mediaType, value) => {
     const key = `show${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}`;
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     
-    updateSettings(newSettings);
+    await updateSettings(newSettings);
   };
 
   return (
