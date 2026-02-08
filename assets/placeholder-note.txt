@@ -1,2 +1,0 @@
-// Placeholder - you should replace this with an actual placeholder image
-// For now, we'll remove the placeholder requirement from the Card component

@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { getSettings } from '../../services/settings';
 
 /**
  * SideBar - Just floating pill buttons with full-screen blur background
@@ -20,14 +21,28 @@ const SideBar = ({
 }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
+  const [visibleSections, setVisibleSections] = React.useState([]);
 
-  const sections = [
-    { id: 'anime', label: 'Anime', icon: '🎌' },
-    { id: 'movie', label: 'Movies', icon: '🎬' },
-    { id: 'game', label: 'Games', icon: '🎮' },
-    { id: 'comic', label: 'Comics', icon: '📚' },
-    { id: 'manga', label: 'Manga', icon: '📖' },
+  const allSections = [
+    { id: 'anime', label: 'Anime', icon: '🎌', settingKey: 'showAnime' },
+    { id: 'movie', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
+    { id: 'game', label: 'Games', icon: '🎮', settingKey: 'showGames' },
+    { id: 'comic', label: 'Comics', icon: '📚', settingKey: 'showComics' },
+    { id: 'manga', label: 'Manga', icon: '📖', settingKey: 'showManga' },
   ];
+  
+  // Load settings and filter sections when sidebar becomes visible
+  useEffect(() =>  {
+    if (isVisible) {
+      loadVisibleSections();
+    }
+  }, [isVisible]);
+  
+  const loadVisibleSections = () => {
+    const settings = getSettings();
+    const filtered = allSections.filter(section => settings[section.settingKey]);
+    setVisibleSections(filtered);
+  };
 
   // Fade and slide animation
   useEffect(() => {
@@ -126,7 +141,7 @@ const SideBar = ({
         ]}
         pointerEvents={isVisible ? 'auto' : 'none'}
       >
-        {sections.map((section) => (
+        {visibleSections.map((section) => (
           <Animated.View key={section.id} style={styles.pillWrapper}>
             <TouchableOpacity
               style={styles.pill}
