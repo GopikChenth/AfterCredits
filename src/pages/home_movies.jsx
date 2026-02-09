@@ -18,9 +18,16 @@ import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_movies';
 import { getMediaTheme } from '../utils/mediaThemes';
+import { useMediaType } from '../context/MediaTypeContext';
 
 const HomeMovies = ({ navigation }) => {
   const theme = getMediaTheme('movie'); // 'movie' theme
+  const { setMediaType } = useMediaType();
+  
+  // Set media type to movies when this page loads
+  useEffect(() => {
+    setMediaType('movies');
+  }, [setMediaType]);
   
   // State for responsive dimensions
   const dimensions = getCardDimensions();

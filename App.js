@@ -20,6 +20,9 @@ import HomeManga from './src/pages/home_manga';
 import ProfilePage from './src/pages/profile_page';
 import AuthPage from './src/pages/auth_page';
 
+// Context
+import { MediaTypeProvider } from './src/context/MediaTypeContext';
+
 // Initialize font loading system
 initializeFonts();
 
@@ -34,32 +37,34 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="HomeAnime"
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-            animationEnabled: false,
-          }}
-        >
-          {/* Anime Routes */}
-          <Stack.Screen name="HomeAnime" component={HomeAnime} />
-          <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
-          <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
-          
-          {/* Other Media Routes */}
-          <Stack.Screen name="HomeMovies" component={HomeMovies} />
-          <Stack.Screen name="HomeGames" component={HomeGames} />
-          <Stack.Screen name="HomeComics" component={HomeComics} />
-          <Stack.Screen name="HomeManga" component={HomeManga} />
-          
-          {/* Common Routes */}
-          <Stack.Screen name="ProfilePage" component={ProfilePage} />
-          <Stack.Screen name="AuthPage" component={AuthPage} />
-        </Stack.Navigator>
-        <StatusBar style="auto" />
-      </NavigationContainer>
+      <MediaTypeProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="HomeAnime"
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+              animationEnabled: false,
+            }}
+          >
+            {/* Anime Routes */}
+            <Stack.Screen name="HomeAnime" component={HomeAnime} />
+            <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
+            <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
+            
+            {/* Other Media Routes */}
+            <Stack.Screen name="HomeMovies" component={HomeMovies} />
+            <Stack.Screen name="HomeGames" component={HomeGames} />
+            <Stack.Screen name="HomeComics" component={HomeComics} />
+            <Stack.Screen name="HomeManga" component={HomeManga} />
+            
+            {/* Common Routes */}
+            <Stack.Screen name="ProfilePage" component={ProfilePage} />
+            <Stack.Screen name="AuthPage" component={AuthPage} />
+          </Stack.Navigator>
+          <StatusBar style="auto" />
+        </NavigationContainer>
+      </MediaTypeProvider>
     </SafeAreaProvider>
   );
 }

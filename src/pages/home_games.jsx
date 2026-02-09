@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useMediaType } from '../context/MediaTypeContext';
 
 const HomeGames = ({ navigation }) => {
+  const { setMediaType } = useMediaType();
+  
+  useEffect(() => {
+    setMediaType('games');
+  }, [setMediaType]);
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />

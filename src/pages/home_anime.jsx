@@ -24,9 +24,16 @@ import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
 import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
+import { useMediaType } from '../context/MediaTypeContext';
 
 const HomeAnime = ({ navigation }) => {
   const theme = getMediaTheme('anime');
+  const { setMediaType } = useMediaType();
+  
+  // Set media type to anime when this page loads
+  useEffect(() => {
+    setMediaType('anime');
+  }, [setMediaType]);
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);

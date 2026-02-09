@@ -19,6 +19,7 @@ import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
+import StatusTag from '../components/details_page/StatusTag';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 
@@ -33,6 +34,7 @@ const AnimeDetail = ({ route, navigation }) => {
   const [animeData, setAnimeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [userStatus, setUserStatus] = useState(null); // 'watching', 'wishlist', 'dropped', or null
   
   // Gesture and animation refs
   const translateX = useRef(new Animated.Value(0)).current;
@@ -142,6 +144,53 @@ const AnimeDetail = ({ route, navigation }) => {
       format: data.format,
     };
   };
+
+  // Render action buttons (Watch/Wishlist)
+  const renderActionButtons = () => (
+    <View style={styles.actionsRow}>
+      <TouchableOpacity 
+        style={[
+          styles.actionButton, 
+          isWatched && { backgroundColor: theme.accent }
+        ]} 
+        onPress={() => setIsWatched(!isWatched)}
+        activeOpacity={0.7}
+      >
+        <Ionicons 
+          name={isWatched ? "eye" : "eye-outline"} 
+          size={20} 
+          color={isWatched ? "#000" : "#fff"} 
+        />
+        <Text style={[
+          styles.actionButtonText, 
+          isWatched && { color: '#000', fontWeight: 'bold' }
+        ]}>
+          {isWatched ? "Watched" : "Watch"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={[
+          styles.actionButton, 
+          isWishlisted && { backgroundColor: theme.accent }
+        ]} 
+        onPress={() => setIsWishlisted(!isWishlisted)}
+        activeOpacity={0.7}
+      >
+        <Ionicons 
+          name={isWishlisted ? "heart" : "heart-outline"} 
+          size={20} 
+          color={isWishlisted ? "#E0245E" : "#fff"} 
+        />
+        <Text style={[
+          styles.actionButtonText, 
+          isWishlisted && { color: '#000', fontWeight: 'bold' }
+        ]}>
+          {isWishlisted ? "Saved" : "Save"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   // Loading state
   if (isLoading) {
@@ -275,6 +324,34 @@ const AnimeDetail = ({ route, navigation }) => {
         <StatsPill label="Popularity" count={animeData.stats.members} color="#FF9AA2" />
         <StatsPill label="Reviews" count={animeData.stats.reviews} color="#B5EAD7" />
         <StatsPill label="Score" count={`${animeData.stats.score}%`} color="#A0C4FF" />
+      </View>
+
+      {/* User Status Section */}
+      <View style={styles.statusSection}>
+        <Text style={styles.statusSectionLabel}>MY STATUS</Text>
+        <View style={styles.statusTagsContainer}>
+          <StatusTag 
+            label="Watching" 
+            icon="eye"
+            isActive={userStatus === 'watching'}
+            onPress={() => setUserStatus(userStatus === 'watching' ? null : 'watching')}
+            color="#FFB3C6"
+          />
+          <StatusTag 
+            label="Wishlist" 
+            icon="bookmark"
+            isActive={userStatus === 'wishlist'}
+            onPress={() => setUserStatus(userStatus === 'wishlist' ? null : 'wishlist')}
+            color="#A0C4FF"
+          />
+          <StatusTag 
+            label="Dropped" 
+            icon="close-circle"
+            isActive={userStatus === 'dropped'}
+            onPress={() => setUserStatus(userStatus === 'dropped' ? null : 'dropped')}
+            color="#FF9AA2"
+          />
+        </View>
       </View>
 
       {/* Genre and Cast & Crew Section */}
@@ -751,6 +828,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 24,
     gap: 10,
+  },
+  statusSection: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  statusSectionLabel: {
+    fontSize: 12,
+    fontFamily: 'Agdasima',
+    letterSpacing: 2,
+    color: '#999',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  statusTagsContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
   },
   genreCrewSectionNative: {
     marginHorizontal: 20,

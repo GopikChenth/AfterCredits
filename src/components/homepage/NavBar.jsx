@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useMediaType } from '../../context/MediaTypeContext';
 
-const NavBar = ({ activeTab = 'Home', onTabChange }) => {
+const NavBar = ({ activeTab = 'home', onTabChange }) => {
   const [active, setActive] = useState(activeTab);
+  const navigation = useNavigation();
+  const { getHomeRoute } = useMediaType();
 
   const tabs = [
     { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'search', label: 'Search', icon: '🔍' },
-    { id: 'library', label: 'Library', icon: '📚' },
+    { id: 'discover', label: 'Discover', icon: '🔍' },
+    { id: 'podium', label: 'Podium', icon: '📋' },
     { id: 'profile', label: 'Profile', icon: '👤' },
   ];
 
   const handleTabPress = (tabId) => {
     setActive(tabId);
+    
+    // Navigate based on tab
+    if (tabId === 'home') {
+      // Navigate to appropriate home page based on media type
+      const homeRoute = getHomeRoute();
+      navigation.navigate(homeRoute);
+    } else if (tabId === 'profile') {
+      navigation.navigate('ProfilePage');
+    }
+    // Add other tab navigation here as needed
+    
     if (onTabChange) {
       onTabChange(tabId);
     }
