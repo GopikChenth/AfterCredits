@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   View, 
   TextInput, 
@@ -12,45 +12,60 @@ import {
 import { BlurView } from 'expo-blur';
 
 /**
- * SearchBar - Floating overlay search bar with frosted glass effect
- * Features: theme-aware, blur background, search icon, cancel button
- * Uses BlurView for mobile, CSS backdrop-filter for web
+ * SearchBar - Floating search bar with frosted glass effect
+ * 
+ * Features:
+ * - Fully controlled component
+ * - Keyboard-aware positioning
+ * - Blur background effect
+ * - Clean, efficient state management
+ * - Proper keyboard persistence
  */
 const SearchBar = ({ 
   theme = 'anime',
   placeholder = 'Search...',
+  value = '',
   onChangeText,
   onCancel,
+  onSubmit,
   style,
 }) => {
-  const [searchText, setSearchText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef(null);
 
-  const handleChangeText = (text) => {
-    setSearchText(text);
+  // Handle text change
+  const handleChangeText = useCallback((text) => {
     if (onChangeText) {
       onChangeText(text);
     }
-  };
+  }, [onChangeText]);
 
-  const handleCancel = () => {
-    setSearchText('');
-    setIsFocused(false);
-    if (onCancel) {
-      onCancel();
-    }
-  };
-
-  const handleClear = () => {
-    setSearchText('');
+  // Handle clear button
+  const handleClear = useCallback(() => {
     if (onChangeText) {
       onChangeText('');
     }
-  };
+    // Keep focus on input after clearing
+    inputRef.current?.focus();
+  }, [onChangeText]);
 
-  // Content to render inside the blur container
-  const inputContent = (
+  // Handle submit (Enter key)
+  const handleSubmit = useCallback(() => {
+    if (onSubmit && value.trim().length > 0) {
+      onSubmit(value);
+    }
+  }, [onSubmit, value]);
+
+  // Handle cancel
+  const handleCancel = useCallback(() => {
+    if (onCancel) {
+      onCancel();
+    }
+    setIsFocused(false);
+  }, [onCancel]);
+
+  // Render search input content
+  const renderInputContent = () => (
     <View style={styles.searchWrapper}>
       {/* Search Icon */}
       <View style={styles.iconWrapper}>
@@ -63,16 +78,20 @@ const SearchBar = ({
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor="rgba(255, 255, 255, 0.5)"
-        value={searchText}
+        value={value}
         onChangeText={handleChangeText}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        onSubmitEditing={handleSubmit}
+        returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}
+        blurOnSubmit={false}
+        keyboardType="default"
       />
 
-      {/* Clear Button (shows when there's text) */}
-      {searchText.length > 0 && (
+      {/* Clear Button */}
+      {value.length > 0 && (
         <TouchableOpacity 
           style={styles.clearButton}
           onPress={handleClear}
@@ -84,12 +103,12 @@ const SearchBar = ({
     </View>
   );
 
-  // Render based on platform - no pointerEvents anywhere
+  // Render with blur effect
   if (Platform.OS === 'web') {
     return (
       <View style={[styles.container, style]}>
         <View style={styles.blurContainerWeb}>
-          {inputContent}
+          {renderInputContent()}
         </View>
       </View>
     );
@@ -98,7 +117,7 @@ const SearchBar = ({
   return (
     <View style={[styles.container, style]}>
       <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
-        {inputContent}
+        {renderInputContent()}
       </BlurView>
     </View>
   );
@@ -122,7 +141,6 @@ const styles = StyleSheet.create({
       },
       web: {
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-        outline: 'none', // Remove web focus outline
       },
     }),
   },
@@ -133,13 +151,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     backdropFilter: 'blur(20px) saturate(180%)',
     WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderWidth: 0, // No borders
   },
   blurContainerNative: {
     flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 0, // No borders
   },
   searchWrapper: {
     flex: 1,
@@ -147,7 +163,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     gap: 12,
-    borderWidth: 0, // No borders
   },
   iconWrapper: {
     width: 24,
@@ -191,68 +206,82 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  cancelButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  cancelText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '500',
-  },
 });
 
 /**
- * KeyboardAwareSearchBar - Wrapper that handles keyboard positioning
- * Uses Animated.Value and actual keyboard height for positioning
+ * KeyboardAwareSearchBar - Wrapper for keyboard-aware positioning
+ * 
+ * Features:
+ * - Smooth keyboard animations
+ * - Platform-specific timing
+ * - Automatic position reset on mount
+ * - Efficient listener management
  */
 export const KeyboardAwareSearchBar = ({ 
-  defaultBottom = 93, // Default position above NavBar
-  keyboardOffset = 16, // Offset above the keyboard
+  defaultBottom = 93,
+  keyboardOffset = 16,
   ...props 
 }) => {
   const bottomAnim = useRef(new Animated.Value(defaultBottom)).current;
+  const keyboardListenersRef = useRef({ show: null, hide: null });
 
   useEffect(() => {
+    // Reset position on mount/hot reload
+    bottomAnim.setValue(defaultBottom);
+    
     const keyboardShowEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const keyboardHideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const showSub = Keyboard.addListener(keyboardShowEvent, (event) => {
-      // Get keyboard height and position SearchBar above it
+    // Keyboard show handler
+    const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
+      const targetPosition = keyboardHeight + keyboardOffset;
+      
       Animated.timing(bottomAnim, {
-        toValue: keyboardHeight + keyboardOffset,
+        toValue: targetPosition,
         duration: Platform.OS === 'ios' ? 250 : 100,
         useNativeDriver: false,
       }).start();
-    });
+    };
 
-    const hideSub = Keyboard.addListener(keyboardHideEvent, () => {
+    // Keyboard hide handler
+    const handleKeyboardHide = () => {
       Animated.timing(bottomAnim, {
         toValue: defaultBottom,
         duration: Platform.OS === 'ios' ? 250 : 100,
         useNativeDriver: false,
       }).start();
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
     };
-  }, [defaultBottom, keyboardOffset]);
+
+    // Add listeners
+    keyboardListenersRef.current.show = Keyboard.addListener(keyboardShowEvent, handleKeyboardShow);
+    keyboardListenersRef.current.hide = Keyboard.addListener(keyboardHideEvent, handleKeyboardHide);
+
+    // Cleanup
+    return () => {
+      keyboardListenersRef.current.show?.remove();
+      keyboardListenersRef.current.hide?.remove();
+    };
+  }, [defaultBottom, keyboardOffset, bottomAnim]);
 
   return (
-    <Animated.View style={{
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: bottomAnim,
-      paddingHorizontal: 16,
-      zIndex: 10,
-    }}>
+    <Animated.View style={[styles.keyboardAwareContainer, { bottom: bottomAnim }]}>
       <SearchBar {...props} />
     </Animated.View>
   );
 };
+
+const keyboardAwareStyles = StyleSheet.create({
+  keyboardAwareContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    zIndex: 100, // Higher than overlay backdrop (9) and overlay content (10)
+  },
+});
+
+// Merge styles
+Object.assign(styles, keyboardAwareStyles);
 
 export default SearchBar;

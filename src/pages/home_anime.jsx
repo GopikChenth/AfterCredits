@@ -8,6 +8,7 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,8 +18,11 @@ import NavBar from '../components/homepage/NavBar';
 import CategoryPill from '../components/homepage/CategoryPill';
 import SideBar from '../components/homepage/SideBar';
 import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
+import SearchSuggestionsOverlay from '../components/homepage/SearchSuggestionsOverlay';
+import InlineSearchResults from '../components/homepage/InlineSearchResults';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
+import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
 
 const HomeAnime = ({ navigation }) => {
@@ -39,6 +43,12 @@ const HomeAnime = ({ navigation }) => {
   const [animeList, setAnimeList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // State for search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
   // Listen for screen size changes
   useEffect(() => {
@@ -93,6 +103,76 @@ const HomeAnime = ({ navigation }) => {
     fetchAnimeData(category);
   }, [fetchAnimeData]);
 
+  // Debounced search for suggestions (while typing)
+  const performSuggestionSearch = useCallback(
+    debounce(async (query) => {
+      if (!query || query.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const results = await searchMedia(query, 'anime', 3); // Only 3 for suggestions
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Suggestion search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+    setIsSearchSubmitted(false);
+    
+    if (text.trim().length >= 2) {
+      performSuggestionSearch(text);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [performSuggestionSearch]);
+
+  // Handle Enter press - show full results
+  const handleSearchSubmit = useCallback(async () => {
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      return;
+    }
+
+    setIsSearchSubmitted(true);
+    Keyboard.dismiss();
+    
+    setIsSearching(true);
+    try {
+      const results = await searchMedia(searchQuery, 'anime', 50); // 50 for full page
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Full search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
+
+  const handleSearchCancel = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+    setIsSearchSubmitted(false);
+  }, []);
+
+  const handleSearchResultPress = (item) => {
+    // Navigate to details page
+    navigation.navigate('DetailsAnime', { animeId: item.id });
+    // Clear search after selection
+    handleSearchCancel();
+  };
+
   // Handle navigation to anime details
   const handleAnimePress = useCallback((animeId) => {
     navigation?.navigate('DetailsAnime', { animeId });
@@ -137,55 +217,70 @@ const HomeAnime = ({ navigation }) => {
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Hero Section with Neumorphic Design */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroCard}>
-            <View style={styles.heroRow}>
-              <CategoryPill
-                categories={['Trending', 'Popular', 'New']}
-                onCategoryChange={handleCategoryChange}
-                width={160}
-              />
-              <Text style={styles.animeText}>ANIME</Text>
-            </View>
-          </View>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.accent} />
-            <Text style={styles.loadingText}>Loading anime...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={() => fetchAnimeData(selectedCategory)}
-            >
-              <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Show full search results page when submitted (Enter pressed) */}
+        {isSearchSubmitted ? (
+          <InlineSearchResults
+            results={searchResults}
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            onResultPress={handleSearchResultPress}
+            onClearSearch={handleSearchCancel}
+            theme={theme}
+          />
         ) : (
-          <View style={styles.contentWrapper}>
-            {/* Virtualized Grid with FlashList */}
-            <FlashList
-              data={animeList}
-              renderItem={({ item }) => (
-                <AnimeCardItem
-                  anime={item}
-                  onPress={() => handleAnimePress(item.id)}
-                  cardHeight={cardHeight}
+          <>
+            {/* Hero Section with Neumorphic Design */}
+            <View style={styles.heroSection}>
+              <View style={styles.heroCard}>
+                <View style={styles.heroRow}>
+                  <CategoryPill
+                    categories={['Trending', 'Popular', 'New']}
+                    onCategoryChange={handleCategoryChange}
+                    width={160}
+                  />
+                  <Text style={styles.animeText}>ANIME</Text>
+                </View>
+              </View>
+            </View>
+
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.accent} />
+                <Text style={styles.loadingText}>Loading anime...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => fetchAnimeData(selectedCategory)}
+                >
+                  <Text style={styles.retryText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.contentWrapper}>
+                {/* Virtualized Grid with FlashList */}
+                <FlashList
+                  data={animeList}
+                  renderItem={({ item }) => (
+                    <AnimeCardItem
+                      anime={item}
+                      onPress={() => handleAnimePress(item.id)}
+                      cardHeight={cardHeight}
+                    />
+                  )}
+                  keyExtractor={(item) => item.id.toString()}
+                  estimatedItemSize={cardHeight + 16}
+                  numColumns={2}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.flashListContent}
                 />
-              )}
-              keyExtractor={(item) => item.id.toString()}
-              estimatedItemSize={cardHeight + 16}
-              numColumns={2}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.flashListContent}
-            />
-          </View>
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -202,11 +297,25 @@ const HomeAnime = ({ navigation }) => {
       <KeyboardAwareSearchBar 
         theme="anime"
         placeholder="Search anime..."
-        onChangeText={(text) => console.log('Search:', text)}
-        onCancel={() => console.log('Search cancelled')}
+        value={searchQuery}
+        onChangeText={handleSearchChange}
+        onCancel={handleSearchCancel}
+        onSubmit={handleSearchSubmit}
         defaultBottom={93}
-        keyboardOffset={24}
+        keyboardOffset={32}
       />
+
+      {/* Search Suggestions Overlay - Only show when typing, NOT when submitted */}
+      {!isSearchSubmitted && (searchQuery.length >= 2 || isSearching) && (
+        <SearchSuggestionsOverlay
+          results={searchResults}
+          isLoading={isSearching}
+          searchQuery={searchQuery}
+          onResultPress={handleSearchResultPress}
+          onClose={handleSearchCancel}
+          theme={theme}
+        />
+      )}
       
       {/* Sidebar */}
       <SideBar 
