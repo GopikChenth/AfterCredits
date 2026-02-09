@@ -20,17 +20,20 @@ export const searchMedia = async (query, mediaType = 'anime', limit = 20) => {
 
   try {
     let response;
+    let results = [];
     
     switch (mediaType) {
       case 'anime':
         response = await searchAnime(query, 1, limit);
         // AniList returns { media: [...] } structure
-        return response.media ? response.media.map(formatAnimeData) : [];
+        results = response.media ? response.media.map(formatAnimeData) : [];
+        break;
       
       case 'movie':
         response = await searchMovies(query, 1, limit);
         // Movies API returns { media: [...] } structure
-        return response.media ? response.media.map(formatMovieData) : [];
+        results = response.media ? response.media.map(formatMovieData) : [];
+        break;
       
       case 'game':
         // TODO: Implement game search API
@@ -51,6 +54,10 @@ export const searchMedia = async (query, mediaType = 'anime', limit = 20) => {
         console.warn(`Unknown media type: ${mediaType}`);
         return [];
     }
+
+    // Sort by popularity (highest first)
+    return results.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    
   } catch (error) {
     console.error(`Error searching ${mediaType}:`, error);
     return []; // Return empty array on error instead of throwing
