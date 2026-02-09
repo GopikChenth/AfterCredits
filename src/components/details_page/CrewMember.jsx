@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
-const CrewMember = ({ name, role, avatar, image }) => {
+const CrewMember = ({ name, role, avatar, image, characterImage, characterName }) => {
   return (
     <View style={styles.container}>
       {image ? (
@@ -16,6 +16,12 @@ const CrewMember = ({ name, role, avatar, image }) => {
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.role}>{role}</Text>
       </View>
+      {characterImage && (
+        <Image 
+          source={{ uri: characterImage }} 
+          style={styles.characterAvatar}
+        />
+      )}
     </View>
   );
 };
@@ -27,9 +33,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     marginRight: 10,
   },
   info: {
@@ -47,6 +53,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
     color: '#838383ff',
+  },
+  characterAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginLeft: 10,
   },
 });
 

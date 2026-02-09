@@ -101,21 +101,21 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: '#666',
+    color: '#999',
   },
   datePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#E0E0E0',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#E0E0E0',
   },
   dateValue: {
     fontSize: 16,
-    color: '#333',
+    color: '#000',
   },
   iosPickerContainer: {
     marginTop: 10,

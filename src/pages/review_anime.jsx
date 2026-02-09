@@ -52,7 +52,7 @@ const ReviewAnime = ({ navigation, route }) => {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
             <Text style={[styles.headerTitle, { fontFamily: theme.headingFont }]}>I Watched</Text>
             <TouchableOpacity onPress={handleSave} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
@@ -165,7 +165,7 @@ const ReviewAnime = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -177,12 +177,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#666',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#fff',
   },
   mediaRow: {
     flexDirection: 'row',
@@ -200,12 +200,12 @@ const styles = StyleSheet.create({
   mediaTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#fff',
     flex: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#595959',
     marginHorizontal: 16,
   },
   dateRow: {
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
     minHeight: 150,
     padding: 16,
     fontSize: 16,
-    color: '#000',
-    backgroundColor: '#fff', // Or slightly off-white '#FAFAFA'
+    color: '#fff',
+    backgroundColor: '#1a1a1a', // Or slightly off-white '#FAFAFA'
   },
   tagsContainer: {
     paddingHorizontal: 16,
