@@ -5,8 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
+  Dimensions,
 } from 'react-native';
+import MediaCard from './Card';
 
 /**
  * InlineSearchResults - Displays search results inline in the main content area
@@ -64,30 +65,33 @@ const InlineSearchResults = ({
 
       {/* Results Grid */}
       <View style={styles.gridContainer}>
-        {results.map((item, index) => (
-          <TouchableOpacity
-            key={`${item.id}-${index}`}
-            style={styles.resultCard}
-            onPress={() => onResultPress && onResultPress(item)}
-            activeOpacity={0.7}
-          >
-            <Image
-              source={{ uri: item.coverImage }}
-              style={styles.resultImage}
-              resizeMode="cover"
-            />
-            
-            <View style={styles.resultOverlay}>
-              <Text style={styles.resultTitle} numberOfLines={2}>
-                {item.title}
-              </Text>
-              
-              {item.year && (
-                <Text style={styles.yearText}>{item.year}</Text>
-              )}
+        {results.map((item, index) => {
+          const { width: screenWidth } = Dimensions.get('window');
+          const cardWrapperWidth = (screenWidth - 32 - 12) / 2; // 32 = padding, 12 = gap between columns
+          const cardWidth = cardWrapperWidth - 16; // Subtract padding inside wrapper
+          const cardHeight = cardWidth * 1.444; // 9:13 aspect ratio
+          
+          return (
+            <View
+              key={`${item.id}-${index}`}
+              style={[styles.cardWrapper, { width: cardWrapperWidth }]}
+            >
+              <TouchableOpacity
+                onPress={() => onResultPress && onResultPress(item)}
+                activeOpacity={0.7}
+              >
+                <MediaCard
+                  theme="anime"
+                  title={item.title}
+                  year={item.year}
+                  imageUrl={item.coverImage}
+                  width={cardWidth}
+                  height={cardHeight}
+                />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        ))}
+          );
+        })}
       </View>
     </View>
   );
@@ -130,64 +134,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
-    gap: 12, // Space between cards
-  },
-  row: {
-    paddingHorizontal: 12,
     justifyContent: 'space-between',
   },
-  resultCard: {
-    width: '48%',
-    marginBottom: 4,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#2a2a2a',
-  },
-  resultImage: {
-    width: '100%',
-    height: 240,
-    backgroundColor: '#333',
-  },
-  resultOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  },
-  resultTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  yearText: {
-    fontSize: 11,
-    color: '#fff',
-    opacity: 0.9,
-  },
-  dotText: {
-    fontSize: 12,
-    color: '#666',
-    marginHorizontal: 6,
-  },
-  scoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  scoreIcon: {
-    fontSize: 12,
-    marginRight: 4,
-  },
-  scoreText: {
-    fontSize: 13,
-    color: '#FFB3C6',
-    fontWeight: '600',
+  cardWrapper: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#252525',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: -8, height: -8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   loadingContainer: {
     flex: 1,

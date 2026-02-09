@@ -87,6 +87,8 @@ const AnimeDetail = ({ route, navigation }) => {
         role: `Voice of ${edge.node?.name?.full || 'Character'}`,
         avatar: avatarColors[index % avatarColors.length],
         image: edge.voiceActors[0]?.image?.medium,
+        characterImage: edge.node?.image?.large || edge.node?.image?.medium,
+        characterName: edge.node?.name?.full || 'Character',
       }))
       ?.slice(0, 12) || [];
 
@@ -242,59 +244,31 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Description Section */}
-      {Platform.OS === 'web' ? (
-        <View style={styles.descriptionSectionWeb}>
-          <View style={styles.titleYearRow}>
-            <Text style={styles.mainTitle}>{animeData.title}</Text>
-            <Text style={styles.year}>{animeData.year}</Text>
-          </View>
-          <Text style={styles.subtitleText}>{animeData.subtitle}</Text>
-          <Text style={styles.studioInfo}>{animeData.studio}</Text>
-          <Text 
-            style={styles.description} 
-            numberOfLines={isDescriptionExpanded ? undefined : 4}
-          >
-            {animeData.description}
-          </Text>
-          {animeData.description && animeData.description.length > 150 && (
-            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-              <Text style={styles.expandDescriptionText}>
-                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
-              </Text>
-            </TouchableOpacity>
-          )}
-          <View style={styles.episodeStatusRow}>
-            <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
-            <Text style={styles.status}>Status: {animeData.status}</Text>
-          </View>
+      <BlurView intensity={80} tint="dark" style={styles.descriptionSectionNative}>
+        <View style={styles.titleYearRow}>
+          <Text style={styles.mainTitle}>{animeData.title}</Text>
+          <Text style={styles.year}>{animeData.year}</Text>
         </View>
-      ) : (
-        <BlurView intensity={80} tint="dark" style={styles.descriptionSectionNative}>
-          <View style={styles.titleYearRow}>
-            <Text style={styles.mainTitle}>{animeData.title}</Text>
-            <Text style={styles.year}>{animeData.year}</Text>
-          </View>
-          <Text style={styles.subtitleText}>{animeData.subtitle}</Text>
-          <Text style={styles.studioInfo}>{animeData.studio}</Text>
-          <Text 
-            style={styles.description} 
-            numberOfLines={isDescriptionExpanded ? undefined : 4}
-          >
-            {animeData.description}
-          </Text>
-          {animeData.description && animeData.description.length > 150 && (
-            <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
-              <Text style={styles.expandDescriptionText}>
-                {isDescriptionExpanded ? 'Show Less' : 'Read More'}
-              </Text>
-            </TouchableOpacity>
-          )}
-          <View style={styles.episodeStatusRow}>
-            <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
-            <Text style={styles.status}>Status: {animeData.status}</Text>
-          </View>
-        </BlurView>
-      )}
+        <Text style={styles.subtitleText}>{animeData.subtitle}</Text>
+        <Text style={styles.studioInfo}>{animeData.studio}</Text>
+        <Text 
+          style={styles.description} 
+          numberOfLines={isDescriptionExpanded ? undefined : 4}
+        >
+          {animeData.description}
+        </Text>
+        {animeData.description && animeData.description.length > 150 && (
+          <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+            <Text style={styles.expandDescriptionText}>
+              {isDescriptionExpanded ? 'Show Less' : 'Read More'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        <View style={styles.episodeStatusRow}>
+          <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
+          <Text style={styles.status}>Status: {animeData.status}</Text>
+        </View>
+      </BlurView>
 
       {/* Stats Section */}
       <View style={styles.statsSection}>
@@ -304,196 +278,56 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Genre and Cast & Crew Section */}
-      {Platform.OS === 'web' ? (
-        <View style={styles.genreCrewSectionWeb}>
-          <View style={styles.genreRow}>
-            <Text style={styles.sectionLabel}>GENRE</Text>
-            <View style={styles.genreList}>
-              {animeData.genres.length > 0 ? (
-                animeData.genres.map((genre, index) => (
-                  <GenrePill key={index} genre={genre} />
-                ))
-              ) : (
-                <Text style={styles.noDataText}>No genres available</Text>
-              )}
-            </View>
-          </View>
-          
-          <View style={styles.crewRow}>
-            <Text style={styles.sectionLabel}>CAST & CREW</Text>
-            <View style={styles.crewList}>
-              {animeData.voiceActors.length > 0 ? (
-                <>
-                  {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
-                    <CrewMember 
-                      key={index} 
-                      name={member.name} 
-                      role={member.role} 
-                      avatar={member.avatar}
-                      image={member.image}
-                    />
-                  ))}
-                  {animeData.voiceActors.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.expandButton} 
-                      onPress={() => setIsCrewExpanded(!isCrewExpanded)}
-                    >
-                      <Text style={styles.expandButtonText}>
-                        {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </>
-              ) : (
-                <Text style={styles.noDataText}>No voice actor information available</Text>
-              )}
-            </View>
+      <BlurView intensity={80} tint="dark" style={styles.genreCrewSectionNative}>
+        <View style={styles.genreRow}>
+          <Text style={styles.sectionLabel}>GENRE</Text>
+          <View style={styles.genreList}>
+            {animeData.genres.length > 0 ? (
+              animeData.genres.map((genre, index) => (
+                <GenrePill key={index} genre={genre} />
+              ))
+            ) : (
+              <Text style={styles.noDataText}>No genres available</Text>
+            )}
           </View>
         </View>
-      ) : (
-        <BlurView intensity={80} tint="dark" style={styles.genreCrewSectionNative}>
-          <View style={styles.genreRow}>
-            <Text style={styles.sectionLabel}>GENRE</Text>
-            <View style={styles.genreList}>
-              {animeData.genres.length > 0 ? (
-                animeData.genres.map((genre, index) => (
-                  <GenrePill key={index} genre={genre} />
-                ))
-              ) : (
-                <Text style={styles.noDataText}>No genres available</Text>
-              )}
-            </View>
+        
+        <View style={styles.crewRow}>
+          <Text style={styles.sectionLabel}>CAST & CREW</Text>
+          <View style={styles.crewList}>
+            {animeData.voiceActors.length > 0 ? (
+              <>
+                {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
+                  <CrewMember 
+                    key={index} 
+                    name={member.name} 
+                    role={member.role} 
+                    avatar={member.avatar}
+                    image={member.image}
+                    characterImage={member.characterImage}
+                    characterName={member.characterName}
+                  />
+                ))}
+                {animeData.voiceActors.length > 5 && (
+                  <TouchableOpacity 
+                    style={styles.expandButton} 
+                    onPress={() => setIsCrewExpanded(!isCrewExpanded)}
+                  >
+                    <Text style={styles.expandButtonText}>
+                      {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <Text style={styles.noDataText}>No voice actor information available</Text>
+            )}
           </View>
-          
-          <View style={styles.crewRow}>
-            <Text style={styles.sectionLabel}>CAST & CREW</Text>
-            <View style={styles.crewList}>
-              {animeData.voiceActors.length > 0 ? (
-                <>
-                  {(isCrewExpanded ? animeData.voiceActors : animeData.voiceActors.slice(0, 5)).map((member, index) => (
-                    <CrewMember 
-                      key={index} 
-                      name={member.name} 
-                      role={member.role} 
-                      avatar={member.avatar}
-                      image={member.image}
-                    />
-                  ))}
-                  {animeData.voiceActors.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.expandButton} 
-                      onPress={() => setIsCrewExpanded(!isCrewExpanded)}
-                    >
-                      <Text style={styles.expandButtonText}>
-                        {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </>
-              ) : (
-                <Text style={styles.noDataText}>No voice actor information available</Text>
-              )}
-            </View>
-          </View>
-        </BlurView>
-      )}
+        </View>
+      </BlurView>
 
       {/* Reviews Section */}
-      {Platform.OS === 'web' ? (
-        <View style={styles.reviewsSectionWeb}>
-          <View style={styles.reviewsHeader}>
-            <Text style={styles.sectionLabel}>REVIEWS</Text>
-            <TouchableOpacity 
-              style={styles.addReviewButton}
-              onPress={() => navigation?.navigate('ReviewAnime', { 
-                animeId: animeData.id,
-                id: animeData.id,
-                title: animeData.title,
-                coverImage: animeData.coverImage 
-              })}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          
-          {animeData.reviews.length > 0 ? (
-            <>
-              {(() => {
-                const REVIEWS_PER_PAGE = 10;
-                const totalPages = Math.ceil(animeData.reviews.length / REVIEWS_PER_PAGE);
-                const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
-                const endIndex = startIndex + REVIEWS_PER_PAGE;
-                const currentReviews = animeData.reviews.slice(startIndex, endIndex);
-                
-                console.log('Total reviews:', animeData.reviews.length, 'Should show pagination:', animeData.reviews.length > REVIEWS_PER_PAGE);
-                
-                return (
-                  <>
-                    {currentReviews.map((review, index) => (
-                      <ReviewCard 
-                        key={startIndex + index}
-                        name={review.name}
-                        rating={review.rating}
-                        text={review.text}
-                        avatar={review.avatar}
-                      />
-                    ))}
-                    
-                    {animeData.reviews.length > REVIEWS_PER_PAGE && (
-                      <View style={styles.paginationContainer}>
-                        <TouchableOpacity 
-                          style={[
-                            styles.paginationButton,
-                            currentReviewPage === 1 && styles.paginationButtonDisabled
-                          ]}
-                          onPress={() => setCurrentReviewPage(prev => Math.max(1, prev - 1))}
-                          disabled={currentReviewPage === 1}
-                        >
-                          <Ionicons 
-                            name="chevron-back" 
-                            size={20} 
-                            color={currentReviewPage === 1 ? '#666' : '#fff'} 
-                          />
-                          <Text style={[
-                            styles.paginationButtonText,
-                            currentReviewPage === 1 && styles.paginationButtonTextDisabled
-                          ]}>Previous</Text>
-                        </TouchableOpacity>
-                        
-                        <Text style={styles.pageIndicator}>
-                          Page {currentReviewPage} of {totalPages}
-                        </Text>
-                        
-                        <TouchableOpacity 
-                          style={[
-                            styles.paginationButton,
-                            currentReviewPage === totalPages && styles.paginationButtonDisabled
-                          ]}
-                          onPress={() => setCurrentReviewPage(prev => Math.min(totalPages, prev + 1))}
-                          disabled={currentReviewPage === totalPages}
-                        >
-                          <Text style={[
-                            styles.paginationButtonText,
-                            currentReviewPage === totalPages && styles.paginationButtonTextDisabled
-                          ]}>Next</Text>
-                          <Ionicons 
-                            name="chevron-forward" 
-                            size={20} 
-                            color={currentReviewPage === totalPages ? '#666' : '#fff'} 
-                          />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </>
-                );
-              })()}
-            </>
-          ) : (
-            <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
-          )}
-        </View>
-      ) : (
-        <BlurView intensity={80} tint="dark" style={styles.reviewsSectionNative}>
+      <BlurView intensity={80} tint="dark" style={styles.reviewsSectionNative}>
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionLabel}>REVIEWS</Text>
             <TouchableOpacity 
@@ -585,7 +419,6 @@ const AnimeDetail = ({ route, navigation }) => {
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
           )}
         </BlurView>
-      )}
 
       {/* Related Shows Section */}
       <View style={styles.relatedSection}>
@@ -815,31 +648,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  descriptionSectionWeb: {
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    zIndex: 5,
-    position: 'relative',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 2,
-    borderRightColor: 'rgba(0, 0, 0, 0.3)',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-      },
-    }),
-  },
   descriptionSectionNative: {
     marginHorizontal: 20,
     borderRadius: 12,
@@ -944,29 +752,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 10,
   },
-  genreCrewSectionWeb: {
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 2,
-    borderRightColor: 'rgba(0, 0, 0, 0.3)',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-      },
-    }),
-  },
   genreCrewSectionNative: {
     marginHorizontal: 20,
     borderRadius: 12,
@@ -1001,7 +786,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
-    color: '#FFFFFF',
+    color: '#ffb3d9',
     marginBottom: 10,
   },
   genreList: {
@@ -1012,29 +797,6 @@ const styles = StyleSheet.create({
   
   crewList: {
     gap: 8,
-  },
-  reviewsSectionWeb: {
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.3)',
-    borderBottomWidth: 2,
-    borderBottomColor: 'rgba(0, 0, 0, 0.5)',
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(0, 0, 0, 0.3)',
-    borderRightWidth: 2,
-    borderRightColor: 'rgba(0, 0, 0, 0.3)',
-    ...Platform.select({
-      web: {
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
-      },
-    }),
   },
   reviewsSectionNative: {
     marginHorizontal: 20,
