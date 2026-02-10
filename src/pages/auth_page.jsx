@@ -345,7 +345,7 @@ const AuthPage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#0D0D0D',
   },
   scrollContent: {
     flexGrow: 1,

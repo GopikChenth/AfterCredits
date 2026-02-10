@@ -24,6 +24,7 @@ import StatusTag from '../components/details_page/StatusTag';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
+import { getMediaStatus, setMediaStatus, setWishlist } from '../services/mediaStatusService';
 
 
 const { width, height } = Dimensions.get('window');
@@ -36,7 +37,8 @@ const AnimeDetail = ({ route, navigation }) => {
   const [animeData, setAnimeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userStatus, setUserStatus] = useState(null); // 'watching', 'wishlist', 'dropped', or null
+  const [userStatus, setUserStatus] = useState(null); // 'watching', 'watched', 'dropped', or null
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const [dbReviews, setDbReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ count: 0, averageRating: 0 });
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
@@ -79,6 +81,34 @@ const AnimeDetail = ({ route, navigation }) => {
     
     fetchReviews();
   }, [animeId]);
+
+  // Fetch user's status for this anime
+  useEffect(() => {
+    const fetchStatus = async () => {
+      if (!animeId) return;
+      const result = await getMediaStatus('anime', animeId);
+      if (result.success && result.data) {
+        setUserStatus(result.data.status);
+        setIsWishlisted(result.data.is_wishlisted);
+      }
+    };
+    fetchStatus();
+  }, [animeId]);
+
+  // Handle status change
+  const handleStatusChange = async (newStatus) => {
+    setUserStatus(newStatus);
+    if (newStatus === 'watched' && isWishlisted) {
+      setIsWishlisted(false);
+    }
+    await setMediaStatus('anime', animeId, newStatus);
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async (wishlisted) => {
+    setIsWishlisted(wishlisted);
+    await setWishlist('anime', animeId, wishlisted);
+  };
 
   // Fetch anime details on mount
   useEffect(() => {
@@ -363,29 +393,12 @@ const AnimeDetail = ({ route, navigation }) => {
       {/* User Status Section */}
       <View style={styles.statusSection}>
         <Text style={styles.statusSectionLabel}>MY STATUS</Text>
-        <View style={styles.statusTagsContainer}>
-          <StatusTag 
-            label="Watching" 
-            icon="eye"
-            isActive={userStatus === 'watching'}
-            onPress={() => setUserStatus(userStatus === 'watching' ? null : 'watching')}
-            color="#FFB3C6"
-          />
-          <StatusTag 
-            label="Wishlist" 
-            icon="bookmark"
-            isActive={userStatus === 'wishlist'}
-            onPress={() => setUserStatus(userStatus === 'wishlist' ? null : 'wishlist')}
-            color="#A0C4FF"
-          />
-          <StatusTag 
-            label="Dropped" 
-            icon="close-circle"
-            isActive={userStatus === 'dropped'}
-            onPress={() => setUserStatus(userStatus === 'dropped' ? null : 'dropped')}
-            color="#FF9AA2"
-          />
-        </View>
+        <StatusTag 
+          status={userStatus}
+          isWishlisted={isWishlisted}
+          onStatusChange={handleStatusChange}
+          onWishlistToggle={handleWishlistToggle}
+        />
       </View>
 
       {/* Genre and Cast & Crew Section */}
@@ -647,7 +660,7 @@ const AnimeDetail = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#0D0D0D',
   },
   scrollView: {
     flex: 1,

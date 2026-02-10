@@ -211,7 +211,7 @@ const ReviewAnime = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#0D0D0D',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: '#fff',
-    backgroundColor: '#1a1a1a', // Or slightly off-white '#FAFAFA'
+    backgroundColor: '#0D0D0D',
   },
   tagsContainer: {
     paddingHorizontal: 16,

@@ -25,6 +25,8 @@ const NavBar = ({ activeTab = 'home', onTabChange }) => {
       navigation.navigate(homeRoute);
     } else if (tabId === 'profile') {
       navigation.navigate('ProfilePage');
+    } else if (tabId === 'podium') {
+      navigation.navigate('PodiumPage');
     }
     // Add other tab navigation here as needed
     
@@ -59,7 +61,7 @@ const NavBar = ({ activeTab = 'home', onTabChange }) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#0D0D0D',
     borderTopWidth: 0,
     paddingBottom: 8,
     paddingTop: 8,

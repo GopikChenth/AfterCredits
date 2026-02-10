@@ -18,6 +18,7 @@ import HomeManga from './src/pages/home_manga';
 
 // Common Pages
 import ProfilePage from './src/pages/profile_page';
+import PodiumPage from './src/pages/podium_page';
 import AuthPage from './src/pages/auth_page';
 
 // Context
@@ -60,6 +61,7 @@ export default function App() {
             
             {/* Common Routes */}
             <Stack.Screen name="ProfilePage" component={ProfilePage} />
+            <Stack.Screen name="PodiumPage" component={PodiumPage} />
             <Stack.Screen name="AuthPage" component={AuthPage} />
           </Stack.Navigator>
           <StatusBar style="auto" />
