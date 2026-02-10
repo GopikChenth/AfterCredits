@@ -484,7 +484,7 @@ const AnimeDetail = ({ route, navigation }) => {
                         name={(review.profiles?.use_display_name && review.profiles?.display_name) ? review.profiles.display_name : (review.profiles?.username || `User ${review.user_id.substring(0, 8)}`)}
                         rating={Math.ceil(review.overall_rating / 2)}
                         text={review.content}
-                        avatar={`#${((review.user_id.charCodeAt(0) * 12345) % 16777215).toString(16).padStart(6, '0')}`}
+                        avatar={review.profiles?.avatar_url || null}
                       />
                     ))}
                     

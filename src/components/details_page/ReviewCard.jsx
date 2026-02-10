@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const ReviewCard = ({ name, rating, text, avatar }) => {
   const renderStars = () => {
     return Array.from({ length: 5 }, (_, index) => (
-      <Text key={index} style={[styles.star, { color: index < rating ? '#000' : '#aaa' }]}>
+      <Text key={index} style={[styles.star, { color: index < rating ? '#FFB3C6' : '#444' }]}>
         ★
       </Text>
     ));
@@ -13,7 +14,13 @@ const ReviewCard = ({ name, rating, text, avatar }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: avatar }]} />
+        {avatar ? (
+          <Image source={{ uri: avatar }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <Ionicons name="person" size={16} color="#666" />
+          </View>
+        )}
         <View style={styles.userInfo}>
           <Text style={styles.name}>{name}</Text>
           <View style={styles.rating}>
@@ -28,7 +35,9 @@ const ReviewCard = ({ name, rating, text, avatar }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1A1A1A',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     padding: 15,
     marginBottom: 10,
@@ -39,10 +48,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  avatarFallback: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    marginRight: 12,
+    backgroundColor: '#2A2A2A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   userInfo: {
     flex: 1,
@@ -55,7 +77,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#000',
+    color: '#fff',
     flex: 1,
   },
   rating: {
@@ -70,7 +92,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#666',
+    color: '#999',
     lineHeight: 16,
   },
 });
