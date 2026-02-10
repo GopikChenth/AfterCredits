@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getMediaTheme } from '../../utils/mediaThemes';
+import { supabase } from '../../services/supabase';
 
 const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
   const theme = getMediaTheme('anime');
@@ -53,12 +54,48 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
     }
   };
 
+  // Upload avatar to Supabase Storage and return public URL
+  const uploadAvatar = async (localUri) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Read the file and create a blob for upload
+      const response = await fetch(localUri);
+      const blob = await response.blob();
+      
+      // Create unique filename using user ID and timestamp
+      const fileExt = localUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, blob, {
+          contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+          upsert: true,
+        });
+
+      if (error) throw error;
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      throw error;
+    }
+  };
+
   // Handle save
   const handleSave = async () => {
     // Use current values if fields are empty
     const newUsername = username.trim() || profile?.username || '';
     const newDisplayName = displayName.trim() || profile?.display_name || '';
-    const newAvatarUrl = avatarUri || profile?.avatar_url || null;
 
     if (!newUsername) {
       Alert.alert('Error', 'Name cannot be empty');
@@ -72,20 +109,38 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
 
     setLoading(true);
     
-    const updates = {
-      username: newUsername,
-      display_name: newDisplayName || null,
-      avatar_url: newAvatarUrl,
-    };
+    try {
+      let newAvatarUrl = profile?.avatar_url || null;
 
-    const result = await onSave(updates);
-    setLoading(false);
+      // If the user picked a new local image, upload it to Supabase Storage
+      if (avatarUri && avatarUri !== profile?.avatar_url) {
+        // Only upload if it's a local file URI (not already a remote URL)
+        if (avatarUri.startsWith('file://') || avatarUri.startsWith('content://') || !avatarUri.startsWith('http')) {
+          newAvatarUrl = await uploadAvatar(avatarUri);
+        } else {
+          newAvatarUrl = avatarUri;
+        }
+      }
 
-    if (result.success) {
-      Alert.alert('Success', 'Profile updated successfully!');
-      onClose();
-    } else {
-      Alert.alert('Error', result.error || 'Failed to update profile');
+      const updates = {
+        username: newUsername,
+        display_name: newDisplayName || null,
+        avatar_url: newAvatarUrl,
+      };
+
+      const result = await onSave(updates);
+      setLoading(false);
+
+      if (result.success) {
+        Alert.alert('Success', 'Profile updated successfully!');
+        onClose();
+      } else {
+        Alert.alert('Error', result.error || 'Failed to update profile');
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Save error:', error);
+      Alert.alert('Error', 'Failed to upload avatar. Please try again.');
     }
   };
 

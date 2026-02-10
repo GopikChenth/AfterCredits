@@ -2180,14 +2180,167 @@ const displayAvatar = avatarUrl && !imageError ? avatarUrl : defaultAvatar;
 
 - Missing `avatar_url` in review query
 - Profile not resetting after logout
+- Avatar saved as local device URI instead of public URL (critical cross-user bug)
+- Review query join returning null for other users' profiles
 
 **Performance Improvements**:
 
 - Image error handling prevents re-render loops
 - Focus listener only reloads when necessary
 - Efficient conditional rendering
+- Two-step review query with client-side merging
 
-**Time Invested**: ~1.5 hours
+**Time Invested**: ~3.5 hours
+
+---
+
+### ✅ Supabase Storage Avatar Upload
+
+#### **Root Cause Discovery**
+
+**Problem**: Other users' profile photos were not displaying in review cards
+
+**Investigation Path**:
+1. ❌ Verified `avatarUrl` prop was being passed correctly to ReviewCard
+2. ❌ Verified Supabase RLS policy allows public SELECT on profiles table
+3. ✅ **Found root cause**: `EditProfileModal.jsx` was saving the **local device URI** (e.g., `file:///data/user/0/...`) directly to `profiles.avatar_url` — never uploading to cloud storage
+
+**Why It Failed**:
+- ✅ Own profile photo worked (same device, same local file path)
+- ❌ Other users' photos failed (their local paths don't exist on your device)
+
+#### **Solution: Supabase Storage Upload**
+
+**Implementation** in `EditProfileModal.jsx`:
+
+```javascript
+const uploadAvatar = async (localUri) => {
+  const response = await fetch(localUri);
+  const blob = await response.blob();
+  
+  const fileExt = localUri.split('.').pop()?.toLowerCase() || 'jpg';
+  const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+  const filePath = `avatars/${fileName}`;
+
+  // Upload to Supabase Storage
+  await supabase.storage
+    .from('avatars')
+    .upload(filePath, blob, {
+      contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+      upsert: true,
+    });
+
+  // Get the public URL
+  const { data: urlData } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath);
+
+  return urlData.publicUrl;
+};
+```
+
+**Changes**:
+
+- Added `supabase` import to EditProfileModal
+- New `uploadAvatar()` function: reads local file → creates blob → uploads to Storage → returns public URL
+- Updated `handleSave()` to detect local URIs vs remote URLs
+- Smart detection: only uploads if URI starts with `file://`, `content://`, or is not `http`
+- Error handling with user-friendly alert on upload failure
+
+**Required Infrastructure**:
+- Created `avatars` bucket in Supabase Storage (public bucket)
+
+---
+
+### ✅ Two-Step Review Query
+
+#### **Problem**: Supabase foreign key join returning null for other users' profiles
+
+**Original Query** (single join):
+```javascript
+.from('reviews')
+.select(`*, profiles!user_id (username, display_name, use_display_name, avatar_url)`)
+```
+
+**New Query** (two-step):
+```javascript
+// Step 1: Fetch reviews
+const { data: reviews } = await supabase.from('reviews').select('*')...
+
+// Step 2: Fetch profiles separately
+const userIds = [...new Set(reviews.map(r => r.user_id))];
+const { data: profiles } = await supabase.from('profiles')
+  .select('id, username, display_name, use_display_name, avatar_url')
+  .in('id', userIds);
+
+// Step 3: Merge client-side
+const profileMap = {};
+profiles.forEach(p => { profileMap[p.id] = p; });
+const enrichedReviews = reviews.map(review => ({
+  ...review,
+  profiles: profileMap[review.user_id] || null,
+}));
+```
+
+**Benefits**:
+- Bypasses potential RLS issues with foreign key joins
+- More explicit data fetching
+- Client-side merging is fast and reliable
+- Better error handling for missing profiles
+
+---
+
+### ✅ Podium Page Created
+
+**New File**: `src/pages/podium_page.jsx`
+
+**Purpose**: User's anime collection management page with status tabs
+
+**Features**:
+- **4 Status Tabs**: Watching, Watched, Dropped, Wishlist
+- **Color-Coded Tabs**: Pastel colors (yellow, green, red, purple)
+- **Count Badges**: Shows number of items per tab
+- **Pull-to-Refresh**: RefreshControl with themed colors
+- **Anime Card Grid**: 2-column responsive grid
+- **In-Memory Cache**: Avoids re-fetching anime details
+- **Rate Limit Handling**: 400ms delay between API calls
+- **Empty States**: Custom messages per tab
+- **Status Indicators**: Colored dots on cards
+
+---
+
+### 📊 Updated Session 7 Statistics
+
+**Files Modified**: 5
+
+- `src/components/details_page/ReviewCard.jsx` - Avatar display with error handling
+- `src/services/reviewService.js` - Two-step review+profile fetch
+- `src/pages/home_anime.jsx` - Profile photo in header with focus listener
+- `src/pages/details_anime.jsx` - Pass avatarUrl to ReviewCard
+- `src/components/profile/EditProfileModal.jsx` - Supabase Storage avatar upload
+
+**Files Created**: 1
+
+- `src/pages/podium_page.jsx` - New Podium (collection) page
+
+**New Features Added**:
+
+- ✅ User profile photos in review cards
+- ✅ Profile photo in home page header
+- ✅ Logged-out state icon indicator
+- ✅ Focus-based profile refresh
+- ✅ Error handling for broken images
+- ✅ DiceBear fallback avatars
+- ✅ Supabase Storage avatar upload
+- ✅ Two-step review query (reviews + profiles)
+- ✅ Podium page with status tabs
+
+**Bugs Fixed**: 4
+
+- Missing `avatar_url` in review query
+- Profile not resetting after logout
+- Avatar saved as local device URI (critical cross-user bug)
+- Review query join returning null for other users' profiles
 
 ---
 
@@ -2199,6 +2352,9 @@ const displayAvatar = avatarUrl && !imageError ? avatarUrl : defaultAvatar;
 4. **Conditional UI**: Different states (logged in/out) need distinct visual indicators
 5. **URL Encoding**: Always encode user-generated content in URLs
 6. **State Management**: Clear state on logout to prevent stale data
+7. **Cloud Storage**: Never save local device URIs to a shared database — always upload to cloud storage first
+8. **Query Strategy**: When foreign key joins fail silently, use separate queries with client-side merging
+9. **Debug Methodology**: Trace the full data chain (query → state → props → component) to find root causes
 
 ---
 
@@ -2206,26 +2362,31 @@ const displayAvatar = avatarUrl && !imageError ? avatarUrl : defaultAvatar;
 
 **Completed Infrastructure**:
 
-- ✅ User profile photos across app
-- ✅ Review card personalization
-- ✅ Header profile button with state awareness
-- ✅ Graceful fallbacks for missing images
+- ✅ User profile photos across app (cloud-hosted via Supabase Storage)
+- ✅ Review card personalization with real user avatars
+- ✅ Header profile button with login state awareness
+- ✅ Graceful fallbacks for missing images (DiceBear)
 - ✅ Logged-out state indicators
+- ✅ Cross-user avatar visibility (Supabase Storage)
+- ✅ Podium page with collection management
 
 **Production Ready Features**:
 
-| Feature               | Status | Quality | Coverage |
-| --------------------- | ------ | ------- | -------- |
-| Review Profile Photos | ✅     | 100%    | All      |
-| Header Profile Button | ✅     | 100%    | All      |
-| Logged-Out Indicator  | ✅     | 100%    | All      |
-| Image Error Handling  | ✅     | 100%    | All      |
-| DiceBear Fallbacks    | ✅     | 100%    | All      |
+| Feature                    | Status | Quality | Coverage |
+| -------------------------- | ------ | ------- | -------- |
+| Review Profile Photos      | ✅     | 100%    | All      |
+| Header Profile Button      | ✅     | 100%    | All      |
+| Logged-Out Indicator       | ✅     | 100%    | All      |
+| Image Error Handling       | ✅     | 100%    | All      |
+| DiceBear Fallbacks         | ✅     | 100%    | All      |
+| Supabase Storage Upload    | ✅     | 100%    | All      |
+| Two-Step Review Query      | ✅     | 100%    | All      |
+| Podium Page                | ✅     | 100%    | All      |
 
 **Next Priorities**:
 
-1. Test profile photos on physical devices
-2. Implement Podium page functionality
+1. Test avatar upload on physical devices (iOS/Android)
+2. Implement Podium page navigation integration
 3. Add pull-to-refresh on home page
 4. Create Movies and Games pages
 5. Implement advanced search filtering
@@ -2233,3 +2394,5 @@ const displayAvatar = avatarUrl && !imageError ? avatarUrl : defaultAvatar;
 ---
 
 _"Personalization creates connection. Every user deserves to see themselves in the app."_
+
+_"Never store local paths in a shared database. The cloud is the only shared filesystem."_

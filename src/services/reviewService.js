@@ -55,24 +55,37 @@ export const submitReview = async (reviewData) => {
  */
 export const getMediaReviews = async (mediaType, mediaId) => {
   try {
-    const { data, error } = await supabase
+    // Step 1: Fetch reviews
+    const { data: reviews, error: reviewsError } = await supabase
       .from('reviews')
-      .select(`
-        *,
-        profiles!user_id (
-          username,
-          display_name,
-          use_display_name,
-          avatar_url
-        )
-      `)
+      .select('*')
       .eq('media_type', mediaType)
       .eq('media_id', mediaId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (reviewsError) throw reviewsError;
+    if (!reviews || reviews.length === 0) return { success: true, reviews: [] };
 
-    return { success: true, reviews: data };
+    // Step 2: Fetch profiles for all review authors separately
+    const userIds = [...new Set(reviews.map(r => r.user_id))];
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, use_display_name, avatar_url')
+      .in('id', userIds);
+
+    // Build a lookup map (profiles may be null if RLS blocks access)
+    const profileMap = {};
+    if (!profilesError && profiles) {
+      profiles.forEach(p => { profileMap[p.id] = p; });
+    }
+
+    // Step 3: Merge profile data into reviews
+    const enrichedReviews = reviews.map(review => ({
+      ...review,
+      profiles: profileMap[review.user_id] || null,
+    }));
+
+    return { success: true, reviews: enrichedReviews };
   } catch (error) {
     console.error('Error fetching reviews:', error);
     return { success: false, error: error.message };
