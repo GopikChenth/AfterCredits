@@ -62,7 +62,8 @@ export const getMediaReviews = async (mediaType, mediaId) => {
         profiles!user_id (
           username,
           display_name,
-          use_display_name
+          use_display_name,
+          avatar_url
         )
       `)
       .eq('media_type', mediaType)

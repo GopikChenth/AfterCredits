@@ -1,7 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 
-const ReviewCard = ({ name, rating, text, avatar }) => {
+const ReviewCard = ({ name, rating, text, avatar, avatarUrl }) => {
+  const [imageError, setImageError] = useState(false);
+  
   const renderStars = () => {
     return Array.from({ length: 5 }, (_, index) => (
       <Text key={index} style={[styles.star, { color: index < rating ? '#000' : '#aaa' }]}>
@@ -10,10 +12,17 @@ const ReviewCard = ({ name, rating, text, avatar }) => {
     ));
   };
 
+  const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(name || 'user')}`;
+  const displayAvatar = (avatarUrl && !imageError) ? avatarUrl : defaultAvatar;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: avatar }]} />
+        <Image
+          source={{ uri: displayAvatar }}
+          style={styles.avatar}
+          onError={() => setImageError(true)}
+        />
         <View style={styles.userInfo}>
           <Text style={styles.name}>{name}</Text>
           <View style={styles.rating}>
