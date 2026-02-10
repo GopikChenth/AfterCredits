@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,12 +9,15 @@ import {
   ScrollView, 
   Platform,
   KeyboardAvoidingView,
-  StatusBar
+  StatusBar,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getMediaTheme } from '../utils/mediaThemes';
 import DateSelector from '../components/review_page/DateSelector';
+import { submitReview, getUserReview } from '../services/reviewService';
 
 const ReviewAnime = ({ navigation, route }) => {
   const theme = getMediaTheme('anime');
@@ -22,9 +25,13 @@ const ReviewAnime = ({ navigation, route }) => {
   const { 
     title = 'Unknown Title', 
     coverImage = 'https://via.placeholder.com/150',
-    id 
+    id,
+    animeId 
   } = route?.params || {};
 
+  const mediaId = animeId || id;
+
+  // Base review states
   const [rating, setRating] = useState(0);
   const [liked, setLiked] = useState(false);
   const [reviewText, setReviewText] = useState('');
@@ -32,12 +39,51 @@ const ReviewAnime = ({ navigation, route }) => {
   const [noSpoilers, setNoSpoilers] = useState(false);
   const [date, setDate] = useState(new Date());
 
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleSave = async () => {
+    // Validation
+    if (rating === 0) {
+      Alert.alert('Rating Required', 'Please rate the anime before submitting.');
+      return;
+    }
 
-  const handleSave = () => {
-    // Save logic placeholder
-    console.log({ id, rating, liked, reviewText, isFirstTime, noSpoilers });
-    navigation.goBack();
+    if (!reviewText.trim()) {
+      Alert.alert('Review Required', 'Please write a review.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare review data (simplified - no detailed ratings)
+      const reviewData = {
+        mediaType: 'anime',
+        mediaId: mediaId,
+        overallRating: rating * 2, // Convert 1-5 stars to 1-10
+        content: reviewText.trim(),
+        isSpoiler: !noSpoilers, // Invert the "no spoilers" checkbox
+      };
+
+      // Submit to database
+      const result = await submitReview(reviewData);
+
+      if (result.success) {
+        Alert.alert(
+          'Success!', 
+          'Your review has been submitted.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('Error', result.error || 'Failed to submit review. Please try again.');
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

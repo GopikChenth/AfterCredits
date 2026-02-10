@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
+import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
 
 
 const { width, height } = Dimensions.get('window');
@@ -35,6 +37,9 @@ const AnimeDetail = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userStatus, setUserStatus] = useState(null); // 'watching', 'wishlist', 'dropped', or null
+  const [dbReviews, setDbReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState({ count: 0, averageRating: 0 });
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   
   // Gesture and animation refs
   const translateX = useRef(new Animated.Value(0)).current;
@@ -45,6 +50,35 @@ const AnimeDetail = ({ route, navigation }) => {
   
   // Get anime theme with integrated font utilities
   const theme = getMediaTheme('anime');
+
+  // Fetch reviews from database
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!animeId) return;
+      
+      setIsLoadingReviews(true);
+      
+      try {
+        // Fetch reviews
+        const reviewsResult = await getMediaReviews('anime', animeId);
+        if (reviewsResult.success) {
+          setDbReviews(reviewsResult.reviews || []);
+        }
+        
+        // Fetch stats
+        const statsResult = await getMediaReviewStats('anime', animeId);
+        if (statsResult.success) {
+          setReviewStats(statsResult.stats);
+        }
+      } catch (error) {
+        console.error('Error fetching reviews:', error);
+      } finally {
+        setIsLoadingReviews(false);
+      }
+    };
+    
+    fetchReviews();
+  }, [animeId]);
 
   // Fetch anime details on mount
   useEffect(() => {
@@ -322,7 +356,7 @@ const AnimeDetail = ({ route, navigation }) => {
       {/* Stats Section */}
       <View style={styles.statsSection}>
         <StatsPill label="Popularity" count={animeData.stats.members} color="#FF9AA2" />
-        <StatsPill label="Reviews" count={animeData.stats.reviews} color="#B5EAD7" />
+        <StatsPill label="Reviews" count={reviewStats.count} color="#B5EAD7" />
         <StatsPill label="Score" count={`${animeData.stats.score}%`} color="#A0C4FF" />
       </View>
 
@@ -420,30 +454,28 @@ const AnimeDetail = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
           
-          {animeData.reviews.length > 0 ? (
+          {dbReviews.length > 0 ? (
             <>
               {(() => {
                 const REVIEWS_PER_PAGE = 10;
-                const totalPages = Math.ceil(animeData.reviews.length / REVIEWS_PER_PAGE);
+                const totalPages = Math.ceil(dbReviews.length / REVIEWS_PER_PAGE);
                 const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
                 const endIndex = startIndex + REVIEWS_PER_PAGE;
-                const currentReviews = animeData.reviews.slice(startIndex, endIndex);
-                
-                console.log('Total reviews:', animeData.reviews.length, 'Should show pagination:', animeData.reviews.length > REVIEWS_PER_PAGE);
+                const currentReviews = dbReviews.slice(startIndex, endIndex);
                 
                 return (
                   <>
-                    {currentReviews.map((review, index) => (
+                    {currentReviews.map((review) => (
                       <ReviewCard 
-                        key={startIndex + index}
-                        name={review.name}
-                        rating={review.rating}
-                        text={review.text}
-                        avatar={review.avatar}
+                        key={review.id}
+                        name={(review.profiles?.use_display_name && review.profiles?.display_name) ? review.profiles.display_name : (review.profiles?.username || `User ${review.user_id.substring(0, 8)}`)}
+                        rating={Math.ceil(review.overall_rating / 2)}
+                        text={review.content}
+                        avatar={`#${((review.user_id.charCodeAt(0) * 12345) % 16777215).toString(16).padStart(6, '0')}`}
                       />
                     ))}
                     
-                    {animeData.reviews.length > REVIEWS_PER_PAGE && (
+                    {dbReviews.length > REVIEWS_PER_PAGE && (
                       <View style={styles.paginationContainer}>
                         <TouchableOpacity 
                           style={[
@@ -492,6 +524,8 @@ const AnimeDetail = ({ route, navigation }) => {
                 );
               })()}
             </>
+          ) : isLoadingReviews ? (
+            <ActivityIndicator color="#fff" style={{ marginVertical: 20 }} />
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
           )}
