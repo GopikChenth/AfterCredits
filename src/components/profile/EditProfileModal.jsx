@@ -60,30 +60,39 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Read the file and create a blob for upload
-      const response = await fetch(localUri);
-      const blob = await response.blob();
-      
-      // Create unique filename using user ID and timestamp
+      // Determine file extension and MIME type
       const fileExt = localUri.split('.').pop()?.toLowerCase() || 'jpg';
+      const mimeType = fileExt === 'png' ? 'image/png' : 'image/jpeg';
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
+
+      // Use FormData for React Native file upload (fetch+blob is unreliable on RN)
+      const formData = new FormData();
+      formData.append('file', {
+        uri: localUri,
+        name: fileName,
+        type: mimeType,
+      });
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, {
-          contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
+        .upload(filePath, formData, {
+          contentType: mimeType,
           upsert: true,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase upload error details:', JSON.stringify(error));
+        throw error;
+      }
 
       // Get the public URL
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
+      console.log('Avatar uploaded successfully:', urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error) {
       console.error('Avatar upload error:', error);
