@@ -9,6 +9,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,8 @@ import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from 
 import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';
+import { getUserProfile } from '../services/profile';
+import { Ionicons } from '@expo/vector-icons';
 
 const HomeAnime = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -57,6 +60,9 @@ const HomeAnime = ({ navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
+  // State for user profile
+  const [userProfile, setUserProfile] = useState(null);
+
   // Listen for screen size changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener('change', () => {
@@ -67,6 +73,28 @@ const HomeAnime = ({ navigation }) => {
 
     return () => subscription?.remove();
   }, []);
+
+  // Fetch user profile on mount and when page regains focus (e.g., after logout)
+  useEffect(() => {
+    const loadProfile = async () => {
+      const result = await getUserProfile();
+      if (result.success && result.profile) {
+        setUserProfile(result.profile);
+      } else {
+        // Clear profile if not logged in
+        setUserProfile(null);
+      }
+    };
+    
+    loadProfile();
+    
+    // Add focus listener to reload profile when returning to this page
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadProfile();
+    });
+    
+    return unsubscribe;
+  }, [navigation]);
 
   // Fetch anime data based on category
   const fetchAnimeData = useCallback(async (category) => {
@@ -216,7 +244,18 @@ const HomeAnime = ({ navigation }) => {
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}
         >
-          <View style={styles.profileIcon} />
+          {userProfile ? (
+            <Image
+              source={{ 
+                uri: userProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`
+              }}
+              style={styles.profileIcon}
+            />
+          ) : (
+            <View style={styles.profileIconContainer}>
+              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 

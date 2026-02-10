@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ReviewCard = ({ name, rating, text, avatar }) => {
+const ReviewCard = ({ name, rating, text, avatar, avatarUrl }) => {
+  const [imageError, setImageError] = useState(false);
+
   const renderStars = () => {
     return Array.from({ length: 5 }, (_, index) => (
       <Text key={index} style={[styles.star, { color: index < rating ? '#FFB3C6' : '#444' }]}>
@@ -11,16 +13,27 @@ const ReviewCard = ({ name, rating, text, avatar }) => {
     ));
   };
 
+  // Determine avatar to display:
+  // 1. avatarUrl prop (if present)
+  // 2. avatar prop (if user is logged in and it's a valid URL string, not a color hex)
+  // 3. DiceBear fallback based on name
+  const isColorHex = (str) => typeof str === 'string' && str.startsWith('#');
+  
+  let imageUrl = null;
+  if (avatarUrl) imageUrl = avatarUrl;
+  else if (avatar && !isColorHex(avatar)) imageUrl = avatar; // Assume it's a URL if not hex
+  
+  const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(name || 'user')}`;
+  const displayAvatar = (imageUrl && !imageError) ? imageUrl : defaultAvatar;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        {avatar ? (
-          <Image source={{ uri: avatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Ionicons name="person" size={16} color="#666" />
-          </View>
-        )}
+        <Image
+          source={{ uri: displayAvatar }}
+          style={styles.avatar}
+          onError={() => setImageError(true)}
+        />
         <View style={styles.userInfo}>
           <Text style={styles.name}>{name}</Text>
           <View style={styles.rating}>
@@ -54,17 +67,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.1)',
-  },
-  avatarFallback: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    marginRight: 12,
     backgroundColor: '#2A2A2A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   userInfo: {
     flex: 1,
