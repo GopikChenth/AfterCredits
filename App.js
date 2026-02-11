@@ -9,6 +9,7 @@ import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 import HomeAnime from './src/pages/home_anime';
 import DetailsAnime from './src/pages/details_anime';
 import ReviewAnime from './src/pages/review_anime';
+import DiscoverAnime from './src/pages/discover_anime';
 
 // Other Media Pages
 import HomeMovies from './src/pages/home_movies';
@@ -52,6 +53,7 @@ export default function App() {
             <Stack.Screen name="HomeAnime" component={HomeAnime} />
             <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
             <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
+            <Stack.Screen name="DiscoverAnime" component={DiscoverAnime} />
             
             {/* Other Media Routes */}
             <Stack.Screen name="HomeMovies" component={HomeMovies} />

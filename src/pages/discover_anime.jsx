@@ -1,0 +1,161 @@
+import React from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  StatusBar,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import NavBar from '../components/homepage/NavBar';
+import DiscoverPost from '../components/discover/DiscoverPost';
+import { getMediaTheme } from '../utils/mediaThemes';
+
+// Dummy data — curated anime lists from users
+const DUMMY_POSTS = [
+  {
+    id: '1',
+    username: 'Jake',
+    avatarUrl: null,
+    date: '06/06/2025',
+    title: 'Anime that should be watched by anyone atleast once in a life before u die.',
+    description: 'This is my list based on my years of anime watching experience.',
+    animeCovers: [
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-C6FPmWm59CyP.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-lawCkEPjOFMq.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-NpIIobuQNbJW.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-KJTQz9AIm6Wk.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-RoPwgrZ32gM3.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-PEn1CTc93blC.jpg' },
+    ],
+  },
+  {
+    id: '2',
+    username: 'Sakura',
+    avatarUrl: null,
+    date: '05/28/2025',
+    title: 'Top 5 hidden gem anime most people have never heard of',
+    description: 'These are criminally underrated shows that deserve way more attention. Trust me on this.',
+    animeCovers: [
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx99426-BZ0VhJOUMPam.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21827-10F6m50H4GJK.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-UMb6Kl7ZL0Db.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21202-TfzXuWQf2oLQ.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx104464-cIUMHS6VDGRV.jpg' },
+    ],
+  },
+  {
+    id: '3',
+    username: 'NarutoFan99',
+    avatarUrl: null,
+    date: '05/15/2025',
+    title: 'Best anime to binge watch on a rainy weekend 🌧️',
+    description: 'Grab some snacks, get cozy, and start any of these. You won\'t regret it.',
+    animeCovers: [
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20605-515yShPMNGkC.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20755-q0bGuVwuzQMy.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4pEFseh.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21856-gutV0czqOSal.jpg' },
+    ],
+  },
+  {
+    id: '4',
+    username: 'AnimeMaster',
+    avatarUrl: null,
+    date: '04/30/2025',
+    title: 'Anime with the best villains of all time',
+    description: 'A great villain can make or break a show. These anime have the most iconic antagonists ever written.',
+    animeCovers: [
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-lawCkEPjOFMq.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-NpIIobuQNbJW.png' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-C6FPmWm59CyP.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20605-515yShPMNGkC.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-RoPwgrZ32gM3.jpg' },
+    ],
+  },
+  {
+    id: '5',
+    username: 'CasualViewer',
+    avatarUrl: null,
+    date: '04/12/2025',
+    title: 'Anime for people who don\'t watch anime',
+    description: 'Trying to get your friends into anime? Start them with these. No filler, no cringe, just storytelling.',
+    animeCovers: [
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-KJTQz9AIm6Wk.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-PEn1CTc93blC.jpg' },
+      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4pEFseh.jpg' },
+    ],
+  },
+];
+
+const DiscoverAnime = ({ navigation }) => {
+  const theme = getMediaTheme('anime');
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Discover</Text>
+        </View>
+
+        {/* Feed */}
+        <ScrollView
+          style={styles.feed}
+          contentContainerStyle={styles.feedContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {DUMMY_POSTS.map((post) => (
+            <DiscoverPost
+              key={post.id}
+              username={post.username}
+              avatarUrl={post.avatarUrl}
+              date={post.date}
+              title={post.title}
+              description={post.description}
+              animeCovers={post.animeCovers}
+            />
+          ))}
+          
+          {/* Bottom spacer for NavBar */}
+          <View style={{ height: 20 }} />
+        </ScrollView>
+      </View>
+
+      {/* Bottom NavBar */}
+      <NavBar activeTab="discover" />
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#0D0D0D',
+  },
+  headerContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: 'Agdasima-Bold',
+    color: '#fff',
+    letterSpacing: 1,
+  },
+  feed: {
+    flex: 1,
+  },
+  feedContent: {
+    paddingBottom: 10,
+  },
+});
+
+export default DiscoverAnime;

@@ -27,8 +27,9 @@ const NavBar = ({ activeTab = 'home', onTabChange }) => {
       navigation.navigate('ProfilePage');
     } else if (tabId === 'podium') {
       navigation.navigate('PodiumPage');
+    } else if (tabId === 'discover') {
+      navigation.navigate('DiscoverAnime');
     }
-    // Add other tab navigation here as needed
     
     if (onTabChange) {
       onTabChange(tabId);
