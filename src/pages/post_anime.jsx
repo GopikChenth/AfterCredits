@@ -7,8 +7,8 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import NavBar from '../components/homepage/NavBar';
-import DiscoverPost from '../components/discover/DiscoverPost';
+
+import ListPost from '../components/Post_page/ListPost';
 import { getMediaTheme } from '../utils/mediaThemes';
 
 // Dummy data — curated anime lists from users
@@ -88,7 +88,7 @@ const DUMMY_POSTS = [
   },
 ];
 
-const DiscoverAnime = ({ navigation }) => {
+const PostPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
 
   return (
@@ -98,7 +98,8 @@ const DiscoverAnime = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <Text style={styles.headerTitle}>Post</Text>
+          <Text style={styles.headerSubtitle}>Curated anime lists from the community</Text>
         </View>
 
         {/* Feed */}
@@ -108,7 +109,7 @@ const DiscoverAnime = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
         >
           {DUMMY_POSTS.map((post) => (
-            <DiscoverPost
+            <ListPost
               key={post.id}
               username={post.username}
               avatarUrl={post.avatarUrl}
@@ -124,8 +125,6 @@ const DiscoverAnime = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      {/* Bottom NavBar */}
-      <NavBar activeTab="discover" />
     </SafeAreaView>
   );
 };
@@ -140,15 +139,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D0D0D',
   },
   headerContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 28,
-    fontFamily: 'Agdasima-Bold',
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: 'Agdasima',
     color: '#fff',
     letterSpacing: 1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+    marginTop: 2,
   },
   feed: {
     flex: 1,
@@ -158,4 +165,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DiscoverAnime;
+export default PostPage;

@@ -10,11 +10,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MediaCard from '../components/homepage/Card';
-import NavBar from '../components/homepage/NavBar';
-import CategoryPill from '../components/homepage/CategoryPill';
-import SideBar from '../components/homepage/SideBar';
-import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
+import MediaCard from '../components/home_page/Card';
+
+import CategoryPill from '../components/home_page/CategoryPill';
+import SideBar from '../components/home_page/SideBar';
+import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_movies';
 import { getMediaTheme } from '../utils/mediaThemes';
@@ -200,14 +200,6 @@ const HomeMovies = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <NavBar 
-        activeTab="home" 
-        onTabChange={(tab) => {
-          if (tab === 'profile') navigation.navigate('ProfilePage');
-          else if (tab === 'home') navigation.navigate('HomeAnime'); // Go back to Anime home
-        }} 
-      />
 
       {/* Search Bar */}
       <KeyboardAwareSearchBar 
@@ -215,7 +207,7 @@ const HomeMovies = ({ navigation }) => {
         placeholder="Search movies..."
         onChangeText={(text) => console.log('Search:', text)}
         onCancel={() => console.log('Search cancelled')}
-        defaultBottom={93}
+        defaultBottom={8}
         keyboardOffset={24}
         accentColor={theme.accent}
       />
@@ -232,7 +224,7 @@ const HomeMovies = ({ navigation }) => {
             // Already on movie page, just close sidebar
             setIsSidebarVisible(false);
           } else if (section === 'anime') {
-            navigation.navigate('HomeAnime');
+            navigation.navigate('MainTabs', { screen: 'HomeAnime' });
           } else if (section === 'game') {
             navigation.navigate('HomeGames');
           } else if (section === 'comic') {

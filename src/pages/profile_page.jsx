@@ -17,7 +17,7 @@ import { getUserProfile, updateAnonymousMode, updateProfile } from '../services/
 import { signOut } from '../services/auth';
 import { getPublicName, getFirstName } from '../utils/userUtils';
 import { getSettings, updateSettings } from '../services/settings';
-import EditProfileModal from '../components/profile/EditProfileModal';
+import EditProfileModal from '../components/profile_page/EditProfileModal';
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');

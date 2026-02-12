@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import NavBar from '../components/homepage/NavBar';
+
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
 import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
@@ -282,8 +282,6 @@ const PodiumPage = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <NavBar activeTab="podium" />
     </SafeAreaView>
   );
 };

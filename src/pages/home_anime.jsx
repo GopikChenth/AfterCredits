@@ -13,14 +13,14 @@ import {
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MediaCard from '../components/homepage/Card';
-import AnimeCardItem from '../components/homepage/AnimeCardItem';
-import NavBar from '../components/homepage/NavBar';
-import CategoryPill from '../components/homepage/CategoryPill';
-import SideBar from '../components/homepage/SideBar';
-import { KeyboardAwareSearchBar } from '../components/homepage/SearchBar';
-import SearchSuggestionsOverlay from '../components/homepage/SearchSuggestionsOverlay';
-import InlineSearchResults from '../components/homepage/InlineSearchResults';
+import MediaCard from '../components/home_page/Card';
+import AnimeCardItem from '../components/home_page/AnimeCardItem';
+
+import CategoryPill from '../components/home_page/CategoryPill';
+import SideBar from '../components/home_page/SideBar';
+import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
+import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
+import InlineSearchResults from '../components/home_page/InlineSearchResults';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
 import { searchMedia, debounce } from '../services/search';
@@ -330,14 +330,6 @@ const HomeAnime = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Bottom Navigation - rendered first */}
-      <NavBar 
-        activeTab="home" 
-        onTabChange={(tab) => {
-          if (tab === 'profile') navigation.navigate('ProfilePage');
-          else if (tab === 'search') console.log('Search tab pressed');
-        }} 
-      />
 
       {/* Search Bar - rendered AFTER NavBar for higher stacking on Android */}
       <KeyboardAwareSearchBar 
@@ -347,7 +339,7 @@ const HomeAnime = ({ navigation }) => {
         onChangeText={handleSearchChange}
         onCancel={handleSearchCancel}
         onSubmit={handleSearchSubmit}
-        defaultBottom={93}
+        defaultBottom={8}
         keyboardOffset={32}
       />
 
@@ -518,7 +510,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   flashListContent: {
-    paddingBottom: 96,
+    paddingBottom: 16,
   },
   loadingContainer: {
     flex: 1,

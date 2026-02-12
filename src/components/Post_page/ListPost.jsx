@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-const DiscoverPost = ({ username, avatarUrl, date, title, description, animeCovers }) => {
+const ListPost = ({ username, avatarUrl, date, title, description, animeCovers }) => {
   const [imageErrors, setImageErrors] = useState({});
 
   const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(username || 'user')}`;
@@ -129,4 +129,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DiscoverPost;
+export default ListPost;
