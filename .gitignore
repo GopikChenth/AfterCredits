@@ -42,5 +42,4 @@ yarn-error.*
 /android
 
 # project documentation (local only)
-FILE_ORGANIZATION.md
-WISHLIST.md
+*.md
