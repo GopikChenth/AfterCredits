@@ -295,7 +295,7 @@ export const getNewAnime = async (page = 1, perPage = 20) => {
           lastPage
           hasNextPage
         }
-        media(type: ANIME, season: $season, seasonYear: $seasonYear, sort: START_DATE_DESC, genre_not_in: $excludedGenres) {
+        media(type: ANIME, season: $season, seasonYear: $seasonYear, status_in: [RELEASING, FINISHED], sort: START_DATE_DESC, genre_not_in: $excludedGenres) {
           ...MediaFields
         }
       }

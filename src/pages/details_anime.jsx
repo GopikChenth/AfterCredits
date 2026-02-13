@@ -381,7 +381,7 @@ const AnimeDetail = ({ route, navigation }) => {
           <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
           <Text style={styles.status}>Status: {animeData.status}</Text>
         </View>
-      </BlurView>
+      </BlurView>    
 
       {/* Stats Section */}
       <View style={styles.statsSection}>
