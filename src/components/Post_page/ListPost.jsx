@@ -5,9 +5,10 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
 
-const ListPost = ({ username, avatarUrl, date, title, description, animeCovers }) => {
+const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress }) => {
   const [imageErrors, setImageErrors] = useState({});
 
   const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(username || 'user')}`;
@@ -18,7 +19,11 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers }
   };
 
   return (
-    <View style={styles.container}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       {/* Header: Avatar + Username + Date */}
       <View style={styles.header}>
         <Image
@@ -55,7 +60,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers }
       {description && (
         <Text style={styles.description}>{description}</Text>
       )}
-    </View>
+    </TouchableOpacity>
   );
 };
 

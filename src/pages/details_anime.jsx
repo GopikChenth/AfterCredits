@@ -12,7 +12,9 @@ import {
   Platform,
   Pressable,
   Animated,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -42,6 +44,10 @@ const AnimeDetail = ({ route, navigation }) => {
   const [dbReviews, setDbReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState({ count: 0, averageRating: 0 });
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  
+  // Scroll position tracking for header reveal
+  const [scrollY, setScrollY] = useState(0);
+  const headerOpacity = useRef(new Animated.Value(0)).current;
   
   // Gesture and animation refs
   const translateX = useRef(new Animated.Value(0)).current;
@@ -209,6 +215,20 @@ const AnimeDetail = ({ route, navigation }) => {
     };
   };
 
+  // Handle scroll to show/hide header
+  const handleScroll = (event) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    setScrollY(offsetY);
+    
+    // Show header after scrolling 100px
+    const newOpacity = offsetY > 100 ? 1 : 0;
+    Animated.timing(headerOpacity, {
+      toValue: newOpacity,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
   // Render action buttons (Watch/Wishlist)
   const renderActionButtons = () => (
     <View style={styles.actionsRow}>
@@ -328,6 +348,37 @@ const AnimeDetail = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      
+      {/* Animated Header - Reveals on Scroll */}
+      <SafeAreaView style={styles.headerSafeArea} edges={['top']}>
+        <Animated.View 
+          style={[
+            styles.animatedHeader,
+            {
+              transform: [{
+                translateY: headerOpacity.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-100, 0],
+                }),
+              }],
+            },
+          ]}
+        >
+          <View style={styles.headerBlur}>
+            <TouchableOpacity 
+              style={styles.headerBackButton} 
+              onPress={() => navigation?.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#fff"/>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {animeData?.title || 'Anime Details'}
+            </Text>
+          </View>
+        </Animated.View>
+      </SafeAreaView>
+
       {/* Organic Background Shapes - Fixed, non-scrollable */}
       <View style={styles.backgroundShapes}>
         <View style={styles.blobShape1} />
@@ -338,6 +389,8 @@ const AnimeDetail = ({ route, navigation }) => {
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {/* Back Button - positioned over hero */}
         <TouchableOpacity 
@@ -661,6 +714,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0D0D0D',
+  },
+  headerSafeArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  animatedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  headerBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 12,
+    backgroundColor: '#0D0D0D',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  headerBackButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,

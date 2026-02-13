@@ -117,6 +117,7 @@ const PostPage = ({ navigation }) => {
               title={post.title}
               description={post.description}
               animeCovers={post.animeCovers}
+              onPress={() => navigation.navigate('PostDetailAnime', { post })}
             />
           ))}
           

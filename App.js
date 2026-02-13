@@ -17,6 +17,7 @@ import DetailsAnime from './src/pages/details_anime';
 import ReviewAnime from './src/pages/review_anime';
 import UpcomingPage from './src/pages/upcoming_page';
 import NewsPage from './src/pages/news_page';
+import PostDetailAnime from './src/pages/post_detail_anime';
 import HomeMovies from './src/pages/home_movies';
 import HomeGames from './src/pages/home_games';
 import HomeComics from './src/pages/home_comics';
@@ -84,6 +85,7 @@ export default function App() {
             <Stack.Screen name="ReviewAnime" component={ReviewAnime} />
             <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
             <Stack.Screen name="NewsPage" component={NewsPage} />
+            <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
             <Stack.Screen name="ProfilePage" component={ProfilePage} />
             <Stack.Screen name="AuthPage" component={AuthPage} />
 
