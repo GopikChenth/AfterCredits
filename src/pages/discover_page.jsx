@@ -412,6 +412,7 @@ const styles = StyleSheet.create({
   },
   cardExpanded: {
     width: EXPANDED_CARD_WIDTH,
+    height: CARD_HEIGHT * 1.5, // Taller to fit all content
     zIndex: 1000,
   },
   cardImage: {
