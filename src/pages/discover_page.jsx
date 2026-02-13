@@ -219,8 +219,8 @@ const DiscoverPage = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header — matches Post & Podium */}
+      <View style={styles.container}>
+        {/* Static Header — stays fixed on scroll */}
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Discover</Text>
           <Text style={styles.headerSubtitle}>
@@ -228,8 +228,9 @@ const DiscoverPage = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* Upcoming Anime Section */}
-        <View style={styles.sectionHeader}>
+        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+          {/* Upcoming Anime Section */}
+          <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <View style={styles.sectionTitleLeft}>
               <Ionicons name="time-outline" size={20} color="#FFB3C6" />
@@ -298,7 +299,8 @@ const DiscoverPage = ({ navigation }) => {
             ))}
           </View>
         )}
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
