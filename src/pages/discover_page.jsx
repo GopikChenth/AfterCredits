@@ -411,8 +411,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.06)",
   },
   cardExpanded: {
-    width: EXPANDED_CARD_WIDTH, // Full width
-    height: CARD_HEIGHT * 1.5, // Taller when expanded
+    width: EXPANDED_CARD_WIDTH,
     zIndex: 1000,
   },
   cardImage: {

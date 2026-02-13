@@ -122,7 +122,6 @@ const UpcomingPage = ({ navigation }) => {
     // When expanded: span full width. Right-column cards shift left.
     const expandedStyle = isExpanded ? {
       width: EXPANDED_WIDTH,
-      height: CARD_HEIGHT * 1.5,
       zIndex: 1000,
       ...(isRightColumn ? { marginLeft: -(EXPANDED_WIDTH - CARD_WIDTH) } : {}),
     } : {};
