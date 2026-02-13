@@ -2837,12 +2837,14 @@ _"Discover what others love. Share what moves you. The community is your guide."
 **Purpose**: Implement professional tab-based navigation with seamless switching
 
 **Before (Stack Navigator only)**:
+
 - All screens in single Stack Navigator
 - Every tab switch destroyed and re-created the screen
 - Visible flicker and reload on navigation
 - Manual NavBar component in each page
 
 **After (Tab + Stack Navigator)**:
+
 - Tab Navigator for 4 main tabs (Home, Post, Discover, Podium)
 - Tabs kept mounted in memory for instant switching
 - Stack Navigator wraps tabs for push screens (Details, Review, etc.)
@@ -2872,10 +2874,11 @@ function MainTabs() {
   <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
   <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
   {/* Other push screens */}
-</Stack.Navigator>
+</Stack.Navigator>;
 ```
 
 **Benefits**:
+
 - Zero flicker on tab switching
 - Instant navigation (no re-mount)
 - Data persists between tab switches
@@ -2890,16 +2893,18 @@ function MainTabs() {
 **Purpose**: Explore upcoming anime releases
 
 **Features**:
+
 - **Header**: Consistent with Post/Podium pages
 - **Coming Soon Section**: Horizontal scrollable list of upcoming anime
 - **View All Button**: Navigates to full Upcoming page
-- **Card Design**: 
+- **Card Design**:
   - Cover image fills card (32% screen width, 1.3x height)
   - Title overlays on image with dark translucent background
   - Release date badge (e.g., "SPRING 2026")
   - Sorted by nearest release (year → season)
 
 **Technical Details**:
+
 - Uses FlatList for horizontal scrolling (better than nested ScrollViews)
 - Fetches from AniList API (\getUpcomingAnime\)
 - Client-side sorting by release date
@@ -2914,8 +2919,9 @@ function MainTabs() {
 **Purpose**: Dedicated page showing all upcoming anime
 
 **Features**:
+
 - **2-Column Grid**: FlashList with \
-umColumns={2}\
+  umColumns={2}\
 - **Infinite Scroll**: Pagination with 50 items per page
 - **Back Button**: Returns to Discover
 - **Same Card Design**: Consistent overlay style
@@ -2943,11 +2949,12 @@ const sorted = formatted.sort((a, b) => {
 #### **NavBar Rewrite** (\/src/components/home_page/NavBar.jsx\)
 
 **Before**: Managed its own state, manually added to each page
-**After**: Custom \	abBar\ component for Tab Navigator
+**After**: Custom \ abBar\ component for Tab Navigator
 
 **Changes**:
+
 - Receives \state\, \descriptors\, \
-avigation\ props from Tab Navigator
+  avigation\ props from Tab Navigator
 - Maps route names to display labels/icons
 - No manual state management
 - Automatically positioned by Tab Navigator
@@ -2955,11 +2962,13 @@ avigation\ props from Tab Navigator
 #### **Component Structure Cleanup**
 
 **Renamed Directories**:
+
 - \components/homepage/\ → \components/home_page/\
 - \components/profile/\ → \components/profile_page/\
 - \components/discover/\ → \components/Post_page/\
 
 **Fixed Import Paths**:
+
 - Updated all pages to use new component paths
 - Removed manual \<NavBar>\ from all tab pages
 - Fixed nested navigation calls
@@ -2989,7 +2998,8 @@ avigation\ props from Tab Navigator
 #### **4. Card Overlay Design**
 
 **Problem**: Title below image looked cluttered
-**Solution**: Overlay title on image with \gba(0,0,0,0.7)\ background
+**Solution**: Overlay title on image with \
+gba(0,0,0,0.7)\ background
 **Result**: Cinematic card design with full image visibility
 
 ---
@@ -3043,7 +3053,7 @@ avigate('MainTabs', { screen: 'HomeAnime' })\
 
 1. **Tab Navigator Pattern**: Keep tabs mounted for instant switching
 2. **Nested Navigation**: Use \
-avigate(parent, { screen: child })\ for nested routes
+   avigate(parent, { screen: child })\ for nested routes
 3. **FlatList for Horizontal**: Better than nested ScrollViews
 4. **Gesture Conflicts**: Disable stack gestures on root tab screen
 5. **Overlay Design**: Translucent backgrounds create premium feel
@@ -3063,15 +3073,15 @@ avigate(parent, { screen: child })\ for nested routes
 
 **Production Ready Features**:
 
-| Feature                     | Status | Quality |
-| --------------------------- | ------ | ------- |
-| Tab Navigation              | ✅     | 100%    |
-| Discover Page               | ✅     | 100%    |
-| Upcoming Page               | ✅     | 100%    |
-| AniList API Integration     | ✅     | 100%    |
-| Horizontal Scroll           | ✅     | 100%    |
-| Overlay Card Design         | ✅     | 100%    |
-| Release Date Sorting        | ✅     | 100%    |
+| Feature                 | Status | Quality |
+| ----------------------- | ------ | ------- |
+| Tab Navigation          | ✅     | 100%    |
+| Discover Page           | ✅     | 100%    |
+| Upcoming Page           | ✅     | 100%    |
+| AniList API Integration | ✅     | 100%    |
+| Horizontal Scroll       | ✅     | 100%    |
+| Overlay Card Design     | ✅     | 100%    |
+| Release Date Sorting    | ✅     | 100%    |
 
 **Next Priorities**:
 
@@ -3085,3 +3095,163 @@ avigate(parent, { screen: child })\ for nested routes
 
 _"Navigation should be invisible. The content is the experience."_
 
+---
+
+## Session 11: Feb 13, 2026
+
+### ✅ Expandable Card System
+
+#### **Discover Page — In-Place Expansion** (`/src/pages/discover_page.jsx`)
+
+**Purpose**: Allow users to preview anime details without navigating away
+
+**Features**:
+
+- **Image-Only Default**: Cards show only cover image (no title/date overlay)
+- **Tap to Expand**: Card expands inline to `width - 40` with gradient overlay
+- **LinearGradient Overlay**: Fades from transparent → dark, keeping image visible
+- **Close Button**: Absolute-positioned X at top-right corner
+- **Expandable Info**: Title, release date, genres, studio, description
+- **Action Buttons**: Wishlist (bookmark) + View Details in horizontal row
+
+**Technical Details**:
+
+- `expandedAnimeId` state tracks which card is expanded
+- `handleCardPress` toggles expansion (collapse if same card tapped again)
+- `expo-linear-gradient` for gradient overlay
+- Card width changes from `CARD_WIDTH` to `EXPANDED_CARD_WIDTH` on expand
+
+---
+
+#### **Upcoming Page — Column-Aware Expansion** (`/src/pages/upcoming_page.jsx`)
+
+**Purpose**: Same expansion behavior in 2-column grid layout
+
+**Features**:
+
+- **Left Column** cards expand to the right (default behavior)
+- **Right Column** cards expand to the left using negative `marginLeft`
+- **Same Design**: Gradient overlay, info, wishlist, View Details
+- **Maintains Grid**: Other cards stay in place during expansion
+
+**Technical Implementation**:
+
+```javascript
+// Right column cards shift left when expanded
+const isRightColumn = index % 2 === 1;
+const expandedStyle = isExpanded
+  ? {
+      width: EXPANDED_WIDTH,
+      height: CARD_HEIGHT * 1.5,
+      zIndex: 1000,
+      ...(isRightColumn ? { marginLeft: -(EXPANDED_WIDTH - CARD_WIDTH) } : {}),
+    }
+  : {};
+```
+
+**Key Detail**: `extraData={expandedAnimeId}` passed to FlashList ensures re-renders when expansion state changes.
+
+---
+
+### ✅ Wishlist Integration (Supabase Backend)
+
+#### **Real Wishlist Service** (both Discover & Upcoming pages)
+
+**Purpose**: Replace local-only wishlist with persistent Supabase backend
+
+**Features**:
+
+- **Initial Load**: `fetchWishlist()` on mount via `getWishlist('anime')`
+- **Optimistic UI**: Instant toggle with rollback on failure
+- **Supabase Persist**: `setWishlistService('anime', animeId, true/false)`
+- **Cross-Page Sync**: Wishlisted items appear in Podium → Wishlist tab
+
+**State Management**:
+
+- `wishlistedIds` — array of anime IDs currently wishlisted
+- `isWishlisted(animeId)` — checks against `wishlistedIds`
+- `toggleWishlist(animeId)` — optimistic update + Supabase call + rollback
+
+---
+
+### ✅ Wishlist Icon Consistency
+
+**Before**: `heart` / `heart-outline` (pink `#FFB3C6`)
+**After**: `bookmark` / `bookmark-outline` (purple `#D4BBFF`)
+
+**Reason**: Matches the Podium page's wishlist tab icon and color scheme
+
+**Button Styles**:
+
+- Icon-only square button (`44×44px`)
+- Background: `rgba(212, 187, 255, 0.1)` (subtle purple)
+- Active state: `rgba(212, 187, 255, 0.25)` (stronger purple)
+
+---
+
+### ✅ Login Redirect to Profile
+
+#### **Auth Page** (`/src/pages/auth_page.jsx`)
+
+**Change**: After successful login, navigate to `ProfilePage` instead of `HomeAnime`
+
+**Updated Flows**:
+
+- `handleLogin()` → `navigation.replace('ProfilePage')`
+- `handleSocialLogin()` → `navigation.replace('ProfilePage')`
+
+---
+
+### ✅ Technical Achievements
+
+#### **1. Column-Aware Expansion**
+
+**Problem**: Expanding cards in a 2-column grid caused right-column cards to overflow off-screen
+**Solution**: Detect column position via `index % 2` and apply negative `marginLeft` for right-column cards
+**Result**: Both columns expand cleanly to full width
+
+#### **2. Optimistic Wishlist Updates**
+
+**Problem**: Waiting for Supabase response caused UI lag
+**Solution**: Update local state immediately, revert on failure
+**Result**: Instant feedback with data integrity
+
+#### **3. LinearGradient Image Preservation**
+
+**Problem**: Solid overlay hid the cover image in expanded view
+**Solution**: `expo-linear-gradient` with transparent → dark gradient
+**Result**: Image visible at top, info readable at bottom
+
+---
+
+### 📊 Session 11 Statistics
+
+**Pages Updated**: 3 (Discover, Upcoming, Auth)
+**Features Added**: 4 (Expandable cards, Wishlist integration, Icon update, Login redirect)
+**Services Used**: 2 (`setWishlist`, `getWishlist` from mediaStatusService)
+**Dependencies Used**: 1 (`expo-linear-gradient`)
+**Bugs Fixed**: 2 (Right-column overflow, Wishlist state conflicts)
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Expandable card system on Discover page
+- ✅ Column-aware expandable cards on Upcoming page
+- ✅ Real Supabase wishlist integration
+- ✅ Consistent bookmark icon across all pages
+- ✅ Login redirects to Profile page
+
+**Next Priorities**:
+
+1. Re-integrate wishlist on Details page with bookmark icon
+2. Add wishlist sync indicator/toast notifications
+3. Implement search functionality on Discover
+4. Add filter options (genre, year, format)
+5. Create similar pages for Movies/Games
+
+---
+
+_"Preview before you commit. Expand before you navigate."_
