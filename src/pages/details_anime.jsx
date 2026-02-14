@@ -12,6 +12,7 @@ import {
   Platform,
   Animated,
   StatusBar,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -22,6 +23,7 @@ import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
+import DetailsSkeleton from '../components/details_page/DetailsSkeleton';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
@@ -46,6 +48,7 @@ const AnimeDetail = ({ route, navigation }) => {
   
   // Scroll position tracking for header reveal
   const [scrollY, setScrollY] = useState(0);
+  const [titleY, setTitleY] = useState(0); // Track title position
   const headerOpacity = useRef(new Animated.Value(0)).current;
   
   // Gesture and animation refs
@@ -219,13 +222,13 @@ const AnimeDetail = ({ route, navigation }) => {
     const offsetY = event.nativeEvent.contentOffset.y;
     setScrollY(offsetY);
     
-    // Show header after scrolling 100px
-    const newOpacity = offsetY > 100 ? 1 : 0;
-    Animated.timing(headerOpacity, {
-      toValue: newOpacity,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    // Show header when title scrolls out of view
+    // Use titleY if measured, otherwise fallback to 100px
+    const triggerPoint = titleY > 0 ? titleY : 100;
+    const newOpacity = offsetY > triggerPoint ? 1 : 0;
+    
+    // Set opacity instantly without animation
+    headerOpacity.setValue(newOpacity);
   };
 
   // Render action buttons (Watch/Wishlist)
@@ -284,10 +287,7 @@ const AnimeDetail = ({ route, navigation }) => {
           <View style={styles.blobShape3} />
         </View>
         
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={styles.loadingText}>Loading anime details...</Text>
-        </View>
+        <DetailsSkeleton />
       </View>
     );
   }
@@ -408,7 +408,15 @@ const AnimeDetail = ({ route, navigation }) => {
 
       {/* Description Section */}
       <BlurView intensity={80} tint="dark" style={styles.descriptionSectionNative}>
-        <View style={styles.titleYearRow}>
+        <View 
+          style={styles.titleYearRow}
+          onLayout={(event) => {
+            // Measure title position relative to scroll view
+            event.target.measure((x, y, width, height, pageX, pageY) => {
+              setTitleY(pageY + height); // Set trigger point to bottom of title
+            });
+          }}
+        >
           <Text style={styles.mainTitle}>{animeData.title}</Text>
           <Text style={styles.year}>{animeData.year}</Text>
         </View>
@@ -596,108 +604,37 @@ const AnimeDetail = ({ route, navigation }) => {
 
       {/* Related Shows Section */}
       <View style={styles.relatedSection}>
-        <Text style={styles.sectionLabel}>RELATED SHOWS</Text>
+        <View style={{ paddingHorizontal: 20, marginBottom: 10 }}>
+          <Text style={styles.sectionLabel}>RELATED SHOWS</Text>
+        </View>
         {animeData.recommendations && animeData.recommendations.length > 0 ? (
-          <>
-            {(() => {
-              const SHOWS_PER_PAGE = 3;
-              const totalPages = Math.ceil(animeData.recommendations.length / SHOWS_PER_PAGE);
-              const startIndex = (currentRelatedPage - 1) * SHOWS_PER_PAGE;
-              const currentShows = animeData.recommendations.slice(startIndex, startIndex + SHOWS_PER_PAGE);
-              
-              // Pan gesture handler
-              const panGesture = Gesture.Pan()
-                .onStart(() => {
-                  gestureStartX.current = translateX._value;
-                })
-                .onUpdate((event) => {
-                  // Update translateX based on gesture
-                  const newValue = gestureStartX.current + event.translationX;
-                  // Limit the translation to prevent excessive dragging
-                  const maxTranslate = 50;
-                  const clampedValue = Math.max(-maxTranslate, Math.min(maxTranslate, newValue));
-                  translateX.setValue(clampedValue);
-                })
-                .onEnd((event) => {
-                  const SWIPE_THRESHOLD = 50;
-                  const velocity = event.velocityX;
-                  
-                  // Determine if swipe was significant enough
-                  if (Math.abs(event.translationX) > SWIPE_THRESHOLD || Math.abs(velocity) > 500) {
-                    if (event.translationX > 0 && currentRelatedPage > 1) {
-                      // Swipe right - go to previous page
-                      setCurrentRelatedPage(prev => prev - 1);
-                    } else if (event.translationX < 0 && currentRelatedPage < totalPages) {
-                      // Swipe left - go to next page
-                      setCurrentRelatedPage(prev => prev + 1);
-                    }
-                  }
-                  
-                  // Reset position with animation
-                  Animated.spring(translateX, {
-                    toValue: 0,
-                    useNativeDriver: true,
-                    tension: 50,
-                    friction: 7,
-                  }).start();
-                });
-              
-              return (
-                <>
-                  <GestureDetector gesture={panGesture}>
-                    <Animated.View 
-                      style={[
-                        styles.relatedCarousel,
-                        {
-                          transform: [{ translateX }]
-                        }
-                      ]}
-                    >
-                      {currentShows.map((item) => (
-                        <View key={item.id.toString()} style={styles.relatedCardWrapper}>
-                          <Pressable 
-                            onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
-                            style={({ pressed }) => [
-                              styles.relatedCard,
-                              pressed && styles.relatedCardPressed
-                            ]}
-                          >
-                            <Image 
-                              source={{ uri: item.image }} 
-                              style={styles.relatedCardImage}
-                              resizeMode="cover"
-                            />
-                            <View style={styles.relatedCardOverlay}>
-                              <Text style={styles.relatedCardTitle} numberOfLines={2}>
-                                {item.title}
-                              </Text>
-                            </View>
-                          </Pressable>
-                        </View>
-                      ))}
-                    </Animated.View>
-                  </GestureDetector>
-                  
-                  {totalPages > 1 && (
-                    <View style={styles.relatedPaginationContainer}>
-                      <View style={styles.dotsContainer}>
-                        {Array.from({ length: totalPages }).map((_, index) => (
-                          <Pressable
-                            key={index}
-                            onPress={() => setCurrentRelatedPage(index + 1)}
-                            style={[
-                              styles.dot,
-                              currentRelatedPage === index + 1 && styles.dotActive
-                            ]}
-                          />
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </>
-              );
-            })()}
-          </>
+          <FlatList
+            data={animeData.recommendations}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.relatedScrollContent}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <Pressable 
+                onPress={() => navigation?.push('DetailsAnime', { animeId: item.id })}
+                style={({ pressed }) => [
+                  styles.relatedCard,
+                  pressed && styles.relatedCardPressed
+                ]}
+              >
+                <Image 
+                  source={{ uri: item.image }} 
+                  style={styles.relatedCardImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.relatedCardOverlay}>
+                  <Text style={styles.relatedCardTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                </View>
+              </Pressable>
+            )}
+          />
         ) : (
           <Text style={styles.noDataText}>No related shows available</Text>
         )}
@@ -1074,8 +1011,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   relatedSection: {
-    marginHorizontal: 20,
     marginBottom: 32,
+  },
+  relatedScrollContent: {
+    paddingHorizontal: 20,
+    gap: 12,
   },
   relatedCarousel: {
     flexDirection: 'row',
@@ -1088,8 +1028,8 @@ const styles = StyleSheet.create({
     maxWidth: '32%',
   },
   relatedCard: {
-    width: '100%',
-    aspectRatio: 0.7,
+    width: 120,
+    height: 170,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#252525',

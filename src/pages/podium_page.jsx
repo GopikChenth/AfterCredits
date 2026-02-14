@@ -19,14 +19,16 @@ import { getUserProfile } from '../services/profile';
 
 import DonutChart from '../components/podium_page/DonutChart';
 import StatusCounters from '../components/podium_page/StatusCounters';
-import RadarGraph from '../components/podium_page/RadarGraph';
+import TopGenres from '../components/podium_page/TopGenres';
+import TopStudios from '../components/podium_page/TopStudios';
 
 const animeCache = {};
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const PodiumPage = ({ navigation }) => {
   const [counts, setCounts] = useState({ watching: 0, watched: 0, dropped: 0, wishlist: 0 });
-  const [demographics, setDemographics] = useState({ shounen: 0, shoujo: 0, seinen: 0, josei: 0, kodomomuke: 0 });
+  const [genreStats, setGenreStats] = useState({});
+  const [studioStats, setStudioStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
 
@@ -58,9 +60,14 @@ const PodiumPage = ({ navigation }) => {
         wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
       });
 
-      // Fetch demographic data from watched anime only
-      if (watchedRes.success && watchedRes.data?.length > 0) {
-        fetchDemographics(watchedRes.data);
+      // Combine watching + watched for genre/studio analysis
+      const combinedItems = [
+        ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
+        ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
+      ];
+
+      if (combinedItems.length > 0) {
+        fetchGenresAndStudios(combinedItems);
       }
     } catch (error) {
       console.error('Error fetching counts:', error);
@@ -70,35 +77,80 @@ const PodiumPage = ({ navigation }) => {
     }
   }, []);
 
-  const fetchDemographics = useCallback(async (watchedItems) => {
-    const demoCount = { shounen: 0, shoujo: 0, seinen: 0, josei: 0, kodomomuke: 0 };
+  const fetchGenresAndStudios = useCallback(async (items) => {
+    const genreCount = {};
+    const studioCount = {};
+    const BATCH_SIZE = 5; // Process 5 items at a time
 
-    for (const item of watchedItems) {
-      try {
-        let anime = animeCache[item.media_id];
-        if (!anime) {
-          const result = await getAnimeDetails(parseInt(item.media_id));
-          if (result) {
-            anime = formatAnimeData(result);
-            animeCache[item.media_id] = anime;
+    // Separate cached and uncached items
+    const uncachedItems = items.filter(item => !animeCache[item.media_id]);
+    const cachedItems = items.filter(item => animeCache[item.media_id]);
+
+    // Process cached items immediately (no API calls needed)
+    cachedItems.forEach(item => {
+      const anime = animeCache[item.media_id];
+      
+      // Count genres
+      if (anime?.genres && Array.isArray(anime.genres)) {
+        anime.genres.forEach(genre => {
+          genreCount[genre] = (genreCount[genre] || 0) + 1;
+        });
+      }
+
+      // Count studios
+      if (anime?.studio) {
+        studioCount[anime.studio] = (studioCount[anime.studio] || 0) + 1;
+      }
+    });
+
+    // Process uncached items in batches
+    for (let i = 0; i < uncachedItems.length; i += BATCH_SIZE) {
+      const batch = uncachedItems.slice(i, i + BATCH_SIZE);
+      
+      // Fetch batch in parallel
+      const batchResults = await Promise.allSettled(
+        batch.map(async (item) => {
+          try {
+            const result = await getAnimeDetails(parseInt(item.media_id));
+            if (result) {
+              const anime = formatAnimeData(result);
+              animeCache[item.media_id] = anime;
+              return { item, anime };
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch anime ${item.media_id}:`, error.message);
+            return null;
           }
-          await delay(300);
-        }
+        })
+      );
 
-        if (anime?.tags) {
-          const tagNames = anime.tags.map(t => t.name.toLowerCase());
-          if (tagNames.includes('shounen')) demoCount.shounen++;
-          if (tagNames.includes('shoujo')) demoCount.shoujo++;
-          if (tagNames.includes('seinen')) demoCount.seinen++;
-          if (tagNames.includes('josei')) demoCount.josei++;
-          if (tagNames.includes('kids') || tagNames.includes('kodomomuke')) demoCount.kodomomuke++;
+      // Process batch results
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+          const { anime } = result.value;
+          
+          // Count genres
+          if (anime?.genres && Array.isArray(anime.genres)) {
+            anime.genres.forEach(genre => {
+              genreCount[genre] = (genreCount[genre] || 0) + 1;
+            });
+          }
+
+          // Count studios
+          if (anime?.studio) {
+            studioCount[anime.studio] = (studioCount[anime.studio] || 0) + 1;
+          }
         }
-      } catch (error) {
-        console.warn('Failed to fetch demographics:', error.message);
+      });
+
+      // Delay only between batches (not per item) - reduced from 300ms to 150ms
+      if (i + BATCH_SIZE < uncachedItems.length) {
+        await delay(150);
       }
     }
 
-    setDemographics(demoCount);
+    setGenreStats(genreCount);
+    setStudioStats(studioCount);
   }, []);
 
   useFocusEffect(
@@ -167,11 +219,16 @@ const PodiumPage = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Demographic Radar Chart */}
-        <View style={styles.radarSection}>
-          <Text style={styles.sectionTitle}>Demographic Profile</Text>
-          <Text style={styles.sectionSubtitle}>Based on your completed anime</Text>
-          <RadarGraph demographics={demographics} />
+        {/* Top Genres */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Top Genres</Text>
+          <TopGenres genreStats={genreStats} />
+        </View>
+
+        {/* Top Studios */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Top Studios</Text>
+          <TopStudios studioStats={studioStats} />
         </View>
 
         <View style={{ height: 24 }} />
@@ -240,7 +297,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 13,
@@ -259,11 +316,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
-    marginTop: 12,
+    marginTop: 8,
   },
 
-  // Radar chart section
-  radarSection: {
+  // Stats sections (genres/studios)
+  statsSection: {
     paddingHorizontal: 20,
     paddingTop: 32,
   },

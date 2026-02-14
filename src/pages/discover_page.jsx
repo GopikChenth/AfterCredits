@@ -20,6 +20,7 @@ import { getAnimeNews } from "../services/news_service";
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";
 import NewsCard from "../components/discover_page/NewsCard";
+import DiscoverSkeleton from "../components/discover_page/DiscoverSkeleton";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.32;
@@ -273,10 +274,7 @@ const DiscoverPage = ({ navigation }) => {
         </View>
 
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFB3C6" />
-            <Text style={styles.loadingText}>Loading upcoming anime...</Text>
-          </View>
+          <DiscoverSkeleton />
         ) : (
           <FlatList
             data={upcomingAnime}
@@ -309,10 +307,7 @@ const DiscoverPage = ({ navigation }) => {
         </View>
 
         {newsLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFB3C6" />
-            <Text style={styles.loadingText}>Loading news...</Text>
-          </View>
+          <DiscoverSkeleton />
         ) : (
           <View style={styles.newsContainer}>
             {news.map((article) => (

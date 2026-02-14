@@ -17,6 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/home_page/Card';
 import AnimeCardItem from '../components/home_page/AnimeCardItem';
+import SkeletonLoader from '../components/home_page/SkeletonLoader';
 
 import CategoryPill from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
@@ -301,10 +302,7 @@ const HomeAnime = ({ navigation }) => {
             </View>
 
             {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.accent} />
-                <Text style={styles.loadingText}>Loading anime...</Text>
-              </View>
+              <SkeletonLoader cardHeight={cardHeight} count={6} />
             ) : error ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
