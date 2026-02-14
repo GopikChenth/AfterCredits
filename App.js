@@ -24,6 +24,7 @@ import HomeComics from './src/pages/home_comics';
 import HomeManga from './src/pages/home_manga';
 import ProfilePage from './src/pages/profile_page';
 import AuthPage from './src/pages/auth_page';
+import PodiumListPage from './src/pages/podium_list_page';
 
 // Custom Tab Bar
 import NavBar from './src/components/home_page/NavBar';
@@ -88,6 +89,7 @@ export default function App() {
             <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
             <Stack.Screen name="ProfilePage" component={ProfilePage} />
             <Stack.Screen name="AuthPage" component={AuthPage} />
+            <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
 
             {/* Other Media Home pages */}
             <Stack.Screen name="HomeMovies" component={HomeMovies} />
