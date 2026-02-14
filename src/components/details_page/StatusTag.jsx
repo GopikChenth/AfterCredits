@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Pressable, Text, StyleSheet, Animated, Modal, Pressable } from 'react-native';
+import { View, Pressable, Text, StyleSheet, Animated, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const STATUS_OPTIONS = [

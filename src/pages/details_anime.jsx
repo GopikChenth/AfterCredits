@@ -10,7 +10,6 @@ import {
   Pressable,
   ActivityIndicator,
   Platform,
-  Pressable,
   Animated,
   StatusBar,
 } from 'react-native';
