@@ -3255,3 +3255,103 @@ const expandedStyle = isExpanded
 ---
 
 _"Preview before you commit. Expand before you navigate."_
+
+---
+
+## Session 12: Feb 14, 2026
+
+### ✅ Podium Page & Charts Overhaul
+
+#### **Podium Page Refactor** (`/src/pages/podium_page.jsx`)
+
+**Purpose**: Visualize user anime statistics with interactive charts and data.
+
+**Features**:
+
+- **Status Distribution**: Donut chart displaying Watching, Completed, Dropped, and Wishlist counts.
+- **Interactive Counters**: Tappable status rows that navigate to detailed lists.
+- **Demographic Radar**: Radar chart showing genre/demographic preferences (Shonen, Seinen, Shojo, Josei, Kids).
+- **Data Integration**: Real-time fetching from user profile and anime lists.
+
+#### **New Components**:
+
+1.  **DonutChart** (`/src/components/podium_page/DonutChart.jsx`)
+    - SVG-based ring chart with dynamic segments based on status counts.
+    - Central "Total" count display.
+
+2.  **StatusCounters** (`/src/components/podium_page/StatusCounters.jsx`)
+    - Vertical list of status counts with color-coded dots.
+    - Navigation callbacks for interaction.
+
+3.  **RadarGraph** (`/src/components/podium_page/RadarGraph.jsx`)
+    - SVG-based radar/spider chart for demographics.
+    - Clean labels (removed count numbers per request).
+    - Pastel color scheme for better aesthetics.
+
+---
+
+### ✅ Detailed List View Implementation
+
+#### **Podium List Page** (`/src/pages/podium_list_page.jsx`)
+
+**Purpose**: Detailed vertical scrollable list of anime for a specific status (e.g., "Completed").
+
+**Features**:
+
+- **Lazy Loading**: Optimized FlashList implementation for performance.
+- **Blurry Headers**: Anime cover art with blurred backgrounds and gradient overlays.
+- **Clean UI**: Removed ratings and pull-to-refresh to focus on the list content.
+- **Smooth Navigation**: Back button integration and status-based filtering.
+
+---
+
+### ✅ Global Header Standardization
+
+**Goal**: Align headers across all main tabs (Home, Post, Discover, Podium) for visual consistency while maintaining distinct styles.
+
+**Achievements**:
+
+1.  **Consistent Alignment**:
+    - Fixed `SafeAreaView` edges (removed bottom inset) to align NavBar height across all tabs.
+    - Unified header padding to **16px horizontal / 8px vertical**.
+    - Aligned Profile Icon to `flex-start` (top), matching the Home page's 8px top offset exactly.
+
+2.  **Style Harmony**:
+    - **Home**: Compact header (Small Title).
+    - **Post/Discover/Podium**: **Large Title (32px) + Subtitle** preserved per user request.
+    - **Profile Button**: Standardized 48x48 button with **Avatar Image** support across all pages.
+
+3.  **Keyboard Handling**:
+    - Added `KeyboardAvoidingView` to Home page to prevent content overlap.
+    - Updated `KeyboardAwareSearchBar` to subtract `tabBarHeight` for precise 8px spacing relative to the keyboard.
+
+---
+
+### 📊 Session 12 Statistics
+
+**Pages Updated**: 4 (Podium, Post, Discover, Home)
+**New Pages**: 1 (PodiumListPage)
+**New Components**: 3 (DonutChart, StatusCounters, RadarGraph)
+**Key Fixes**: 4 (Header alignment, Keyboard overlap, Safe Area insets, Radar labels)
+**Libraries Used**: `react-native-svg`, `expo-blur`, `expo-linear-gradient`
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Podium page with rich visualizations
+- ✅ Detailed status list views
+- ✅ Pixel-perfect header alignment across tabs
+- ✅ Search bar keyboard handling
+
+**Next Priorities**:
+
+1.  Implement "Post" page functionality (Community lists).
+2.  Expand "Discover" page with searching and filtering.
+3.  Add "Edit Profile" covering banner image.
+
+---
+
+_"Data is beautiful. Alignment is key."_
