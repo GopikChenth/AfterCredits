@@ -131,10 +131,16 @@ const PodiumPage = ({ navigation }) => {
     }
   }, []);
 
+  // Fetch initial data on mount
+  useEffect(() => {
+    fetchItems('watching'); // Load watching tab by default
+    fetchCounts();
+  }, [fetchItems, fetchCounts]);
+
+  // Fetch data when tab changes
   useEffect(() => {
     fetchItems(activeTab);
-    fetchCounts();
-  }, [activeTab]);
+  }, [activeTab, fetchItems]);
 
   const onRefresh = () => {
     setRefreshing(true);

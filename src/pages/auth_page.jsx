@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { 
   signUp, 
@@ -48,7 +49,21 @@ const AuthPage = ({ navigation }) => {
 
     if (result.success) {
       Alert.alert('Success', 'Logged in successfully!');
-      navigation.replace('ProfilePage');
+      // Reset navigation stack to prevent going back to auth
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'MainTabs',
+              state: {
+                routes: [{ name: 'ProfilePage' }],
+                index: 0,
+              },
+            },
+          ],
+        })
+      );
     } else {
       Alert.alert('Login Failed', result.error);
     }
