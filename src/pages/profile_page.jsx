@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile, updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
@@ -35,11 +36,13 @@ const ProfilePage = ({ navigation }) => {
     showManga: true,
   });
 
-  // Load user profile and settings on mount
-  useEffect(() => {
-    loadProfile();
-    loadSettings();
-  }, []);
+  // Reload profile every time screen gains focus (handles login/logout)
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      loadSettings();
+    }, [])
+  );
   
   const loadSettings = async () => {
     const userSettings = await getSettings();

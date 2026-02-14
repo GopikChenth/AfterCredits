@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress }) => {
   const [imageErrors, setImageErrors] = useState({});
@@ -19,10 +20,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
   };
 
   return (
-    <Pressable
-      style={styles.container}
-      onPress={onPress}
-    >
+    <View style={styles.container}>
       {/* Header: Avatar + Username + Date */}
       <View style={styles.header}>
         <Image
@@ -39,6 +37,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       {/* Anime Cover Strip */}
       <ScrollView
         horizontal
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         style={styles.coverStrip}
         contentContainerStyle={styles.coverStripContent}
@@ -59,7 +58,13 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       {description && (
         <Text style={styles.description}>{description}</Text>
       )}
-    </Pressable>
+
+      {/* View List Button */}
+      <Pressable style={styles.viewListButton} onPress={onPress}>
+        <Text style={styles.viewListText}>View List</Text>
+        <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
+      </Pressable>
+    </View>
   );
 };
 
@@ -130,6 +135,25 @@ const styles = StyleSheet.create({
     color: '#777',
     lineHeight: 18,
     letterSpacing: 0.3,
+  },
+  viewListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,179,198,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,179,198,0.15)',
+  },
+  viewListText: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Agdasima',
+    color: '#FFB3C6',
+    letterSpacing: 0.5,
   },
 });
 

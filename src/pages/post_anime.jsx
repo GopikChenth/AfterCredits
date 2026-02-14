@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  Image,
+  Pressable,
   StyleSheet,
   StatusBar,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ListPost from '../components/Post_page/ListPost';
 import { getMediaTheme } from '../utils/mediaThemes';
+import { getUserProfile } from '../services/profile';
 
 // Dummy data — curated anime lists from users
 const DUMMY_POSTS = [
@@ -90,16 +94,41 @@ const DUMMY_POSTS = [
 
 const PostPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      const result = await getUserProfile();
+      setUserProfile(result.success && result.profile ? result.profile : null);
+    };
+    loadProfile();
+    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    return unsubscribe;
+  }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
       
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Post</Text>
-          <Text style={styles.headerSubtitle}>Curated anime lists from the community</Text>
+          <Pressable
+            style={styles.profileButton}
+            onPress={() => navigation.navigate('ProfilePage')}
+          >
+            {userProfile ? (
+              <Image
+                source={{
+                  uri: userProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`
+                }}
+                style={styles.profileIcon}
+              />
+            ) : (
+              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+            )}
+          </Pressable>
         </View>
 
         {/* Feed */}
@@ -140,23 +169,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#0D0D0D',
   },
   headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  profileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  profileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFB3C6',
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    fontFamily: 'Agdasima',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#fff',
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    marginTop: 2,
   },
   feed: {
     flex: 1,

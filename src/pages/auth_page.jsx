@@ -48,7 +48,7 @@ const AuthPage = ({ navigation }) => {
 
     if (result.success) {
       Alert.alert('Success', 'Logged in successfully!');
-      navigation.replace('ProfilePage');
+      navigation.goBack();
     } else {
       Alert.alert('Login Failed', result.error);
     }
@@ -118,7 +118,7 @@ const AuthPage = ({ navigation }) => {
 
     if (result.success) {
       Alert.alert('Success', `Logged in with ${provider}!`);
-      navigation.replace('ProfilePage');
+      navigation.goBack();
     } else {
       Alert.alert('Login Failed', result.error);
     }

@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getUpcomingAnime, formatAnimeData } from "../services/api_anime";
 import { getAnimeNews } from "../services/news_service";
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
+import { getUserProfile } from "../services/profile";
 import NewsCard from "../components/discover_page/NewsCard";
 
 const { width } = Dimensions.get("window");
@@ -28,6 +29,7 @@ const EXPANDED_CARD_WIDTH = width - 40;
 const DiscoverPage = ({ navigation }) => {
   const [upcomingAnime, setUpcomingAnime] = useState([]);
   const [news, setNews] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newsLoading, setNewsLoading] = useState(true);
   const [expandedAnimeId, setExpandedAnimeId] = useState(null);
@@ -40,7 +42,15 @@ const DiscoverPage = ({ navigation }) => {
     fetchUpcoming();
     fetchNews();
     fetchWishlist();
-  }, []);
+
+    const loadProfile = async () => {
+      const result = await getUserProfile();
+      setUserProfile(result.success && result.profile ? result.profile : null);
+    };
+    loadProfile();
+    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchNews = async () => {
     try {
@@ -212,16 +222,28 @@ const DiscoverPage = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       <View style={styles.container}>
         {/* Static Header — stays fixed on scroll */}
         <View style={styles.headerContainer}>
           <Text style={styles.headerTitle}>Discover</Text>
-          <Text style={styles.headerSubtitle}>
-            Explore anime, find your next obsession
-          </Text>
+          <Pressable
+            style={styles.profileButton}
+            onPress={() => navigation.navigate('ProfilePage')}
+          >
+            {userProfile ? (
+              <Image
+                source={{
+                  uri: userProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`
+                }}
+                style={styles.profileIcon}
+              />
+            ) : (
+              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+            )}
+          </Pressable>
         </View>
 
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -308,25 +330,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0D0D0D",
   },
-  // Header — identical to Post & Podium
+  // Header — matches Home page
   headerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  profileButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  profileIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFB3C6',
   },
   headerTitle: {
-    fontSize: 32,
-    fontWeight: "800",
-    fontFamily: "Agdasima",
-    color: "#fff",
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#888",
-    fontFamily: "Agdasima",
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
     letterSpacing: 0.5,
-    marginTop: 2,
   },
   // Content
   content: {

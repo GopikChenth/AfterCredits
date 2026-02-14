@@ -30,6 +30,12 @@ const PostDetailPage = ({ route, navigation }) => {
     setImageErrors(prev => ({ ...prev, [index]: true }));
   };
 
+  // Extract anime ID from AniList CDN URL (e.g. bx16498-xxx.jpg => 16498)
+  const getAnimeIdFromUrl = (url) => {
+    const match = url?.match(/\/bx(\d+)/);
+    return match ? parseInt(match[1]) : null;
+  };
+
   // Build rows of 4 for the grid
   const gridRows = [];
   const validCovers = post.animeCovers.filter((_, i) => !imageErrors[i]);
@@ -77,16 +83,22 @@ const PostDetailPage = ({ route, navigation }) => {
 
         {/* Anime Grid - 4 columns */}
         <View style={styles.grid}>
-          {post.animeCovers.map((cover, index) => (
-            !imageErrors[index] && (
-              <Image
+          {post.animeCovers.map((cover, index) => {
+            if (imageErrors[index]) return null;
+            const animeId = getAnimeIdFromUrl(cover.imageUrl);
+            return (
+              <Pressable
                 key={index}
-                source={{ uri: cover.imageUrl }}
-                style={styles.gridImage}
-                onError={() => handleImageError(index)}
-              />
-            )
-          ))}
+                onPress={() => animeId && navigation.navigate('DetailsAnime', { animeId })}
+              >
+                <Image
+                  source={{ uri: cover.imageUrl }}
+                  style={styles.gridImage}
+                  onError={() => handleImageError(index)}
+                />
+              </Pressable>
+            );
+          })}
         </View>
 
         {/* Bottom spacer */}

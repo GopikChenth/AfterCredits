@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Keyboard,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,10 +30,12 @@ import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getUserProfile } from '../services/profile';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const HomeAnime = ({ navigation }) => {
   const theme = getMediaTheme('anime');
   const { setMediaType } = useMediaType();
+  const tabBarHeight = useBottomTabBarHeight();
   
   // Set media type to anime when this page loads
   useEffect(() => {
@@ -260,6 +264,11 @@ const HomeAnime = ({ navigation }) => {
       </View>
 
       {/* Content */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -329,6 +338,7 @@ const HomeAnime = ({ navigation }) => {
           </>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
 
       {/* Search Bar - rendered AFTER NavBar for higher stacking on Android */}
@@ -340,7 +350,8 @@ const HomeAnime = ({ navigation }) => {
         onCancel={handleSearchCancel}
         onSubmit={handleSearchSubmit}
         defaultBottom={8}
-        keyboardOffset={32}
+        keyboardOffset={8}
+        tabBarHeight={tabBarHeight}
       />
 
       {/* Search Suggestions Overlay - Only show when typing, NOT when submitted */}

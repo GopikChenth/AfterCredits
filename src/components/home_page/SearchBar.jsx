@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
 export const KeyboardAwareSearchBar = ({ 
   defaultBottom = 93,
   keyboardOffset = 16,
+  tabBarHeight = 0,
   ...props 
 }) => {
   const bottomAnim = useRef(new Animated.Value(defaultBottom)).current;
@@ -234,7 +235,7 @@ export const KeyboardAwareSearchBar = ({
     // Keyboard show handler
     const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
-      const targetPosition = keyboardHeight + keyboardOffset;
+      const targetPosition = keyboardHeight - tabBarHeight + keyboardOffset;
       
       Animated.timing(bottomAnim, {
         toValue: targetPosition,

@@ -91,6 +91,11 @@ const MEDIA_FRAGMENT = `
       month
       day
     }
+    tags {
+      name
+      category
+      rank
+    }
   }
 `;
 
@@ -557,6 +562,7 @@ export const formatAnimeData = (media) => {
     trending: media.trending,
     studio: media.studios?.nodes?.[0]?.name || 'Unknown',
     color: media.coverImage.color,
+    tags: media.tags || [],
   };
 };
 
