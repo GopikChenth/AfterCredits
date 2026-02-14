@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ListPost from '../components/Post_page/ListPost';
+import PostSkeleton from '../components/Post_page/PostSkeleton';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile } from '../services/profile';
 
@@ -95,6 +96,7 @@ const DUMMY_POSTS = [
 const PostPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
   const [userProfile, setUserProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -103,7 +105,13 @@ const PostPage = ({ navigation }) => {
     };
     loadProfile();
     const unsubscribe = navigation.addListener('focus', () => loadProfile());
-    return unsubscribe;
+    
+    // Simulate loading for dummy data
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, [navigation]);
 
   return (
@@ -140,18 +148,22 @@ const PostPage = ({ navigation }) => {
           contentContainerStyle={styles.feedContent}
           showsVerticalScrollIndicator={false}
         >
-          {DUMMY_POSTS.map((post) => (
-            <ListPost
-              key={post.id}
-              username={post.username}
-              avatarUrl={post.avatarUrl}
-              date={post.date}
-              title={post.title}
-              description={post.description}
-              animeCovers={post.animeCovers}
-              onPress={() => navigation.navigate('PostDetailAnime', { post })}
-            />
-          ))}
+          {isLoading ? (
+            <PostSkeleton count={3} />
+          ) : (
+            DUMMY_POSTS.map((post) => (
+              <ListPost
+                key={post.id}
+                username={post.username}
+                avatarUrl={post.avatarUrl}
+                date={post.date}
+                title={post.title}
+                description={post.description}
+                animeCovers={post.animeCovers}
+                onPress={() => navigation.navigate('PostDetailAnime', { post })}
+              />
+            ))
+          )}
           
           {/* Bottom spacer for NavBar */}
           <View style={{ height: 20 }} />
