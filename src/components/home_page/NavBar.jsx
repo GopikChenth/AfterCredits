@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
 /**
  * Custom Tab Bar for Bottom Tab Navigator
@@ -34,11 +34,10 @@ const NavBar = ({ state, descriptors, navigation }) => {
         };
 
         return (
-          <TouchableOpacity
+          <Pressable
             key={route.key}
             style={styles.tab}
             onPress={onPress}
-            activeOpacity={0.7}
           >
             <Text style={styles.icon}>{config.icon}</Text>
             <Text style={[
@@ -48,7 +47,7 @@ const NavBar = ({ state, descriptors, navigation }) => {
               {config.label}
             </Text>
             {isFocused && <View style={styles.indicator} />}
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>

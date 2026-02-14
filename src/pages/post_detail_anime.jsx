@@ -7,7 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,13 +42,12 @@ const PostDetailPage = ({ route, navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
 
       {/* Back Button */}
-      <TouchableOpacity
+      <Pressable
         style={styles.backButton}
         onPress={() => navigation.goBack()}
-        activeOpacity={0.7}
       >
         <Ionicons name="arrow-back" size={24} color="#fff" />
-      </TouchableOpacity>
+      </Pressable>
 
       <ScrollView
         style={styles.scrollView}

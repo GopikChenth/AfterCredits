@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Animated,
   Platform,
 } from 'react-native';
@@ -121,13 +121,12 @@ const SideBar = ({
         ]}
         pointerEvents={isVisible ? 'auto' : 'none'}
       >
-        <TouchableOpacity 
+        <Pressable 
           style={StyleSheet.absoluteFill}
-          activeOpacity={1}
           onPress={onClose}
         >
           <BackgroundBlur />
-        </TouchableOpacity>
+        </Pressable>
       </Animated.View>
 
       {/* Floating pills */}
@@ -143,10 +142,9 @@ const SideBar = ({
       >
         {visibleSections.map((section) => (
           <Animated.View key={section.id} style={styles.pillWrapper}>
-            <TouchableOpacity
+            <Pressable
               style={styles.pill}
               onPress={() => handleSectionPress(section.id)}
-              activeOpacity={0.7}
               android_ripple={null}
               underlayColor="transparent"
               hitSlop={{top: 0, bottom: 0, left: 0, right: 0}}
@@ -170,7 +168,7 @@ const SideBar = ({
                   </Text>
                 </View>
               </PillBlur>
-            </TouchableOpacity>
+            </Pressable>
           </Animated.View>
         ))}
       </Animated.View>

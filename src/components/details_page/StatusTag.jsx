@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Animated, Modal, Pressable } from 'react-native';
+import { View, Pressable, Text, StyleSheet, Animated, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const STATUS_OPTIONS = [
@@ -46,24 +46,23 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
     <View style={styles.wrapper}>
       {/* Status Pill */}
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <TouchableOpacity
+        <Pressable
           style={[
             styles.pill,
             { backgroundColor: currentStatus.bg, borderColor: currentStatus.border },
           ]}
           onPress={() => setShowDropdown(true)}
-          activeOpacity={0.7}
         >
           <Ionicons name={currentStatus.icon} size={18} color={currentStatus.text} />
           <Text style={[styles.pillLabel, { color: currentStatus.text }]}>
             {currentStatus.label}
           </Text>
           <Ionicons name="chevron-down" size={14} color={currentStatus.text} style={{ marginLeft: 2 }} />
-        </TouchableOpacity>
+        </Pressable>
       </Animated.View>
 
       {/* Wishlist Pill */}
-      <TouchableOpacity
+      <Pressable
         style={[
           styles.pill,
           isWishlisted
@@ -71,7 +70,6 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
             : { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)' },
         ]}
         onPress={handleWishlistPress}
-        activeOpacity={0.7}
       >
         <Ionicons
           name={isWishlisted ? 'bookmark' : 'bookmark-outline'}
@@ -81,7 +79,7 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
         <Text style={[styles.pillLabel, { color: isWishlisted ? '#5B2D8E' : '#fff' }]}>
           Wishlist
         </Text>
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Dropdown Modal */}
       <Modal
@@ -94,7 +92,7 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
           <View style={styles.dropdown}>
             <Text style={styles.dropdownTitle}>Set Status</Text>
             {STATUS_OPTIONS.filter(s => s.key !== null).map((option) => (
-              <TouchableOpacity
+              <Pressable
                 key={option.key}
                 style={[
                   styles.dropdownItem,
@@ -102,7 +100,6 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
                   status === option.key && styles.dropdownItemActive,
                 ]}
                 onPress={() => handleStatusSelect(option.key)}
-                activeOpacity={0.7}
               >
                 <Ionicons name={option.icon} size={20} color={option.text} />
                 <Text style={[styles.dropdownItemLabel, { color: option.text }]}>
@@ -111,19 +108,18 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
                 {status === option.key && (
                   <Ionicons name="checkmark" size={18} color={option.text} style={{ marginLeft: 'auto' }} />
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ))}
 
             {/* Clear status option */}
             {status && (
-              <TouchableOpacity
+              <Pressable
                 style={[styles.dropdownItem, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)' }]}
                 onPress={() => handleStatusSelect(null)}
-                activeOpacity={0.7}
               >
                 <Ionicons name="remove-circle-outline" size={20} color="#aaa" />
                 <Text style={[styles.dropdownItemLabel, { color: '#aaa' }]}>Clear Status</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         </Pressable>

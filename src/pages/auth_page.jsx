@@ -4,7 +4,7 @@ import {
   Text, 
   StyleSheet, 
   TextInput,
-  TouchableOpacity,
+  Pressable,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
@@ -148,22 +148,22 @@ const AuthPage = ({ navigation }) => {
 
           {/* Toggle Tabs */}
           <View style={styles.tabContainer}>
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.tab, isLogin && [styles.activeTab, { borderBottomColor: theme.accent }]]}
               onPress={() => setIsLogin(true)}
             >
               <Text style={[styles.tabText, isLogin && [styles.activeTabText, { color: theme.accent }]]}>
                 Login
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
+            </Pressable>
+            <Pressable 
               style={[styles.tab, !isLogin && [styles.activeTab, { borderBottomColor: theme.accent }]]}
               onPress={() => setIsLogin(false)}
             >
               <Text style={[styles.tabText, !isLogin && [styles.activeTabText, { color: theme.accent }]]}>
                 Sign Up
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Form */}
@@ -237,13 +237,13 @@ const AuthPage = ({ navigation }) => {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                 />
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Pressable onPress={() => setShowPassword(!showPassword)}>
                   <Ionicons 
                     name={showPassword ? "eye-outline" : "eye-off-outline"} 
                     size={20} 
                     color="#999" 
                   />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
 
@@ -268,15 +268,15 @@ const AuthPage = ({ navigation }) => {
 
             {/* Forgot Password (Login only) */}
             {isLogin && (
-              <TouchableOpacity style={styles.forgotPassword}>
+              <Pressable style={styles.forgotPassword}>
                 <Text style={[styles.forgotPasswordText, { color: theme.accent }]}>
                   Forgot Password?
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
 
             {/* Submit Button */}
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.submitButton, { backgroundColor: theme.accent }]}
               onPress={isLogin ? handleLogin : handleSignUp}
               disabled={loading}
@@ -288,7 +288,7 @@ const AuthPage = ({ navigation }) => {
                   {isLogin ? 'Login' : 'Sign Up'}
                 </Text>
               )}
-            </TouchableOpacity>
+            </Pressable>
 
             {/* OAuth buttons temporarily hidden - requires additional setup */}
             {/* 
@@ -299,27 +299,27 @@ const AuthPage = ({ navigation }) => {
             </View>
 
             <View style={styles.socialButtons}>
-              <TouchableOpacity 
+              <Pressable 
                 style={styles.socialButton}
                 onPress={() => handleSocialLogin('google')}
                 disabled={loading}
               >
                 <Ionicons name="logo-google" size={24} color="#DB4437" />
-              </TouchableOpacity>
-              <TouchableOpacity 
+              </Pressable>
+              <Pressable 
                 style={styles.socialButton}
                 onPress={() => handleSocialLogin('apple')}
                 disabled={loading}
               >
                 <Ionicons name="logo-apple" size={24} color="#000" />
-              </TouchableOpacity>
-              <TouchableOpacity 
+              </Pressable>
+              <Pressable 
                 style={styles.socialButton}
                 onPress={() => handleSocialLogin('facebook')}
                 disabled={loading}
               >
                 <Ionicons name="logo-facebook" size={24} color="#4267B2" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             */}
 

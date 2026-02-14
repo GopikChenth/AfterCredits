@@ -5,7 +5,7 @@ import {
   StyleSheet,
   StatusBar,
   Image,
-  TouchableOpacity,
+  Pressable,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
@@ -127,9 +127,8 @@ const UpcomingPage = ({ navigation }) => {
     } : {};
 
     return (
-      <TouchableOpacity
+      <Pressable
         style={[styles.card, expandedStyle]}
-        activeOpacity={0.85}
         onPress={() => handleCardPress(anime.id)}
       >
         <Image source={{ uri: anime.coverImage }} style={styles.cardImage} />
@@ -140,13 +139,12 @@ const UpcomingPage = ({ navigation }) => {
             locations={[0, 0.4, 1]}
             style={styles.expandedOverlay}
           >
-            <TouchableOpacity
+            <Pressable
               style={styles.closeButton}
               onPress={() => setExpandedAnimeId(null)}
-              activeOpacity={0.7}
             >
               <Ionicons name="close" size={20} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.expandedHeader}>
               <Text style={styles.expandedTitle} numberOfLines={3}>
@@ -183,34 +181,32 @@ const UpcomingPage = ({ navigation }) => {
               )}
 
               <View style={styles.actionButtonsRow}>
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.wishlistButton,
                     isWishlisted(anime.id) && styles.wishlistButtonActive
                   ]}
                   onPress={() => toggleWishlist(anime.id)}
-                  activeOpacity={0.7}
                 >
                   <Ionicons
                     name={isWishlisted(anime.id) ? 'bookmark' : 'bookmark-outline'}
                     size={20}
                     color="#D4BBFF"
                   />
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                   style={styles.viewDetailsButton}
                   onPress={() => navigation.navigate('DetailsAnime', { animeId: anime.id })}
-                  activeOpacity={0.7}
                 >
                   <Text style={styles.viewDetailsText}>View Details</Text>
                   <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </LinearGradient>
         )}
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -230,13 +226,12 @@ const UpcomingPage = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <Pressable
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>Upcoming Anime</Text>
             <Text style={styles.headerSubtitle}>Sorted by nearest release</Text>

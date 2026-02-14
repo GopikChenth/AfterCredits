@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Modal,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   Image,
   Alert,
   KeyboardAvoidingView,
@@ -168,9 +168,9 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
           <View style={styles.modalContent}>
             {/* Header */}
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={onClose}>
+              <Pressable onPress={onClose}>
                 <Ionicons name="close" size={28} color="#333" />
-              </TouchableOpacity>
+              </Pressable>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <View style={{ width: 28 }} />
             </View>
@@ -178,7 +178,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Avatar Section */}
               <View style={styles.avatarSection}>
-                <TouchableOpacity onPress={pickImage} style={styles.avatarContainer}>
+                <Pressable onPress={pickImage} style={styles.avatarContainer}>
                   <Image
                     source={{ 
                       uri: avatarUri || 'https://api.dicebear.com/7.x/avataaars/png?seed=user123' 
@@ -188,7 +188,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
                   <View style={[styles.editBadge, { backgroundColor: theme.accent }]}>
                     <Ionicons name="camera" size={16} color="#fff" />
                   </View>
-                </TouchableOpacity>
+                </Pressable>
                 <Text style={styles.avatarHint}>Tap to change photo</Text>
               </View>
 
@@ -227,7 +227,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
               </View>
 
               {/* Save Button */}
-              <TouchableOpacity
+              <Pressable
                 style={[styles.saveButton, { backgroundColor: theme.accent }]}
                 onPress={handleSave}
                 disabled={loading}
@@ -237,7 +237,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
                 ) : (
                   <Text style={styles.saveButtonText}>Save Changes</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
 
               <View style={{ height: 20 }} />
             </ScrollView>

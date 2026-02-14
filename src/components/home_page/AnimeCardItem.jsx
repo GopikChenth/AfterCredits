@@ -1,13 +1,12 @@
 import React from 'react';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
 import MediaCard from './Card';
 
 const AnimeCardItem = React.memo(({ anime, onPress, cardHeight }) => {
   return (
-    <TouchableOpacity 
+    <Pressable 
       style={styles.neumorphicCard}
       onPress={onPress}
-      activeOpacity={0.8}
     >
       <View style={styles.cardInner}>
         <MediaCard
@@ -19,7 +18,7 @@ const AnimeCardItem = React.memo(({ anime, onPress, cardHeight }) => {
           height={cardHeight}
         />
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 

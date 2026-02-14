@@ -5,7 +5,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 
 const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress }) => {
@@ -19,10 +19,9 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={styles.container}
       onPress={onPress}
-      activeOpacity={0.7}
     >
       {/* Header: Avatar + Username + Date */}
       <View style={styles.header}>
@@ -60,7 +59,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       {description && (
         <Text style={styles.description}>{description}</Text>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

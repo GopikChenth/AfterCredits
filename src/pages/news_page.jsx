@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   StatusBar,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   FlatList,
 } from 'react-native';
@@ -76,13 +76,12 @@ const NewsPage = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header with back button */}
         <View style={styles.header}>
-          <TouchableOpacity
+          <Pressable
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            activeOpacity={0.7}
           >
             <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerTitle}>Anime News</Text>
             <Text style={styles.headerSubtitle}>Latest updates from Anime Corner</Text>

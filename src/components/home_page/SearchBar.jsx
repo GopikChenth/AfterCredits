@@ -3,7 +3,7 @@ import {
   View, 
   TextInput, 
   StyleSheet, 
-  TouchableOpacity, 
+  Pressable, 
   Text,
   Platform,
   Keyboard,
@@ -92,13 +92,12 @@ const SearchBar = ({
 
       {/* Clear Button */}
       {value.length > 0 && (
-        <TouchableOpacity 
+        <Pressable 
           style={styles.clearButton}
           onPress={handleClear}
-          activeOpacity={0.7}
         >
           <Text style={styles.clearIcon}>✕</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );

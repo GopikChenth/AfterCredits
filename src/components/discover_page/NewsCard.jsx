@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Linking } from 'react-native';
+import { View, Text, Pressable, Image, StyleSheet, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { formatTimeAgo, fetchArticleImage } from '../../services/news_service';
 
@@ -32,9 +32,8 @@ const NewsCard = ({ article }) => {
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       style={styles.card}
-      activeOpacity={0.85}
       onPress={handlePress}
       onLayout={handleLayout}
     >
@@ -71,7 +70,7 @@ const NewsCard = ({ article }) => {
           <Ionicons name="open-outline" size={12} color="#FFB3C6" style={styles.linkIcon} />
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 };
 

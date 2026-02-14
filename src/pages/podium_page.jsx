@@ -1,47 +1,48 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Dimensions,
   StatusBar,
   ActivityIndicator,
+  Image,
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getMediaTheme } from '../utils/mediaThemes';
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
 import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
-import { useMediaType } from '../context/MediaTypeContext';
 
 const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - 56) / 2;
 
-const STATUS_CARDS = [
-  { key: 'watching', label: 'Watching', icon: 'eye', color: '#FFF3B0', textColor: '#7A6B00', bgColor: 'rgba(255, 243, 176, 0.08)', borderColor: 'rgba(240, 230, 140, 0.25)' },
-  { key: 'watched', label: 'Watched', icon: 'checkmark-circle', color: '#B5EAD7', textColor: '#1B6B3A', bgColor: 'rgba(181, 234, 215, 0.08)', borderColor: 'rgba(143, 212, 180, 0.25)' },
-  { key: 'dropped', label: 'Dropped', icon: 'close-circle', color: '#FFB5B5', textColor: '#8B1A1A', bgColor: 'rgba(255, 181, 181, 0.08)', borderColor: 'rgba(240, 144, 144, 0.25)' },
-  { key: 'wishlist', label: 'Wishlist', icon: 'bookmark', color: '#D4BBFF', textColor: '#5B2D8E', bgColor: 'rgba(212, 187, 255, 0.08)', borderColor: 'rgba(184, 154, 232, 0.25)' },
+const TABS = [
+  { key: 'watching', label: 'Watching', icon: 'eye', color: '#FFF3B0', textColor: '#7A6B00', borderColor: '#F0E68C' },
+  { key: 'watched', label: 'Watched', icon: 'checkmark-circle', color: '#B5EAD7', textColor: '#1B6B3A', borderColor: '#8FD4B4' },
+  { key: 'dropped', label: 'Dropped', icon: 'close-circle', color: '#FFB5B5', textColor: '#8B1A1A', borderColor: '#F09090' },
+  { key: 'wishlist', label: 'Wishlist', icon: 'bookmark', color: '#D4BBFF', textColor: '#5B2D8E', borderColor: '#B89AE8' },
 ];
 
-// In-memory cache for anime details
+// Simple in-memory cache for anime details
 const animeCache = {};
+
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const PodiumPage = ({ navigation }) => {
-  const theme = getMediaTheme('anime');
-  const { mediaType } = useMediaType();
+  const [activeTab, setActiveTab] = useState('watching');
+  const [items, setItems] = useState([]);
+  const [animeDetails, setAnimeDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [counts, setCounts] = useState({ watching: 0, watched: 0, dropped: 0, wishlist: 0 });
-  const [allAnimeData, setAllAnimeData] = useState([]);
-  const [animeDetails, setAnimeDetails] = useState({});
 
-  // Fetch anime details for items with rate limiting
+  // Fetch anime details for a list of media IDs with rate limit handling
   const fetchAnimeDetailsForItems = useCallback(async (statusItems) => {
+    // Show cached items instantly
     const cached = {};
     statusItems.forEach(item => {
       if (animeCache[item.media_id]) {
@@ -52,6 +53,7 @@ const PodiumPage = ({ navigation }) => {
       setAnimeDetails(prev => ({ ...prev, ...cached }));
     }
 
+    // Fetch uncached items one by one, updating state after each
     const uncachedIds = statusItems
       .map(item => item.media_id)
       .filter(id => !animeCache[id]);
@@ -64,22 +66,48 @@ const PodiumPage = ({ navigation }) => {
           animeCache[id] = formatted;
           setAnimeDetails(prev => ({ ...prev, [id]: formatted }));
         }
+        // Small delay between requests to avoid rate limiting
         if (uncachedIds.indexOf(id) < uncachedIds.length - 1) {
           await delay(400);
         }
       } catch (error) {
         console.warn(`Failed to fetch details for ${id}:`, error.message);
-        const fallback = { id, title: `Anime #${id}`, coverImage: null, genres: [], studio: 'Unknown' };
+        const fallback = { id, title: `Anime #${id}`, coverImage: null };
         animeCache[id] = fallback;
         setAnimeDetails(prev => ({ ...prev, [id]: fallback }));
       }
     }
   }, []);
 
-  // Fetch all data: counts + anime details for stats
-  const fetchAllData = useCallback(async (isRefresh = false) => {
+  const fetchItems = useCallback(async (tab, isRefresh = false) => {
     if (!isRefresh) setLoading(true);
 
+    try {
+      let result;
+      if (tab === 'wishlist') {
+        result = await getWishlist('anime');
+      } else {
+        result = await getByStatus(tab, 'anime');
+      }
+
+      if (result.success) {
+        const data = result.data || [];
+        setItems(data);
+        // Fetch anime details for each item
+        if (data.length > 0) {
+          fetchAnimeDetailsForItems(data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching podium items:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [fetchAnimeDetailsForItems]);
+
+  // Fetch all counts on mount
+  const fetchCounts = useCallback(async () => {
     try {
       const [watchingRes, watchedRes, droppedRes, wishlistRes] = await Promise.all([
         getByStatus('watching', 'anime'),
@@ -88,100 +116,83 @@ const PodiumPage = ({ navigation }) => {
         getWishlist('anime'),
       ]);
 
-      const watchingData = watchingRes.success ? (watchingRes.data || []) : [];
-      const watchedData = watchedRes.success ? (watchedRes.data || []) : [];
-      const droppedData = droppedRes.success ? (droppedRes.data || []) : [];
-      const wishlistData = wishlistRes.success ? (wishlistRes.data || []) : [];
-
       setCounts({
-        watching: watchingData.length,
-        watched: watchedData.length,
-        dropped: droppedData.length,
-        wishlist: wishlistData.length,
+        watching: watchingRes.success ? (watchingRes.data?.length || 0) : 0,
+        watched: watchedRes.success ? (watchedRes.data?.length || 0) : 0,
+        dropped: droppedRes.success ? (droppedRes.data?.length || 0) : 0,
+        wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
       });
-
-      // Combine all data for stats calculations
-      const allItems = [...watchingData, ...watchedData, ...droppedData, ...wishlistData];
-      // Deduplicate by media_id
-      const uniqueItems = allItems.filter((item, index, self) =>
-        index === self.findIndex(t => t.media_id === item.media_id)
-      );
-      setAllAnimeData(uniqueItems);
-
-      // Fetch details for all anime
-      if (uniqueItems.length > 0) {
-        fetchAnimeDetailsForItems(uniqueItems);
-      }
     } catch (error) {
-      console.error('Error fetching podium data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.error('Error fetching counts:', error);
     }
-  }, [fetchAnimeDetailsForItems]);
+  }, []);
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    fetchItems(activeTab);
+    fetchCounts();
+  }, [activeTab]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchAllData(true);
+    fetchItems(activeTab, true);
+    fetchCounts();
   };
 
-  // Calculate statistics from anime details
-  const statistics = useMemo(() => {
-    const allAnime = Object.values(animeDetails);
-    if (allAnime.length === 0) {
-      return { totalAnime: 0, totalEpisodes: 0, averageScore: 0, topGenres: [], topStudios: [], mostWatched: [] };
-    }
+  const currentTab = TABS.find(t => t.key === activeTab);
 
-    const totalAnime = allAnime.length;
-    const totalEpisodes = allAnime.reduce((sum, anime) => sum + (anime.episodes || 0), 0);
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name={currentTab.icon} size={64} color="rgba(255,255,255,0.15)" />
+      <Text style={styles.emptyTitle}>Nothing here yet</Text>
+      <Text style={styles.emptySubtitle}>
+        {activeTab === 'watching' && 'Start watching anime and mark them here'}
+        {activeTab === 'watched' && 'Mark anime as watched to track your history'}
+        {activeTab === 'dropped' && "Anime you've dropped will appear here"}
+        {activeTab === 'wishlist' && 'Add anime to your wishlist from the details page'}
+      </Text>
+    </View>
+  );
 
-    const scoresWithValues = allAnime.filter(anime => anime.score);
-    const averageScore = scoresWithValues.length > 0
-      ? (scoresWithValues.reduce((sum, anime) => sum + anime.score, 0) / scoresWithValues.length).toFixed(1)
-      : 0;
+  const renderItem = useCallback((item) => {
+    const anime = animeDetails[item.media_id];
+    const title = anime?.title || `Loading...`;
+    const coverImage = anime?.coverImage;
 
-    // Top genres
-    const genreMap = {};
-    allAnime.forEach(anime => {
-      if (anime.genres) {
-        anime.genres.forEach(genre => {
-          genreMap[genre] = (genreMap[genre] || 0) + 1;
-        });
-      }
-    });
-    const topGenres = Object.entries(genreMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([name, count]) => ({ name, count }));
-
-    // Top studios
-    const studioMap = {};
-    allAnime.forEach(anime => {
-      if (anime.studio && anime.studio !== 'Unknown') {
-        studioMap[anime.studio] = (studioMap[anime.studio] || 0) + 1;
-      }
-    });
-    const topStudios = Object.entries(studioMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, count]) => ({ name, count }));
-
-    // Most watched (by episode count)
-    const mostWatched = allAnime
-      .filter(anime => anime.episodes && anime.episodes > 0)
-      .sort((a, b) => b.episodes - a.episodes)
-      .slice(0, 3)
-      .map(anime => ({ title: anime.title, episodes: anime.episodes }));
-
-    return { totalAnime, totalEpisodes, averageScore, topGenres, topStudios, mostWatched };
-  }, [animeDetails]);
-
-  // Status breakdown bar widths
-  const totalCount = counts.watching + counts.watched + counts.dropped + counts.wishlist;
+    return (
+      <Pressable
+        key={item.id}
+        style={styles.animeCard}
+        onPress={() => navigation.navigate('DetailsAnime', { animeId: item.media_id })}
+      >
+        <View style={styles.cardImageContainer}>
+          {coverImage ? (
+            <Image
+              source={{ uri: coverImage }}
+              style={styles.cardImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.cardPlaceholder}>
+              <ActivityIndicator size="small" color="rgba(255,255,255,0.3)" />
+            </View>
+          )}
+          {/* Status indicator dot */}
+          <View style={[styles.statusDot, { backgroundColor: currentTab.color }]} />
+        </View>
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {title}
+          </Text>
+          <View style={[styles.statusBadge, { backgroundColor: currentTab.color }]}>
+            <Ionicons name={currentTab.icon} size={10} color={currentTab.textColor} />
+            <Text style={[styles.statusBadgeText, { color: currentTab.textColor }]}>
+              {currentTab.label}
+            </Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }, [animeDetails, currentTab, navigation]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -190,9 +201,54 @@ const PodiumPage = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Podium</Text>
-        <Text style={styles.headerSubtitle}>Your anime collection & stats</Text>
+        <Text style={styles.headerSubtitle}>Your anime collection</Text>
       </View>
 
+      {/* Tab Bar */}
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              style={[
+                styles.tab,
+                isActive && { backgroundColor: tab.color, borderColor: tab.borderColor },
+              ]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={16}
+                color={isActive ? tab.textColor : '#888'}
+              />
+              <Text style={[
+                styles.tabLabel,
+                isActive && { color: tab.textColor, fontWeight: '800' },
+              ]}>
+                {tab.label}
+              </Text>
+              {counts[tab.key] > 0 ? (
+                <View style={[
+                  styles.countBadge,
+                  isActive
+                    ? { backgroundColor: tab.textColor }
+                    : { backgroundColor: 'rgba(255,255,255,0.15)' },
+                ]}>
+                  <Text style={[
+                    styles.countText,
+                    isActive && { color: tab.color },
+                  ]}>
+                    {counts[tab.key]}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Content */}
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
@@ -208,159 +264,18 @@ const PodiumPage = ({ navigation }) => {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFD4A3" />
-            <Text style={styles.loadingText}>Loading stats...</Text>
+            <ActivityIndicator size="large" color={currentTab.color} />
+            <Text style={styles.loadingText}>Loading...</Text>
           </View>
+        ) : items.length === 0 ? (
+          renderEmptyState()
         ) : (
-          <>
-            {/* ═══ OVERVIEW ═══ */}
-            <View style={styles.sectionHeader}>
-              <Ionicons name="grid-outline" size={18} color="#FFD4A3" />
-              <Text style={styles.sectionTitle}>Overview</Text>
-            </View>
-
-            <View style={styles.overviewGrid}>
-              <View style={styles.overviewCard}>
-                <Ionicons name="film-outline" size={24} color="#FFD4A3" />
-                <Text style={styles.overviewValue}>{statistics.totalAnime}</Text>
-                <Text style={styles.overviewLabel}>Anime</Text>
-              </View>
-              <View style={styles.overviewCard}>
-                <Ionicons name="play-circle-outline" size={24} color="#FFD4A3" />
-                <Text style={styles.overviewValue}>{statistics.totalEpisodes}</Text>
-                <Text style={styles.overviewLabel}>Episodes</Text>
-              </View>
-              <View style={styles.overviewCard}>
-                <Ionicons name="star" size={24} color="#FFD4A3" />
-                <Text style={styles.overviewValue}>{statistics.averageScore || 'N/A'}</Text>
-                <Text style={styles.overviewLabel}>Avg Score</Text>
-              </View>
-              <View style={styles.overviewCard}>
-                <Ionicons name="heart" size={24} color="#FFD4A3" />
-                <Text style={styles.overviewValue}>{counts.wishlist}</Text>
-                <Text style={styles.overviewLabel}>Favorites</Text>
-              </View>
-            </View>
-
-            {/* ═══ LIBRARY ═══ */}
-            <View style={styles.sectionHeader}>
-              <Ionicons name="library-outline" size={18} color="#FFD4A3" />
-              <Text style={styles.sectionTitle}>Library</Text>
-            </View>
-
-            <View style={styles.libraryContainer}>
-              {/* Status Breakdown Bar */}
-              {totalCount > 0 && (
-                <View style={styles.statusBar}>
-                  {STATUS_CARDS.map(card => {
-                    const pct = totalCount > 0 ? (counts[card.key] / totalCount) * 100 : 0;
-                    if (pct === 0) return null;
-                    return (
-                      <View
-                        key={card.key}
-                        style={[styles.statusBarSegment, { width: `${pct}%`, backgroundColor: card.color }]}
-                      />
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Status Cards */}
-              {STATUS_CARDS.map(card => (
-                <TouchableOpacity
-                  key={card.key}
-                  style={[styles.statusCard, { backgroundColor: card.bgColor, borderColor: card.borderColor }]}
-                  activeOpacity={0.7}
-                  onPress={() => navigation.navigate('PodiumListPage', { status: card.key })}
-                >
-                  <View style={styles.statusCardLeft}>
-                    <View style={[styles.statusIconBg, { backgroundColor: card.color }]}>
-                      <Ionicons name={card.icon} size={16} color={card.textColor} />
-                    </View>
-                    <Text style={[styles.statusCardLabel, { color: card.color }]}>{card.label}</Text>
-                  </View>
-                  <View style={styles.statusCardRight}>
-                    <Text style={[styles.statusCardCount, { color: card.color }]}>{counts[card.key]}</Text>
-                    <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* ═══ TOP GENRES ═══ */}
-            {statistics.topGenres.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="pricetag-outline" size={18} color="#FFD4A3" />
-                  <Text style={styles.sectionTitle}>Top Genres</Text>
-                </View>
-
-                <View style={styles.genreGrid}>
-                  {statistics.topGenres.map((genre, index) => (
-                    <View key={index} style={styles.genrePill}>
-                      <Text style={styles.genreName}>{genre.name}</Text>
-                      <View style={styles.genreCountBadge}>
-                        <Text style={styles.genreCountText}>{genre.count}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* ═══ MOST WATCHED ═══ */}
-            {statistics.mostWatched.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="eye-outline" size={18} color="#FFD4A3" />
-                  <Text style={styles.sectionTitle}>Most Watched</Text>
-                </View>
-
-                <View style={styles.analyticsContainer}>
-                  {statistics.mostWatched.map((anime, index) => (
-                    <View key={index} style={styles.analyticsItem}>
-                      <View style={styles.analyticsRank}>
-                        <Text style={styles.analyticsRankText}>{index + 1}</Text>
-                      </View>
-                      <Text style={styles.analyticsTitle} numberOfLines={1}>{anime.title}</Text>
-                      <View style={styles.analyticsBadge}>
-                        <Text style={styles.analyticsBadgeText}>{anime.episodes} ep</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* ═══ TOP STUDIOS ═══ */}
-            {statistics.topStudios.length > 0 && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Ionicons name="business-outline" size={18} color="#FFD4A3" />
-                  <Text style={styles.sectionTitle}>Top Studios</Text>
-                </View>
-
-                <View style={styles.analyticsContainer}>
-                  {statistics.topStudios.map((studio, index) => (
-                    <View key={index} style={styles.analyticsItem}>
-                      <View style={styles.analyticsRank}>
-                        <Text style={styles.analyticsRankText}>{index + 1}</Text>
-                      </View>
-                      <Text style={styles.analyticsTitle} numberOfLines={1}>{studio.name}</Text>
-                      <View style={styles.analyticsBadge}>
-                        <Text style={styles.analyticsBadgeText}>{studio.count} anime</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-
-            {/* Bottom spacer */}
-            <View style={{ height: 30 }} />
-          </>
+          <View style={styles.grid}>
+            {items.map(renderItem)}
+          </View>
         )}
       </ScrollView>
+
     </SafeAreaView>
   );
 };
@@ -389,11 +304,50 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginTop: 2,
   },
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.08)',
+    gap: 4,
+  },
+  tabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888',
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.3,
+  },
+  countBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  countText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#fff',
+  },
   content: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   loadingContainer: {
@@ -407,190 +361,91 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Agdasima',
   },
-
-  // Section Headers
-  sectionHeader: {
-    flexDirection: 'row',
+  emptyContainer: {
     alignItems: 'center',
-    gap: 8,
-    marginTop: 24,
-    marginBottom: 12,
+    justifyContent: 'center',
+    paddingTop: 80,
+    gap: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
     color: '#fff',
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
   },
-
-  // Overview Cards
-  overviewGrid: {
+  emptySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    fontFamily: 'Agdasima',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    lineHeight: 20,
+  },
+  grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
+    paddingTop: 8,
   },
-  overviewCard: {
-    flex: 1,
-    minWidth: (width - 60) / 2,
-    backgroundColor: 'rgba(255, 212, 163, 0.06)',
+  animeCard: {
+    width: CARD_WIDTH,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 179, 102, 0.15)',
-    padding: 16,
-    alignItems: 'center',
-    gap: 6,
-  },
-  overviewValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#FFD4A3',
-    fontFamily: 'Agdasima',
-  },
-  overviewLabel: {
-    fontSize: 11,
-    color: '#777',
-    fontFamily: 'Agdasima',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-
-  // Library
-  libraryContainer: {
-    gap: 8,
-  },
-  statusBar: {
-    flexDirection: 'row',
-    height: 6,
-    borderRadius: 3,
-    marginBottom: 8,
+    backgroundColor: '#1A1A2E',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  statusBarSegment: {
+  cardImageContainer: {
+    width: '100%',
+    height: CARD_WIDTH * 1.4,
+    position: 'relative',
+  },
+  cardImage: {
+    width: '100%',
     height: '100%',
   },
-  statusCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  statusCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  statusIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+  cardPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#252540',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusCardLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.3,
+  statusDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.3)',
   },
-  statusCardRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statusCardCount: {
-    fontSize: 20,
-    fontWeight: '800',
-    fontFamily: 'Agdasima',
-  },
-
-  // Genre Pills
-  genreGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  genrePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 212, 163, 0.08)',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingLeft: 14,
-    paddingRight: 6,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 179, 102, 0.2)',
-  },
-  genreName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFD4A3',
-    fontFamily: 'Agdasima',
-  },
-  genreCountBadge: {
-    backgroundColor: 'rgba(139, 90, 0, 0.5)',
-    borderRadius: 10,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    minWidth: 24,
-    alignItems: 'center',
-  },
-  genreCountText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFD4A3',
-    fontFamily: 'Agdasima',
-  },
-
-  // Analytics (Most Watched & Top Studios)
-  analyticsContainer: {
+  cardInfo: {
+    padding: 10,
     gap: 6,
   },
-  analyticsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    gap: 12,
-  },
-  analyticsRank: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255, 212, 163, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  analyticsRankText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#FFD4A3',
-    fontFamily: 'Agdasima',
-  },
-  analyticsTitle: {
-    flex: 1,
-    fontSize: 14,
+  cardTitle: {
+    fontSize: 13,
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'Agdasima',
+    letterSpacing: 0.3,
+    lineHeight: 17,
   },
-  analyticsBadge: {
-    backgroundColor: 'rgba(255, 212, 163, 0.12)',
-    borderRadius: 10,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    gap: 4,
   },
-  analyticsBadgeText: {
-    fontSize: 12,
+  statusBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#FFD4A3',
     fontFamily: 'Agdasima',
   },
 });

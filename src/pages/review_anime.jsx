@@ -4,7 +4,7 @@ import {
   Text, 
   StyleSheet, 
   TextInput, 
-  TouchableOpacity, 
+  Pressable, 
   Image, 
   ScrollView, 
   Platform,
@@ -97,13 +97,13 @@ const ReviewAnime = ({ navigation, route }) => {
           
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+            <Pressable onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
               <Ionicons name="close" size={28} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={[styles.headerTitle, { fontFamily: theme.headingFont }]}>I Watched</Text>
-            <TouchableOpacity onPress={handleSave} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+            <Pressable onPress={handleSave} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
               <Ionicons name="checkmark" size={28} color={theme.accent} />
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Media Info */}
@@ -128,27 +128,27 @@ const ReviewAnime = ({ navigation, route }) => {
             <View style={styles.ratingContainer}>
               <View style={styles.stars}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
+                  <Pressable key={star} onPress={() => setRating(star)}>
                     <Ionicons 
                       name="star" 
                       size={32} 
                       color={star <= rating ? theme.accent : '#E0E0E0'} 
                       style={{ marginRight: 6 }}
                     />
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
               <Text style={[styles.smallLabel, { fontFamily: theme.contentFont }]}>Rate</Text>
             </View>
 
             <View style={styles.likeContainer}>
-              <TouchableOpacity onPress={() => setLiked(!liked)} activeOpacity={0.7}>
+              <Pressable onPress={() => setLiked(!liked)}>
                 <Ionicons 
                   name={liked ? "heart" : "heart"} 
                   size={32} 
                   color={liked ? theme.accent : '#E0E0E0'} 
                 />
-              </TouchableOpacity>
+              </Pressable>
               <Text style={[styles.smallLabel, { fontFamily: theme.contentFont }]}>Like</Text>
             </View>
           </View>
@@ -167,18 +167,17 @@ const ReviewAnime = ({ navigation, route }) => {
           />
 
           {/* Tags */}
-          <TouchableOpacity style={styles.tagsContainer} activeOpacity={0.7}>
+          <Pressable style={styles.tagsContainer}>
             <Text style={[styles.tagsPlaceholder, { fontFamily: theme.contentFont }]}>Add tags...</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.divider} />
 
           {/* Bottom Toggles */}
           <View style={styles.togglesRow}>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.toggleItem} 
               onPress={() => setIsFirstTime(!isFirstTime)}
-              activeOpacity={0.7}
             >
               <View style={[styles.iconCircle, isFirstTime && { borderColor: theme.accent, backgroundColor: theme.accent + '20' }]}>
                 <Ionicons name="eye-outline" size={24} color={isFirstTime ? theme.accent : '#ccc'} />
@@ -186,12 +185,11 @@ const ReviewAnime = ({ navigation, route }) => {
               <Text style={[styles.toggleText, { fontFamily: theme.contentFont }, isFirstTime && { color: theme.accent }]}>
                 First-time watch
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
-            <TouchableOpacity 
+            <Pressable 
               style={styles.toggleItem} 
               onPress={() => setNoSpoilers(!noSpoilers)}
-              activeOpacity={0.7}
             >
               <View style={[styles.iconCircle, noSpoilers && { borderColor: theme.accent, backgroundColor: theme.accent + '20' }]}>
                 <Ionicons name="eye-off-outline" size={24} color={noSpoilers ? theme.accent : '#ccc'} /> 
@@ -199,7 +197,7 @@ const ReviewAnime = ({ navigation, route }) => {
               <Text style={[styles.toggleText, { fontFamily: theme.contentFont }, noSpoilers && { color: theme.accent }]}>
                 No spoilers
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
         </ScrollView>

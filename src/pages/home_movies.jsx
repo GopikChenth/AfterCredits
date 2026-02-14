@@ -3,7 +3,7 @@ import {
   View, 
   Text, 
   ScrollView, 
-  TouchableOpacity, 
+  Pressable, 
   StyleSheet, 
   Dimensions,
   StatusBar,
@@ -108,21 +108,21 @@ const HomeMovies = ({ navigation }) => {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.menuButton}
           onPress={() => setIsSidebarVisible(!isSidebarVisible)}
         >
           <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
+        </Pressable>
         
         <Text style={styles.headerTitle}>Movies</Text>
         
-        <TouchableOpacity 
+        <Pressable 
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}
         >
           <View style={styles.profileIcon} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Masonry Grid with Badge integrated */}
@@ -138,12 +138,12 @@ const HomeMovies = ({ navigation }) => {
         ) : error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.retryButton, { backgroundColor: theme.accent }]}
               onPress={() => fetchMovieData(selectedCategory)}
             >
               <Text style={styles.retryText}>Retry</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.grid}>
@@ -160,7 +160,7 @@ const HomeMovies = ({ navigation }) => {
               </View>
               
               {leftColumn.map((movie) => (
-                <TouchableOpacity 
+                <Pressable 
                   key={movie.id} 
                   style={styles.cardWrapper}
                   // onPress={() => navigation?.navigate('DetailsMovie', { movieId: movie.id })} // Not created yet
@@ -173,14 +173,14 @@ const HomeMovies = ({ navigation }) => {
                     width={cardWidth}
                     height={cardHeight}
                   />
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
 
             {/* Right Column */}
             <View style={styles.column}>
               {rightColumn.map((movie) => (
-                <TouchableOpacity 
+                <Pressable 
                   key={movie.id} 
                   style={styles.cardWrapper}
                   // onPress={() => navigation?.navigate('DetailsMovie', { movieId: movie.id })}
@@ -193,7 +193,7 @@ const HomeMovies = ({ navigation }) => {
                     width={cardWidth}
                     height={cardHeight}
                   />
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </View>
           </View>

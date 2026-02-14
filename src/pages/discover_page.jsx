@@ -7,7 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   Image,
-  TouchableOpacity,
+  Pressable,
   Dimensions,
   ActivityIndicator,
 } from "react-native";
@@ -127,10 +127,9 @@ const DiscoverPage = ({ navigation }) => {
     const isExpanded = expandedAnimeId === anime.id;
     
     return (
-      <TouchableOpacity
+      <Pressable
         key={anime.id}
         style={[styles.card, isExpanded && styles.cardExpanded]}
-        activeOpacity={0.85}
         onPress={() => handleCardPress(anime.id)}
       >
         <Image source={{ uri: anime.coverImage }} style={styles.cardImage} />
@@ -141,13 +140,12 @@ const DiscoverPage = ({ navigation }) => {
             locations={[0, 0.4, 1]}
             style={styles.expandedOverlay}
           >
-            <TouchableOpacity
+            <Pressable
               style={styles.closeButton}
               onPress={() => setExpandedAnimeId(null)}
-              activeOpacity={0.7}
             >
               <Ionicons name="close" size={20} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
 
             <View style={styles.expandedHeader}>
               <Text style={styles.expandedTitle} numberOfLines={3}>
@@ -184,34 +182,32 @@ const DiscoverPage = ({ navigation }) => {
               )}
 
               <View style={styles.actionButtonsRow}>
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.wishlistButton,
                     isWishlisted(anime.id) && styles.wishlistButtonActive
                   ]}
                   onPress={() => toggleWishlist(anime.id)}
-                  activeOpacity={0.7}
                 >
                   <Ionicons 
                     name={isWishlisted(anime.id) ? "bookmark" : "bookmark-outline"} 
                     size={20} 
                     color="#D4BBFF" 
                   />
-                </TouchableOpacity>
+                </Pressable>
 
-                <TouchableOpacity
+                <Pressable
                   style={styles.viewDetailsButton}
                   onPress={() => navigation.navigate("DetailsAnime", { animeId: anime.id })}
-                  activeOpacity={0.7}
                 >
                   <Text style={styles.viewDetailsText}>View Details</Text>
                   <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           </LinearGradient>
         )}
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -236,14 +232,13 @@ const DiscoverPage = ({ navigation }) => {
               <Ionicons name="time-outline" size={20} color="#FFB3C6" />
               <Text style={styles.sectionTitle}>Coming Soon</Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.viewAllButton}
               onPress={() => navigation.navigate("UpcomingPage")}
-              activeOpacity={0.7}
             >
               <Text style={styles.viewAllText}>View All</Text>
               <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.sectionSubtitle}>
             Anime that are yet to release
@@ -275,14 +270,13 @@ const DiscoverPage = ({ navigation }) => {
               <Ionicons name="newspaper-outline" size={20} color="#FFB3C6" />
               <Text style={styles.sectionTitle}>Latest News</Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.viewAllButton}
               onPress={() => navigation.navigate('NewsPage')}
-              activeOpacity={0.7}
             >
               <Text style={styles.viewAllText}>View All</Text>
               <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.sectionSubtitle}>Fresh from Anime Corner</Text>
         </View>

@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
@@ -35,12 +35,12 @@ const InlineSearchResults = ({
         <Text style={styles.emptyIcon}>🔍</Text>
         <Text style={styles.emptyTitle}>No results found</Text>
         <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
-        <TouchableOpacity 
+        <Pressable 
           onPress={onClearSearch}
           style={styles.backButton}
         >
           <Text style={styles.backButtonText}>← Back to Browse</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
@@ -55,12 +55,12 @@ const InlineSearchResults = ({
             {results.length} found for "{searchQuery}"
           </Text>
         </View>
-        <TouchableOpacity 
+        <Pressable 
           onPress={onClearSearch}
           style={styles.clearButton}
         >
           <Text style={styles.clearButtonText}>✕ Clear</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Results Grid */}
@@ -76,9 +76,8 @@ const InlineSearchResults = ({
               key={`${item.id}-${index}`}
               style={[styles.cardWrapper, { width: cardWrapperWidth }]}
             >
-              <TouchableOpacity
+              <Pressable
                 onPress={() => onResultPress && onResultPress(item)}
-                activeOpacity={0.7}
               >
                 <MediaCard
                   theme="anime"
@@ -88,7 +87,7 @@ const InlineSearchResults = ({
                   width={cardWidth}
                   height={cardHeight}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           );
         })}

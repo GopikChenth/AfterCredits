@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { getMediaTheme } from '../../utils/mediaThemes';
@@ -46,17 +46,16 @@ const DateSelector = ({ date, onDateChange }) => {
       <View style={styles.row}>
         <Text style={[styles.label, { fontFamily: theme.contentFont }]}>Date</Text>
         
-        <TouchableOpacity 
+        <Pressable 
           style={styles.datePill} 
           onPress={togglePicker}
-          activeOpacity={0.7}
         >
           <Text style={[styles.dateValue, { fontFamily: theme.contentFont }]}>
             {formattedDate}
           </Text>
           {/* Calendar or Edit Icon */}
           <Ionicons name="calendar-outline" size={16} color="#999" style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Render Picker */}
@@ -76,12 +75,12 @@ const DateSelector = ({ date, onDateChange }) => {
           
           {/* iOS needs a manual Close button if using inline picker in a custom view */}
           {Platform.OS === 'ios' && (
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.closeButton, { backgroundColor: theme.accent }]} 
               onPress={() => setShow(false)}
             >
               <Text style={styles.closeButtonText}>Done</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       )}

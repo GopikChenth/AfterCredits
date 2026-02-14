@@ -5,7 +5,7 @@ import {
   StyleSheet, 
   ScrollView, 
   Image, 
-  TouchableOpacity,
+  Pressable,
   StatusBar,
   Switch,
   Alert
@@ -128,9 +128,9 @@ const ProfilePage = ({ navigation }) => {
       >
         {/* Header - ALWAYS SHOW */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          </Pressable>
           <Text style={styles.headerTitle}>Settings</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -152,13 +152,13 @@ const ProfilePage = ({ navigation }) => {
                 Sign in to unlock your profile, stats & library
               </Text>
               
-              <TouchableOpacity 
+              <Pressable 
                 style={[styles.signInButton, { backgroundColor: theme.accent }]}
                 onPress={() => navigation.navigate('AuthPage')}
               >
                 <Ionicons name="finger-print" size={20} color="#fff" />
                 <Text style={styles.signInButtonText}>Sign In</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             {/* Media Visibility Settings */}
             <Text style={styles.sectionTitle}>Sidebar</Text>
@@ -275,7 +275,7 @@ const ProfilePage = ({ navigation }) => {
             
             <View style={styles.menuCard}>
               {/* Theme (Future) */}
-              <TouchableOpacity style={styles.menuItem}>
+              <Pressable style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
                   <Ionicons name="color-palette-outline" size={20} color={theme.accent} />
                 </View>
@@ -284,12 +284,12 @@ const ProfilePage = ({ navigation }) => {
                   <Text style={styles.menuSubtitle}>Dark</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#999" />
-              </TouchableOpacity>
+              </Pressable>
 
               <View style={styles.menuDivider} />
 
               {/* Language (Future) */}
-              <TouchableOpacity style={styles.menuItem}>
+              <Pressable style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
                   <Ionicons name="language-outline" size={20} color={theme.accent} />
                 </View>
@@ -298,12 +298,12 @@ const ProfilePage = ({ navigation }) => {
                   <Text style={styles.menuSubtitle}>English</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#999" />
-              </TouchableOpacity>
+              </Pressable>
 
               <View style={styles.menuDivider} />
 
               {/* About */}
-              <TouchableOpacity style={styles.menuItem}>
+              <Pressable style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
                   <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
                 </View>
@@ -312,7 +312,7 @@ const ProfilePage = ({ navigation }) => {
                   <Text style={styles.menuSubtitle}>Version 1.0.0</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="#999" />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {/* Bottom Spacing */}
@@ -333,12 +333,12 @@ const ProfilePage = ({ navigation }) => {
               style={[styles.avatar, { borderColor: theme.accent }]}
             />
             {/* Edit Button */}
-            <TouchableOpacity 
+            <Pressable 
               style={[styles.avatarActionLeft, { backgroundColor: theme.accent }]}
               onPress={() => setShowEditModal(true)}
             >
               <Ionicons name="pencil" size={14} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {/* User Name */}
@@ -385,7 +385,7 @@ const ProfilePage = ({ navigation }) => {
         
         <View style={styles.menuCard}>
           {/* Connect Account */}
-          <TouchableOpacity style={styles.menuItem}>
+          <Pressable style={styles.menuItem}>
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
               <Ionicons name="key-outline" size={20} color={theme.accent} />
             </View>
@@ -394,7 +394,7 @@ const ProfilePage = ({ navigation }) => {
               <Text style={styles.menuSubtitle}>Connect account and sync your library</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Backlog Section */}
@@ -402,7 +402,7 @@ const ProfilePage = ({ navigation }) => {
         
         <View style={styles.menuCard}>
           {/* Custom Statuses */}
-          <TouchableOpacity style={styles.menuItem}>
+          <Pressable style={styles.menuItem}>
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
               <Ionicons name="flag-outline" size={20} color={theme.accent} />
             </View>
@@ -416,7 +416,7 @@ const ProfilePage = ({ navigation }) => {
               <Text style={styles.menuSubtitle}>Create custom tracking statuses</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* App Info Section */}
@@ -424,7 +424,7 @@ const ProfilePage = ({ navigation }) => {
         
         <View style={styles.menuCard}>
           {/* About */}
-          <TouchableOpacity style={styles.menuItem}>
+          <Pressable style={styles.menuItem}>
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
               <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
             </View>
@@ -433,12 +433,12 @@ const ProfilePage = ({ navigation }) => {
               <Text style={styles.menuSubtitle}>Version 1.0.0</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.menuDivider} />
 
           {/* Logout */}
-          <TouchableOpacity 
+          <Pressable 
             style={styles.menuItem}
             onPress={handleLogout}
           >
@@ -449,7 +449,7 @@ const ProfilePage = ({ navigation }) => {
               <Text style={styles.menuTitle}>Log Out</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Bottom Spacing */}

@@ -3,7 +3,7 @@ import {
   View, 
   Text, 
   ScrollView, 
-  TouchableOpacity, 
+  Pressable, 
   StyleSheet, 
   Dimensions,
   StatusBar,
@@ -231,16 +231,16 @@ const HomeAnime = ({ navigation }) => {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <Pressable 
           style={styles.menuButton}
           onPress={() => setIsSidebarVisible(!isSidebarVisible)}
         >
           <Text style={styles.menuIcon}>☰</Text>
-        </TouchableOpacity>
+        </Pressable>
         
         <Text style={styles.headerTitle}>AfterCredits</Text>
         
-        <TouchableOpacity 
+        <Pressable 
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}
         >
@@ -256,7 +256,7 @@ const HomeAnime = ({ navigation }) => {
               <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
             </View>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Content */}
@@ -299,12 +299,12 @@ const HomeAnime = ({ navigation }) => {
             ) : error ? (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
-                <TouchableOpacity 
+                <Pressable 
                   style={styles.retryButton}
                   onPress={() => fetchAnimeData(selectedCategory)}
                 >
                   <Text style={styles.retryText}>Retry</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ) : (
               <View style={styles.contentWrapper}>

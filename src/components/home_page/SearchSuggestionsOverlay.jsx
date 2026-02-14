@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -158,11 +158,10 @@ const SearchSuggestionsOverlay = ({
         keyboardShouldPersistTaps="handled"
       >
         {visibleResults.map((item, index) => (
-          <TouchableOpacity
+          <Pressable
             key={`${item.id}-${index}`}
             style={styles.resultItem}
             onPress={() => handleResultPress(item)}
-            activeOpacity={0.7}
           >
             <Image 
               source={{ uri: item.coverImage }}
@@ -191,7 +190,7 @@ const SearchSuggestionsOverlay = ({
             </View>
 
             <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
         
         {results.length > 3 && (

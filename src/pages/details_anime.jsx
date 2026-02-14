@@ -7,7 +7,7 @@ import {
   Image,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Platform,
   Pressable,
@@ -232,13 +232,12 @@ const AnimeDetail = ({ route, navigation }) => {
   // Render action buttons (Watch/Wishlist)
   const renderActionButtons = () => (
     <View style={styles.actionsRow}>
-      <TouchableOpacity 
+      <Pressable 
         style={[
           styles.actionButton, 
           isWatched && { backgroundColor: theme.accent }
         ]} 
         onPress={() => setIsWatched(!isWatched)}
-        activeOpacity={0.7}
       >
         <Ionicons 
           name={isWatched ? "eye" : "eye-outline"} 
@@ -251,15 +250,14 @@ const AnimeDetail = ({ route, navigation }) => {
         ]}>
           {isWatched ? "Watched" : "Watch"}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
 
-      <TouchableOpacity 
+      <Pressable 
         style={[
           styles.actionButton, 
           isWishlisted && { backgroundColor: theme.accent }
         ]} 
         onPress={() => setIsWishlisted(!isWishlisted)}
-        activeOpacity={0.7}
       >
         <Ionicons 
           name={isWishlisted ? "heart" : "heart-outline"} 
@@ -272,7 +270,7 @@ const AnimeDetail = ({ route, navigation }) => {
         ]}>
           {isWishlisted ? "Saved" : "Save"}
         </Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 
@@ -308,15 +306,15 @@ const AnimeDetail = ({ route, navigation }) => {
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
+          <Pressable style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
             <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
+          </Pressable>
+          <Pressable 
             style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]} 
             onPress={() => navigation?.goBack()}
           >
             <Text style={styles.retryText}>Go Back</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -335,12 +333,12 @@ const AnimeDetail = ({ route, navigation }) => {
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>No anime data available.</Text>
-          <TouchableOpacity 
+          <Pressable 
             style={[styles.retryButton, { backgroundColor: theme.accent }]} 
             onPress={() => navigation?.goBack()}
           >
             <Text style={styles.retryText}>Go Back</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -366,12 +364,12 @@ const AnimeDetail = ({ route, navigation }) => {
           ]}
         >
           <View style={styles.headerBlur}>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.headerBackButton} 
               onPress={() => navigation?.goBack()}
             >
               <Ionicons name="arrow-back" size={24} color="#fff"/>
-            </TouchableOpacity>
+            </Pressable>
             <Text style={styles.headerTitle} numberOfLines={1}>
               {animeData?.title || 'Anime Details'}
             </Text>
@@ -393,12 +391,12 @@ const AnimeDetail = ({ route, navigation }) => {
         scrollEventThrottle={16}
       >
         {/* Back Button - positioned over hero */}
-        <TouchableOpacity 
+        <Pressable 
           style={styles.backButton} 
           onPress={() => navigation?.goBack()}
         >
           <Ionicons name="arrow-back" size={20} color="#fff"/>
-        </TouchableOpacity>
+        </Pressable>
 
       {/* Hero/Banner Section */}
       <View style={styles.heroSection}>
@@ -424,11 +422,11 @@ const AnimeDetail = ({ route, navigation }) => {
           {animeData.description}
         </Text>
         {animeData.description && animeData.description.length > 150 && (
-          <TouchableOpacity onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+          <Pressable onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
             <Text style={styles.expandDescriptionText}>
               {isDescriptionExpanded ? 'Show Less' : 'Read More'}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
         <View style={styles.episodeStatusRow}>
           <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
@@ -486,14 +484,14 @@ const AnimeDetail = ({ route, navigation }) => {
                   />
                 ))}
                 {animeData.voiceActors.length > 5 && (
-                  <TouchableOpacity 
+                  <Pressable 
                     style={styles.expandButton} 
                     onPress={() => setIsCrewExpanded(!isCrewExpanded)}
                   >
                     <Text style={styles.expandButtonText}>
                       {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               </>
             ) : (
@@ -507,7 +505,7 @@ const AnimeDetail = ({ route, navigation }) => {
       <BlurView intensity={80} tint="dark" style={styles.reviewsSectionNative}>
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionLabel}>REVIEWS</Text>
-            <TouchableOpacity 
+            <Pressable 
               style={styles.addReviewButton}
               onPress={() => navigation?.navigate('ReviewAnime', { 
                 animeId: animeData.id,
@@ -517,7 +515,7 @@ const AnimeDetail = ({ route, navigation }) => {
               })}
             >
               <Ionicons name="add" size={20} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
           
           {dbReviews.length > 0 ? (
@@ -543,7 +541,7 @@ const AnimeDetail = ({ route, navigation }) => {
                     
                     {dbReviews.length > REVIEWS_PER_PAGE && (
                       <View style={styles.paginationContainer}>
-                        <TouchableOpacity 
+                        <Pressable 
                           style={[
                             styles.paginationButton,
                             currentReviewPage === 1 && styles.paginationButtonDisabled
@@ -560,13 +558,13 @@ const AnimeDetail = ({ route, navigation }) => {
                             styles.paginationButtonText,
                             currentReviewPage === 1 && styles.paginationButtonTextDisabled
                           ]}>Previous</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                         
                         <Text style={styles.pageIndicator}>
                           Page {currentReviewPage} of {totalPages}
                         </Text>
                         
-                        <TouchableOpacity 
+                        <Pressable 
                           style={[
                             styles.paginationButton,
                             currentReviewPage === totalPages && styles.paginationButtonDisabled
@@ -583,7 +581,7 @@ const AnimeDetail = ({ route, navigation }) => {
                             size={20} 
                             color={currentReviewPage === totalPages ? '#666' : '#fff'} 
                           />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     )}
                   </>
@@ -685,7 +683,7 @@ const AnimeDetail = ({ route, navigation }) => {
                     <View style={styles.relatedPaginationContainer}>
                       <View style={styles.dotsContainer}>
                         {Array.from({ length: totalPages }).map((_, index) => (
-                          <TouchableOpacity
+                          <Pressable
                             key={index}
                             onPress={() => setCurrentRelatedPage(index + 1)}
                             style={[
