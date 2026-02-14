@@ -113,7 +113,10 @@ const PostPage = ({ navigation }) => {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Post</Text>
+          <View>
+            <Text style={styles.headerTitle}>Post</Text>
+            <Text style={styles.headerSubtitle}>Curated anime lists from the community</Text>
+          </View>
           <Pressable
             style={styles.profileButton}
             onPress={() => navigation.navigate('ProfilePage')}
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -188,10 +191,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB3C6',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: 'Agdasima',
     color: '#fff',
+    letterSpacing: 1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
+    marginTop: 2,
   },
   feed: {
     flex: 1,

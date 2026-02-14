@@ -228,7 +228,12 @@ const DiscoverPage = ({ navigation }) => {
       <View style={styles.container}>
         {/* Static Header — stays fixed on scroll */}
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>Discover</Text>
+          <View>
+            <Text style={styles.headerTitle}>Discover</Text>
+            <Text style={styles.headerSubtitle}>
+              Explore anime, find your next obsession
+            </Text>
+          </View>
           <Pressable
             style={styles.profileButton}
             onPress={() => navigation.navigate('ProfilePage')}
@@ -333,7 +338,7 @@ const styles = StyleSheet.create({
   // Header — matches Home page
   headerContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -351,10 +356,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB3C6',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 32,
+    fontWeight: "800",
+    fontFamily: "Agdasima",
+    color: "#fff",
+    letterSpacing: 1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#888",
+    fontFamily: "Agdasima",
     letterSpacing: 0.5,
+    marginTop: 2,
   },
   // Content
   content: {

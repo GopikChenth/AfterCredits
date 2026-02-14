@@ -129,7 +129,10 @@ const PodiumPage = ({ navigation }) => {
 
       {/* Static Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Podium</Text>
+        <View>
+          <Text style={styles.headerTitle}>Podium</Text>
+          <Text style={styles.headerSubtitle}>Your anime stats</Text>
+        </View>
         <Pressable
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -205,10 +208,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFB3C6',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '800',
     color: '#fff',
+    fontFamily: 'Agdasima',
+    letterSpacing: 1,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#888',
+    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
+    marginTop: 2,
   },
   loadingContainer: {
     flex: 1,
