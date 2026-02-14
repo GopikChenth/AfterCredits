@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   Pressable,
   StyleSheet,
   Dimensions,
@@ -153,14 +153,13 @@ const PodiumPage = ({ navigation }) => {
     </View>
   );
 
-  const renderItem = useCallback((item) => {
+  const renderItem = useCallback(({ item }) => {
     const anime = animeDetails[item.media_id];
     const title = anime?.title || `Loading...`;
     const coverImage = anime?.coverImage;
 
     return (
       <Pressable
-        key={item.id}
         style={styles.animeCard}
         onPress={() => navigation.navigate('DetailsAnime', { animeId: item.media_id })}
       >
@@ -249,8 +248,12 @@ const PodiumPage = ({ navigation }) => {
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
+      <FlatList
+        data={loading ? [] : items}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        columnWrapperStyle={items.length > 0 ? styles.columnWrapper : undefined}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -261,20 +264,17 @@ const PodiumPage = ({ navigation }) => {
             colors={['#FFB3C6']}
           />
         }
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={currentTab.color} />
-            <Text style={styles.loadingText}>Loading...</Text>
-          </View>
-        ) : items.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <View style={styles.grid}>
-            {items.map(renderItem)}
-          </View>
-        )}
-      </ScrollView>
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={currentTab.color} />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          ) : (
+            renderEmptyState()
+          )
+        }
+      />
 
     </SafeAreaView>
   );
@@ -343,12 +343,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
   },
-  content: {
-    flex: 1,
-  },
   contentContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
+  },
+  columnWrapper: {
+    gap: 12,
+    marginBottom: 12,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -382,14 +383,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     lineHeight: 20,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingTop: 8,
-  },
   animeCard: {
-    width: CARD_WIDTH,
+    flex: 1,
+    maxWidth: CARD_WIDTH,
     borderRadius: 16,
     backgroundColor: '#1A1A2E',
     overflow: 'hidden',
