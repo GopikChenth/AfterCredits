@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { getUpcomingAnime, formatAnimeData } from '../services/api_anime';
 import { setWishlist as setWishlistService, getWishlist } from '../services/mediaStatusService';
+import SkeletonUpcoming from '../components/skeletons/SkeletonUpcoming';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
@@ -239,10 +240,7 @@ const UpcomingPage = ({ navigation }) => {
         </View>
 
         {loading && page === 1 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFB3C6" />
-            <Text style={styles.loadingText}>Loading upcoming anime...</Text>
-          </View>
+          <SkeletonUpcoming count={6} />
         ) : (
           <FlashList
             data={upcomingAnime}

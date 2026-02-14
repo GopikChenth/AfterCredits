@@ -19,6 +19,7 @@ import { signOut } from '../services/auth';
 import { getPublicName, getFirstName } from '../utils/userUtils';
 import { getSettings, updateSettings } from '../services/settings';
 import EditProfileModal from '../components/profile_page/EditProfileModal';
+import SkeletonProfile from '../components/skeletons/SkeletonProfile';
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -322,9 +323,7 @@ const ProfilePage = ({ navigation }) => {
             <View style={{ height: 100 }} />
           </>
         ) : loading ? (
-          <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Loading profile...</Text>
-          </View>
+          <SkeletonProfile />
         ) : (
           <>
 

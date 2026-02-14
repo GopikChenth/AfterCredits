@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ListPost from '../components/Post_page/ListPost';
-import PostSkeleton from '../components/Post_page/PostSkeleton';
+import PostSkeleton from '../components/skeletons/SkeletonPost';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile } from '../services/profile';
 

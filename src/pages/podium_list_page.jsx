@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
 import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
+import SkeletonPodiumList from '../components/skeletons/SkeletonPodiumList';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 56) / 2;
@@ -174,11 +175,7 @@ const PodiumListPage = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
-        <ListHeader />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={config.color} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
+        <SkeletonPodiumList count={6} />
       </SafeAreaView>
     );
   }

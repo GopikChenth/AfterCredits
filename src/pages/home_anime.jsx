@@ -17,7 +17,7 @@ import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/home_page/Card';
 import AnimeCardItem from '../components/home_page/AnimeCardItem';
-import SkeletonLoader from '../components/home_page/SkeletonLoader';
+import SkeletonLoader from '../components/skeletons/SkeletonHome';
 
 import CategoryPill from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';

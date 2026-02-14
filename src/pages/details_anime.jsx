@@ -23,7 +23,7 @@ import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
-import DetailsSkeleton from '../components/details_page/DetailsSkeleton';
+import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anime';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';

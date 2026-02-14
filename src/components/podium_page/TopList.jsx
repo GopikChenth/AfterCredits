@@ -2,42 +2,55 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 /**
- * TopGenres - displays ranked list of user's top anime genres
- * @param {Object} genreStats - { genreName: count, ... }
+ * TopList - Unified component for displaying ranked lists (genres, studios, etc.)
+ * @param {Object} data - { itemName: count, ... }
+ * @param {string} emptyMessage - Message to show when no data
+ * @param {string} barColor - Color for the progress bars (default: '#FFB3C6')
+ * @param {string} countColor - Color for the count text (default: '#FFB3C6')
+ * @param {number} maxItems - Maximum number of items to display (default: 5)
  */
-const TopGenres = ({ genreStats }) => {
+const TopList = ({ 
+  data, 
+  emptyMessage = 'No data available yet',
+  barColor = '#FFB3C6',
+  countColor = '#FFB3C6',
+  maxItems = 5 
+}) => {
   // Convert to array and sort by count
-  const sortedGenres = Object.entries(genreStats)
+  const sortedItems = Object.entries(data)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 8); // Top 8 genres
+    .slice(0, maxItems);
 
-  if (sortedGenres.length === 0) {
+  if (sortedItems.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.emptyText}>No genre data available yet</Text>
+        <Text style={styles.emptyText}>{emptyMessage}</Text>
       </View>
     );
   }
 
-  const maxCount = sortedGenres[0][1];
+  const maxCount = sortedItems[0][1];
 
   return (
     <View style={styles.container}>
-      {sortedGenres.map(([genre, count], index) => {
+      {sortedItems.map(([itemName, count], index) => {
         const percentage = (count / maxCount) * 100;
         
         return (
-          <View key={genre} style={styles.genreRow}>
-            <View style={styles.genreInfo}>
+          <View key={itemName} style={styles.itemRow}>
+            <View style={styles.itemInfo}>
               <Text style={styles.rank}>#{index + 1}</Text>
-              <Text style={styles.genreName}>{genre}</Text>
+              <Text style={styles.itemName} numberOfLines={1}>{itemName}</Text>
             </View>
             
             <View style={styles.barContainer}>
               <View 
                 style={[
-                  styles.bar, 
-                  { width: `${percentage}%` },
+                  styles.bar,
+                  { 
+                    width: `${percentage}%`,
+                    backgroundColor: index < 3 ? undefined : barColor 
+                  },
                   index === 0 && styles.barFirst,
                   index === 1 && styles.barSecond,
                   index === 2 && styles.barThird,
@@ -45,7 +58,7 @@ const TopGenres = ({ genreStats }) => {
               />
             </View>
             
-            <Text style={styles.count}>{count}</Text>
+            <Text style={[styles.count, { color: countColor }]}>{count}</Text>
           </View>
         );
       })}
@@ -67,12 +80,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
-  genreRow: {
+  itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  genreInfo: {
+  itemInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     width: 120,
@@ -85,7 +98,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Agdasima',
     width: 24,
   },
-  genreName: {
+  itemName: {
     fontSize: 14,
     fontWeight: '600',
     color: '#fff',
@@ -101,7 +114,6 @@ const styles = StyleSheet.create({
   },
   bar: {
     height: '100%',
-    backgroundColor: '#FFB3C6',
     borderRadius: 10,
   },
   barFirst: {
@@ -116,11 +128,10 @@ const styles = StyleSheet.create({
   count: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#FFB3C6',
     fontFamily: 'Agdasima',
     width: 32,
     textAlign: 'right',
   },
 });
 
-export default TopGenres;
+export default TopList;

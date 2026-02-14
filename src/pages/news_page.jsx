@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { getAnimeNews } from '../services/news_service';
 import NewsCard from '../components/discover_page/NewsCard';
+import SkeletonNews from '../components/skeletons/SkeletonNews';
 
 const NewsPage = ({ navigation }) => {
   const [news, setNews] = useState([]);
@@ -89,10 +90,7 @@ const NewsPage = ({ navigation }) => {
         </View>
 
         {loading && page === 1 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFB3C6" />
-            <Text style={styles.loadingText}>Loading news...</Text>
-          </View>
+          <SkeletonNews count={4} />
         ) : (
           <FlatList
             data={news}

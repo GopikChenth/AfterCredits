@@ -20,7 +20,7 @@ import { getAnimeNews } from "../services/news_service";
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";
 import NewsCard from "../components/discover_page/NewsCard";
-import DiscoverSkeleton from "../components/discover_page/DiscoverSkeleton";
+import DiscoverSkeleton from "../components/skeletons/SkeletonDiscover";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.32;

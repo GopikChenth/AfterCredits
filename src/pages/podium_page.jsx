@@ -7,7 +7,6 @@ import {
   Pressable,
   StyleSheet,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,8 +18,8 @@ import { getUserProfile } from '../services/profile';
 
 import DonutChart from '../components/podium_page/DonutChart';
 import StatusCounters from '../components/podium_page/StatusCounters';
-import TopGenres from '../components/podium_page/TopGenres';
-import TopStudios from '../components/podium_page/TopStudios';
+import TopList from '../components/podium_page/TopList';
+import SkeletonPodium from '../components/skeletons/SkeletonPodium';
 
 const animeCache = {};
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -167,10 +166,7 @@ const PodiumPage = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <StatusBar barStyle="light-content" />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FBBF24" />
-          <Text style={styles.loadingText}>Loading your stats...</Text>
-        </View>
+        <SkeletonPodium />
       </SafeAreaView>
     );
   }
@@ -222,13 +218,23 @@ const PodiumPage = ({ navigation }) => {
         {/* Top Genres */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Top Genres</Text>
-          <TopGenres genreStats={genreStats} />
+          <TopList 
+            data={genreStats} 
+            emptyMessage="No genre data available yet"
+            barColor="#FFB3C6"
+            countColor="#FFB3C6"
+          />
         </View>
 
         {/* Top Studios */}
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Top Studios</Text>
-          <TopStudios studioStats={studioStats} />
+          <TopList 
+            data={studioStats} 
+            emptyMessage="No studio data available yet"
+            barColor="#A0C4FF"
+            countColor="#A0C4FF"
+          />
         </View>
 
         <View style={{ height: 24 }} />
