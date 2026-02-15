@@ -186,11 +186,6 @@ const DiscoverPage = ({ navigation }) => {
                 </View>
               )}
 
-              {anime.description && (
-                <Text style={styles.expandedDescription} numberOfLines={4}>
-                  {anime.description.replace(/<[^>]*>/g, '')}
-                </Text>
-              )}
 
               <View style={styles.actionButtonsRow}>
                 <Pressable
@@ -444,7 +439,7 @@ const styles = StyleSheet.create({
   },
   cardExpanded: {
     width: EXPANDED_CARD_WIDTH,
-    height: CARD_HEIGHT * 1.5, // Taller to fit all content
+    height: CARD_HEIGHT * 1.5,
     zIndex: 1000,
   },
   cardImage: {

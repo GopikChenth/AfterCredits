@@ -513,6 +513,73 @@ export const getAnimeReviews = async (mediaId, page = 1, perPage = 10) => {
   return response.data.Page;
 };
 
+/**
+ * Get staff/voice actor details by ID
+ * @param {number} id - AniList staff ID
+ * @returns {Promise<object>} - Staff details with character media
+ */
+export const getStaffDetails = async (id) => {
+  const query = `
+    query ($id: Int) {
+      Staff(id: $id) {
+        id
+        name {
+          full
+          native
+        }
+        image {
+          large
+          medium
+        }
+        description(asHtml: false)
+        gender
+        dateOfBirth {
+          year
+          month
+          day
+        }
+        age
+        yearsActive
+        homeTown
+        bloodType
+        favourites
+        characterMedia(sort: POPULARITY_DESC, perPage: 25) {
+          edges {
+            characterRole
+            characterName
+            node {
+              id
+              title {
+                romaji
+                english
+              }
+              coverImage {
+                large
+                medium
+              }
+              format
+              status
+              seasonYear
+            }
+            characters {
+              id
+              name {
+                full
+              }
+              image {
+                medium
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await executeQuery(query, { id });
+  return response.data.Staff;
+};
+
 // ===========================================
 // UTILITY FUNCTIONS
 // ===========================================
@@ -609,6 +676,7 @@ export default {
   getPopularAnime,
   getNewAnime,
   getAnimeDetails,
+  getStaffDetails,
   searchAnime,
   getAnimeByGenre,
   getAnimeRecommendations,

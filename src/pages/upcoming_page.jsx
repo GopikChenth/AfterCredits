@@ -175,12 +175,6 @@ const UpcomingPage = ({ navigation }) => {
                 </View>
               )}
 
-              {anime.description && (
-                <Text style={styles.expandedDescription} numberOfLines={4}>
-                  {anime.description.replace(/<[^>]*>/g, '')}
-                </Text>
-              )}
-
               <View style={styles.actionButtonsRow}>
                 <Pressable
                   style={[

@@ -157,6 +157,7 @@ const AnimeDetail = ({ route, navigation }) => {
     const voiceActors = data.characters?.edges
       ?.filter(edge => edge.voiceActors && edge.voiceActors.length > 0)
       ?.map((edge, index) => ({
+        id: edge.voiceActors[0]?.id,
         name: edge.voiceActors[0]?.name?.full || 'Unknown',
         role: `Voice of ${edge.node?.name?.full || 'Character'}`,
         avatar: avatarColors[index % avatarColors.length],
@@ -488,6 +489,7 @@ const AnimeDetail = ({ route, navigation }) => {
                     image={member.image}
                     characterImage={member.characterImage}
                     characterName={member.characterName}
+                    onPress={member.id ? () => navigation.navigate('CrewDetailPage', { staffId: member.id, staffName: member.name }) : undefined}
                   />
                 ))}
                 {animeData.voiceActors.length > 5 && (

@@ -3355,3 +3355,304 @@ _"Preview before you commit. Expand before you navigate."_
 ---
 
 _"Data is beautiful. Alignment is key."_
+
+---
+
+## Session 13: Feb 11-15, 2026
+
+### ✅ Skeleton Loading System
+
+#### **Purpose**: Replace ActivityIndicator spinners with animated skeleton placeholders for better perceived performance
+
+**Components Created**:
+
+1. **ShimmerBlock** (`/src/components/shared/ShimmerBlock.jsx`)
+   - Reusable animated shimmer component
+   - Pulsing opacity effect (0.3 → 0.7)
+   - 1200ms animation duration
+   - Used across all skeleton loaders
+
+2. **SkeletonLoader** (`/src/components/home_page/SkeletonLoader.jsx`)
+   - Homepage skeleton with 2-column grid
+   - Neumorphic card design matching AnimeCardItem
+   - Fixed width calculation: `(screenWidth - 48) / 2`
+   - Shimmer blocks for cover, title, and year
+
+3. **DetailsSkeleton** (`/src/components/details_page/DetailsSkeleton.jsx`)
+   - Full-page skeleton matching details layout
+   - Hero banner → Description box → Stats pills → Status tags → Genre/Crew → Reviews
+   - Mirrors actual page structure for seamless transition
+
+4. **DiscoverSkeleton** (`/src/components/discover_page/DiscoverSkeleton.jsx`)
+   - Horizontal upcoming anime card placeholders
+   - News card skeletons with image + content layout
+   - Matches discover page's dual-section design
+
+5. **PostSkeleton** (`/src/components/Post_page/PostSkeleton.jsx`)
+   - Post card skeletons with avatar, title, cover strip, description
+   - Matches ListPost component layout
+   - 1-second simulated loading for dummy data
+
+**Pages Updated**:
+
+- **home_anime.jsx**: Replaced ActivityIndicator with SkeletonLoader
+- **details_anime.jsx**: Replaced loading text with DetailsSkeleton
+- **discover_page.jsx**: Replaced both upcoming and news loading states
+- **post_anime.jsx**: Added loading state with PostSkeleton (1s delay)
+
+**Technical Achievements**:
+
+- **Shared Component**: Single ShimmerBlock used across all skeletons
+- **Layout Matching**: Skeletons precisely match actual content layouts
+- **Performance**: Instant display, no API calls during loading
+- **Consistency**: Unified shimmer animation across entire app
+
+---
+
+### ✅ Details Page Header Improvements
+
+#### **Reveal-on-Scroll Header Optimization**
+
+**Problem**: Header appeared at fixed 100px scroll, not when title scrolled out of view
+
+**Solution**:
+
+1. **Dynamic Trigger Point**:
+   - Added `titleY` state to track anime title position
+   - Used `onLayout` handler to measure title's Y position
+   - Header reveals when `scrollY > titleY` (seamless transition)
+
+2. **Instant Appearance**:
+   - Removed `Animated.timing` animation
+   - Direct `setValue()` for instant visibility
+   - No fade-in delay for immediate feedback
+
+**Technical Implementation**:
+
+```javascript
+// Track title position
+const [titleY, setTitleY] = useState(0);
+
+// Measure title on layout
+<Text onLayout={(e) => setTitleY(e.nativeEvent.layout.y)}>
+  {animeData.title}
+</Text>;
+
+// Instant header reveal
+const triggerPoint = titleY > 0 ? titleY : 100;
+headerOpacity.setValue(offsetY > triggerPoint ? 1 : 0);
+```
+
+---
+
+#### **Related Section Horizontal Scroll**
+
+**Problem**: Paginated grid with gesture handlers was complex and limiting
+
+**Solution**:
+
+- Replaced pagination with horizontal `FlatList`
+- Removed gesture handlers, page state, and dot indicators
+- Fixed card dimensions (120×170px)
+- Horizontal padding for proper scrolling
+- Matches discover page's "Upcoming Anime" pattern
+
+**Benefits**:
+
+- Simpler implementation (removed ~50 lines of code)
+- Smoother scrolling experience
+- Consistent with app's horizontal scroll patterns
+- No pagination limits
+
+---
+
+### ✅ Podium Page Redesign
+
+#### **Top Genres & Top Studios Implementation**
+
+**Purpose**: Replace RadarGraph with more meaningful genre and studio statistics
+
+**Components Created**:
+
+1. **TopGenres** (`/src/components/podium_page/TopGenres.jsx`)
+   - Ranked horizontal bar chart (top 8 genres)
+   - Gold/Silver/Bronze highlighting for top 3
+   - Percentage-based bar widths
+   - Count display on right
+
+2. **TopStudios** (`/src/components/podium_page/TopStudios.jsx`)
+   - Ranked horizontal bar chart (top 8 studios)
+   - Same gold/silver/bronze system
+   - Studio name truncation with `numberOfLines={1}`
+   - Blue color scheme (#A0C4FF)
+
+**Data Source**:
+
+- **Watching + Watched** anime (combined)
+- Excluded dropped and wishlist
+- Aggregates genres and studios from anime details API
+
+**Visual Design**:
+
+```
+#1  Action        ████████████████████  45  (Gold)
+#2  Adventure     ████████████████      38  (Silver)
+#3  Fantasy       ██████████████        32  (Bronze)
+#4  Comedy        ████████████          28  (Pink)
+...
+```
+
+---
+
+#### **Performance Optimization**
+
+**Problem**: Sequential API calls with 300ms delays = 6+ seconds for 20 anime
+
+**Solution - Batch Processing**:
+
+1. **Separate Cached Items**:
+   - Process cached anime instantly (0ms)
+   - Only fetch uncached items from API
+
+2. **Parallel Batches**:
+   - Batch size: 5 items
+   - `Promise.allSettled()` for parallel fetching
+   - 150ms delay between batches (not per item)
+
+3. **Error Handling**:
+   - Graceful failure with `allSettled`
+   - Individual item errors don't block batch
+
+**Performance Improvement**:
+
+- **Before**: 20 anime × 300ms = 6+ seconds
+- **After**: 4 batches × 150ms = ~600ms
+- **Speed**: 10x faster for uncached items
+- **Cached**: Instant processing (0ms)
+
+**Technical Implementation**:
+
+```javascript
+const BATCH_SIZE = 5;
+const uncachedItems = items.filter((item) => !animeCache[item.media_id]);
+
+for (let i = 0; i < uncachedItems.length; i += BATCH_SIZE) {
+  const batch = uncachedItems.slice(i, i + BATCH_SIZE);
+
+  const results = await Promise.allSettled(
+    batch.map((item) => getAnimeDetails(item.media_id)),
+  );
+
+  // Process results...
+
+  if (i + BATCH_SIZE < uncachedItems.length) {
+    await delay(150); // Only between batches
+  }
+}
+```
+
+---
+
+### ✅ File Structure Updates
+
+```
+/AfterCredits
+├── /src
+│   ├── /components
+│   │   ├── /shared
+│   │   │   └── ShimmerBlock.jsx          ✅ NEW - Shared shimmer animation
+│   │   ├── /home_page
+│   │   │   └── SkeletonLoader.jsx         ✅ UPDATED - Uses ShimmerBlock
+│   │   ├── /details_page
+│   │   │   └── DetailsSkeleton.jsx        ✅ NEW - Full page skeleton
+│   │   ├── /discover_page
+│   │   │   └── DiscoverSkeleton.jsx       ✅ NEW - Horizontal cards skeleton
+│   │   ├── /Post_page
+│   │   │   └── PostSkeleton.jsx           ✅ NEW - Post cards skeleton
+│   │   └── /podium_page
+│   │       ├── TopGenres.jsx              ✅ NEW - Genre bar chart
+│   │       ├── TopStudios.jsx             ✅ NEW - Studio bar chart
+│   │       ├── DonutChart.jsx             ✅ (Session 12)
+│   │       ├── StatusCounters.jsx         ✅ (Session 12)
+│   │       └── RadarGraph.jsx             ✅ KEPT - Not deleted (future use)
+│   └── /pages
+│       ├── home_anime.jsx                 ✅ UPDATED - SkeletonLoader
+│       ├── details_anime.jsx              ✅ UPDATED - DetailsSkeleton + header
+│       ├── discover_page.jsx              ✅ UPDATED - DiscoverSkeleton
+│       ├── post_anime.jsx                 ✅ UPDATED - PostSkeleton + loading
+│       └── podium_page.jsx                ✅ UPDATED - TopGenres/Studios + batch
+└── PROGRESS.md                            ✅ UPDATED - This file
+```
+
+---
+
+### 📊 Session 13 Statistics
+
+**New Components**: 6 (ShimmerBlock, 4 skeletons, TopGenres, TopStudios)
+**Components Updated**: 5 (SkeletonLoader, 4 pages)
+**Performance Improvements**: 10x faster podium loading
+**Code Removed**: ~50 lines (pagination logic)
+**Code Added**: ~500 lines (skeletons + optimizations)
+**Key Features**: Skeleton loading, batch processing, header reveal
+**Git Commits**: 1 comprehensive commit to `chart` branch
+
+---
+
+### 🎯 Key Session 13 Learnings
+
+1. **Skeleton Loading**: Matching actual layout creates seamless loading experience
+2. **Batch Processing**: Parallel API calls with `Promise.allSettled` dramatically improve performance
+3. **Smart Caching**: Separate cached/uncached items for instant vs delayed processing
+4. **Component Reusability**: Single ShimmerBlock shared across all skeletons
+5. **Dynamic Measurements**: `onLayout` enables precise scroll trigger points
+6. **Simplification**: Horizontal FlatList simpler than pagination + gestures
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Skeleton loading across all major pages
+- ✅ Podium page with Top Genres and Top Studios
+- ✅ Optimized API fetching (10x faster)
+- ✅ Seamless header reveal on details page
+- ✅ Horizontal scroll for related shows
+
+**Next Priorities**:
+
+1. Implement post detail page functionality
+2. Add search and filtering to discover page
+3. Create upcoming anime page
+4. Add more podium statistics (top voice actors, top years, etc.)
+5. Implement pull-to-refresh on all pages
+
+---
+
+### 🎨 Technical Highlights
+
+**Skeleton System Architecture**:
+
+```
+ShimmerBlock (shared)
+    ↓
+SkeletonLoader → Home page
+DetailsSkeleton → Details page
+DiscoverSkeleton → Discover page
+PostSkeleton → Post page
+```
+
+**Batch Processing Flow**:
+
+```
+1. Separate cached/uncached items
+2. Process cached instantly → Update state
+3. Batch uncached (5 at a time)
+4. Parallel fetch with Promise.allSettled
+5. 150ms delay between batches
+6. Update state after each batch
+```
+
+---
+
+_"Performance is perception. Skeletons bridge the gap between loading and loaded."_

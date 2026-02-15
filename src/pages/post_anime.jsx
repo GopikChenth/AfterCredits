@@ -15,88 +15,26 @@ import ListPost from '../components/Post_page/ListPost';
 import PostSkeleton from '../components/skeletons/SkeletonPost';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile } from '../services/profile';
-
-// Dummy data — curated anime lists from users
-const DUMMY_POSTS = [
-  {
-    id: '1',
-    username: 'Jake',
-    avatarUrl: null,
-    date: '06/06/2025',
-    title: 'Anime that should be watched by anyone atleast once in a life before u die.',
-    description: 'This is my list based on my years of anime watching experience.',
-    animeCovers: [
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-C6FPmWm59CyP.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-lawCkEPjOFMq.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-NpIIobuQNbJW.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-KJTQz9AIm6Wk.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-RoPwgrZ32gM3.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-PEn1CTc93blC.jpg' },
-    ],
-  },
-  {
-    id: '2',
-    username: 'Sakura',
-    avatarUrl: null,
-    date: '05/28/2025',
-    title: 'Top 5 hidden gem anime most people have never heard of',
-    description: 'These are criminally underrated shows that deserve way more attention. Trust me on this.',
-    animeCovers: [
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx99426-BZ0VhJOUMPam.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21827-10F6m50H4GJK.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20954-UMb6Kl7ZL0Db.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21202-TfzXuWQf2oLQ.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx104464-cIUMHS6VDGRV.jpg' },
-    ],
-  },
-  {
-    id: '3',
-    username: 'NarutoFan99',
-    avatarUrl: null,
-    date: '05/15/2025',
-    title: 'Best anime to binge watch on a rainy weekend 🌧️',
-    description: 'Grab some snacks, get cozy, and start any of these. You won\'t regret it.',
-    animeCovers: [
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20605-515yShPMNGkC.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20755-q0bGuVwuzQMy.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4pEFseh.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21856-gutV0czqOSal.jpg' },
-    ],
-  },
-  {
-    id: '4',
-    username: 'AnimeMaster',
-    avatarUrl: null,
-    date: '04/30/2025',
-    title: 'Anime with the best villains of all time',
-    description: 'A great villain can make or break a show. These anime have the most iconic antagonists ever written.',
-    animeCovers: [
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx1535-lawCkEPjOFMq.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx11061-NpIIobuQNbJW.png' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx16498-C6FPmWm59CyP.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx20605-515yShPMNGkC.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx21459-RoPwgrZ32gM3.jpg' },
-    ],
-  },
-  {
-    id: '5',
-    username: 'CasualViewer',
-    avatarUrl: null,
-    date: '04/12/2025',
-    title: 'Anime for people who don\'t watch anime',
-    description: 'Trying to get your friends into anime? Start them with these. No filler, no cringe, just storytelling.',
-    animeCovers: [
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx5114-KJTQz9AIm6Wk.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx101922-PEn1CTc93blC.jpg' },
-      { imageUrl: 'https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx113415-bbBWj4pEFseh.jpg' },
-    ],
-  },
-];
+import { getPosts } from '../services/postService';
 
 const PostPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
   const [userProfile, setUserProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchPosts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const result = await getPosts();
+    if (result.success) {
+      setPosts(result.data);
+    } else {
+      setError(result.error || 'Failed to load posts');
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -104,15 +42,13 @@ const PostPage = ({ navigation }) => {
       setUserProfile(result.success && result.profile ? result.profile : null);
     };
     loadProfile();
-    const unsubscribe = navigation.addListener('focus', () => loadProfile());
-    
-    // Simulate loading for dummy data
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [navigation]);
+    fetchPosts();
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadProfile();
+      fetchPosts();
+    });
+    return unsubscribe;
+  }, [navigation, fetchPosts]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -150,8 +86,15 @@ const PostPage = ({ navigation }) => {
         >
           {isLoading ? (
             <PostSkeleton count={3} />
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <Pressable style={styles.retryButton} onPress={fetchPosts}>
+                <Text style={styles.retryText}>Retry</Text>
+              </Pressable>
+            </View>
           ) : (
-            DUMMY_POSTS.map((post) => (
+            posts.map((post) => (
               <ListPost
                 key={post.id}
                 username={post.username}
@@ -221,6 +164,30 @@ const styles = StyleSheet.create({
   },
   feedContent: {
     paddingBottom: 10,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 12,
+  },
+  errorText: {
+    color: '#888',
+    fontSize: 15,
+    fontFamily: 'Agdasima',
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#FFB3C6',
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryText: {
+    color: '#0D0D0D',
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: 'Agdasima',
   },
 });
 

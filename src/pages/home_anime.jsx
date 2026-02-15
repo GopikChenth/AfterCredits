@@ -59,6 +59,11 @@ const HomeAnime = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   // State for search
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -102,33 +107,41 @@ const HomeAnime = ({ navigation }) => {
   }, [navigation]);
 
   // Fetch anime data based on category
-  const fetchAnimeData = useCallback(async (category) => {
-    setIsLoading(true);
+  const fetchAnimeData = useCallback(async (category, page = 1) => {
+    setIsLoadingMore(page > 1);
+    setIsLoading(page === 1);
     setError(null);
     
     try {
       let response;
       switch (category) {
         case 'Popular':
-          response = await getPopularAnime(1, 20);
+          response = await getPopularAnime(page, 20);
           break;
         case 'New':
-          response = await getNewAnime(1, 20);
+          response = await getNewAnime(page, 20);
           break;
         case 'Trending':
         default:
-          response = await getTrendingAnime(1, 20);
+          response = await getTrendingAnime(page, 20);
           break;
       }
       
       // Format the anime data for display
       const formattedAnime = response.media.map(anime => formatAnimeData(anime));
+      
+      // Always replace the list
       setAnimeList(formattedAnime);
+      setCurrentPage(page);
+      
+      // Check if there's more data
+      setHasMore(response.pageInfo?.hasNextPage || false);
     } catch (err) {
       console.error('Error fetching anime:', err);
       setError('Failed to load anime. Please try again.');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }, []);
 
@@ -140,8 +153,26 @@ const HomeAnime = ({ navigation }) => {
   // Handle category change
   const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
-    fetchAnimeData(category);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchAnimeData(category, 1);
   }, [fetchAnimeData]);
+
+  // Handle load more (next page)
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      const nextPage = currentPage + 1;
+      fetchAnimeData(selectedCategory, nextPage);
+    }
+  }, [isLoadingMore, hasMore, currentPage, selectedCategory, fetchAnimeData]);
+
+  // Handle previous page
+  const handlePrevPage = useCallback(() => {
+    if (!isLoadingMore && currentPage > 1) {
+      const prevPage = currentPage - 1;
+      fetchAnimeData(selectedCategory, prevPage);
+    }
+  }, [isLoadingMore, currentPage, selectedCategory, fetchAnimeData]);
 
   // Debounced search for suggestions (while typing)
   const performSuggestionSearch = useCallback(
@@ -301,7 +332,7 @@ const HomeAnime = ({ navigation }) => {
               </View>
             </View>
 
-            {isLoading ? (
+            {isLoading || isLoadingMore ? (
               <SkeletonLoader cardHeight={cardHeight} count={6} />
             ) : error ? (
               <View style={styles.errorContainer}>
@@ -330,6 +361,37 @@ const HomeAnime = ({ navigation }) => {
                   numColumns={2}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.flashListContent}
+                  ListFooterComponent={
+                    (currentPage > 1 || hasMore) ? (
+                      <View style={styles.paginationContainer}>
+                        {currentPage > 1 ? (
+                          <Pressable
+                            style={styles.loadMoreButton}
+                            onPress={handlePrevPage}
+                          >
+                            <Ionicons name="chevron-back" size={16} color="#FFB3C6" />
+                            <Text style={styles.loadMoreText}>Prev</Text>
+                          </Pressable>
+                        ) : (
+                          <View style={styles.loadMoreButtonPlaceholder} />
+                        )}
+
+                        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+                        {hasMore ? (
+                          <Pressable
+                            style={styles.loadMoreButton}
+                            onPress={handleLoadMore}
+                          >
+                            <Text style={styles.loadMoreText}>Next</Text>
+                            <Ionicons name="chevron-forward" size={16} color="#FFB3C6" />
+                          </Pressable>
+                        ) : (
+                          <View style={styles.loadMoreButtonPlaceholder} />
+                        )}
+                      </View>
+                    ) : null
+                  }
                 />
               </View>
             )}
@@ -519,7 +581,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   flashListContent: {
-    paddingBottom: 16,
+    paddingBottom: 80,
   },
   loadingContainer: {
     flex: 1,
@@ -554,6 +616,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  loadMoreContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 8,
+  },
+  loadMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 179, 198, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 198, 0.3)',
+    minWidth: 90,
+  },
+  loadMoreButtonPlaceholder: {
+    minWidth: 90,
+  },
+  loadMoreText: {
+    color: '#FFB3C6',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+  },
+  pageIndicator: {
+    color: '#888',
+    fontSize: 14,
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
   },
 });
 
