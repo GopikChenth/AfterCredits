@@ -135,6 +135,45 @@ const baseStyles = {
     paddingVertical: 60,
     gap: 12,
   },
+  // News Card Base Styles
+  newsCard: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  newsImage: {
+    width: '100%',
+    height: 180,
+  },
+  newsImagePlaceholder: {
+    width: '100%',
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  newsContent: {
+    padding: 14,
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  newsCategoryBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  newsFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  newsLinkIcon: {
+    marginLeft: 'auto',
+  },
 };
 
 
@@ -369,6 +408,51 @@ const buildStyles = (theme) =>
       fontSize: 14,
       fontFamily: theme.fontFamily,
       letterSpacing: 0.3,
+    },
+    // News Card Themed Styles
+    newsCard: {
+      ...baseStyles.newsCard,
+      backgroundColor: theme.cardBg,
+      borderColor: theme.cardBorder,
+    },
+    newsImage: {
+      ...baseStyles.newsImage,
+      backgroundColor: theme.cardImageBg,
+    },
+    newsImagePlaceholder: {
+      ...baseStyles.newsImagePlaceholder,
+      backgroundColor: theme.cardBg,
+    },
+    newsCategoryBadge: {
+      ...baseStyles.newsCategoryBadge,
+      backgroundColor: theme.accentLight,
+    },
+    newsCategoryText: {
+      fontSize: 11,
+      fontWeight: '600',
+      fontFamily: theme.fontFamily,
+      color: theme.accent,
+      letterSpacing: 0.3,
+    },
+    newsTimeAgo: {
+      fontSize: 11,
+      fontFamily: theme.fontFamily,
+      color: '#666',
+    },
+    newsTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      fontFamily: theme.fontFamily,
+      color: '#fff',
+      letterSpacing: 0.3,
+      lineHeight: 22,
+      marginBottom: 10,
+    },
+    newsAuthor: {
+      fontSize: 12,
+      fontFamily: theme.fontFamily,
+      color: '#888',
+      flex: 1,
     },
   });
 
