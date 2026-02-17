@@ -19,7 +19,7 @@ import UpcomingPage from './src/pages/upcoming_page';
 import NewsPage from './src/pages/news_page';
 import PostDetailAnime from './src/pages/post_detail_anime';
 import HomeMovies from './src/pages/home_movies';
-import HomeGames from './src/pages/home_games';
+import GameHome from './src/pages/game_home';
 import HomeComics from './src/pages/home_comics';
 import HomeManga from './src/pages/home_manga';
 import ProfilePage from './src/pages/profile_page';
@@ -95,7 +95,7 @@ export default function App() {
 
             {/* Other Media Home pages */}
             <Stack.Screen name="HomeMovies" component={HomeMovies} />
-            <Stack.Screen name="HomeGames" component={HomeGames} />
+            <Stack.Screen name="HomeGames" component={GameHome} />
             <Stack.Screen name="HomeComics" component={HomeComics} />
             <Stack.Screen name="HomeManga" component={HomeManga} />
           </Stack.Navigator>
