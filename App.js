@@ -40,8 +40,9 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 /**
- * Main Tab Navigator — keeps all 4 tabs mounted in memory.
- * Switching tabs is instant with zero re-render flicker.
+ * Main Tab Navigator — keeps core tabs mounted in memory.
+ * HomeGames is a hidden tab (not in NavBar tabConfig) so the
+ * nav bar stays visible when the user switches to games.
  */
 function MainTabs() {
   return (
@@ -49,10 +50,11 @@ function MainTabs() {
       tabBar={(props) => <NavBar {...props} />}
       screenOptions={{
         headerShown: false,
-        lazy: false, // Pre-render all tabs so first switch is instant
+        lazy: false,
       }}
     >
       <Tab.Screen name="HomeAnime" component={HomeAnime} />
+      <Tab.Screen name="HomeGames" component={GameHome} options={{ lazy: true }} />
       <Tab.Screen name="PostPage" component={PostPage} />
       <Tab.Screen name="DiscoverPage" component={DiscoverPage} />
       <Tab.Screen name="PodiumPage" component={PodiumPage} />
@@ -93,9 +95,8 @@ export default function App() {
             <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
             <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
 
-            {/* Other Media Home pages */}
+            {/* Other Media Home pages (without nav bar) */}
             <Stack.Screen name="HomeMovies" component={HomeMovies} />
-            <Stack.Screen name="HomeGames" component={GameHome} />
             <Stack.Screen name="HomeComics" component={HomeComics} />
             <Stack.Screen name="HomeManga" component={HomeManga} />
           </Stack.Navigator>

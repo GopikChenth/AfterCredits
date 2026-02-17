@@ -325,7 +325,7 @@ const GameHome = ({ navigation }) => {
             // Already on games page, just close sidebar
             setIsSidebarVisible(false);
           } else if (section === 'anime') {
-            navigation.navigate('MainTabs', { screen: 'HomeAnime' });
+            navigation.navigate('HomeAnime');
           } else if (section === 'movie') {
             navigation.navigate('HomeMovies');
           } else if (section === 'comic') {

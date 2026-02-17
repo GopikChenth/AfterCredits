@@ -1,45 +1,57 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
   ScrollView,
-  StyleSheet,
   StatusBar,
   Image,
   Pressable,
-  Dimensions,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 
+// Anime services
 import { getUpcomingAnime, formatAnimeData } from "../services/api_anime";
 import { getAnimeNews } from "../services/news_service";
+// Games services
+import { getUpcomingGames, formatGameData } from "../services/api_games";
+import { getGamingNews } from "../services/news_games";
+// Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";
+// Components
 import NewsCard from "../components/discover_page/NewsCard";
 import DiscoverSkeleton from "../components/skeletons/SkeletonDiscover";
-
-const { width } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.32;
-const CARD_HEIGHT = CARD_WIDTH * 1.3;
-const EXPANDED_CARD_WIDTH = width - 40;
+// Style handler & context
+import { useMediaType } from "../context/MediaTypeContext";
+import { getDiscoverStyles, getDiscoverTheme, CARD_WIDTH, CARD_HEIGHT, EXPANDED_CARD_WIDTH } from "../stylehandler/discoverStyles";
 
 const DiscoverPage = ({ navigation }) => {
-  const [upcomingAnime, setUpcomingAnime] = useState([]);
+  const { mediaType } = useMediaType();
+  const styles = getDiscoverStyles(mediaType);
+  const theme = getDiscoverTheme(mediaType);
+
+  const isGames = mediaType === 'games';
+
+  const [upcomingItems, setUpcomingItems] = useState([]);
   const [news, setNews] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [newsLoading, setNewsLoading] = useState(true);
-  const [expandedAnimeId, setExpandedAnimeId] = useState(null);
-  const [wishlistedIds, setWishlistedIds] = useState([]); // Array of wishlisted anime IDs
+  const [expandedItemId, setExpandedItemId] = useState(null);
+  const [wishlistedIds, setWishlistedIds] = useState([]);
 
-  // Season order for sorting (earliest first)
+  // Season order for sorting anime (earliest first)
   const SEASON_ORDER = { WINTER: 0, SPRING: 1, SUMMER: 2, FALL: 3 };
 
+  // ─── Re-fetch when media type changes ──────────────────────────
   useEffect(() => {
+    setUpcomingItems([]);
+    setNews([]);
+    setExpandedItemId(null);
     fetchUpcoming();
     fetchNews();
     fetchWishlist();
@@ -51,12 +63,15 @@ const DiscoverPage = ({ navigation }) => {
     loadProfile();
     const unsubscribe = navigation.addListener('focus', () => loadProfile());
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, mediaType]);
 
+  // ─── Data Fetching ─────────────────────────────────────────────
   const fetchNews = async () => {
     try {
       setNewsLoading(true);
-      const articles = await getAnimeNews(7); // Show 7 preview articles
+      const articles = isGames
+        ? await getGamingNews(7)
+        : await getAnimeNews(7);
       setNews(articles);
     } catch (error) {
       console.error("Error fetching news:", error);
@@ -68,22 +83,38 @@ const DiscoverPage = ({ navigation }) => {
   const fetchUpcoming = async () => {
     try {
       setLoading(true);
-      const result = await getUpcomingAnime(1, 20);
-      if (result?.media) {
-        const formatted = result.media.map(formatAnimeData);
-        // Sort by nearest release: year first, then season order
-        const sorted = formatted.sort((a, b) => {
-          const yearA = a.year || 9999;
-          const yearB = b.year || 9999;
-          if (yearA !== yearB) return yearA - yearB;
-          const seasonA = SEASON_ORDER[a.season] ?? 99;
-          const seasonB = SEASON_ORDER[b.season] ?? 99;
-          return seasonA - seasonB;
-        });
-        setUpcomingAnime(sorted);
+
+      if (isGames) {
+        // RAWG API — upcoming games
+        const result = await getUpcomingGames(1, 20);
+        if (result?.results) {
+          const formatted = result.results.map(formatGameData);
+          // Sort by release date (nearest first)
+          const sorted = formatted.sort((a, b) => {
+            if (!a.released) return 1;
+            if (!b.released) return -1;
+            return new Date(a.released) - new Date(b.released);
+          });
+          setUpcomingItems(sorted);
+        }
+      } else {
+        // AniList API — upcoming anime
+        const result = await getUpcomingAnime(1, 20);
+        if (result?.media) {
+          const formatted = result.media.map(formatAnimeData);
+          const sorted = formatted.sort((a, b) => {
+            const yearA = a.year || 9999;
+            const yearB = b.year || 9999;
+            if (yearA !== yearB) return yearA - yearB;
+            const seasonA = SEASON_ORDER[a.season] ?? 99;
+            const seasonB = SEASON_ORDER[b.season] ?? 99;
+            return seasonA - seasonB;
+          });
+          setUpcomingItems(sorted);
+        }
       }
     } catch (error) {
-      console.error("Error fetching upcoming anime:", error);
+      console.error("Error fetching upcoming:", error);
     } finally {
       setLoading(false);
     }
@@ -91,7 +122,8 @@ const DiscoverPage = ({ navigation }) => {
 
   const fetchWishlist = async () => {
     try {
-      const result = await getWishlist('anime');
+      const type = isGames ? 'games' : 'anime';
+      const result = await getWishlist(type);
       if (result.success && result.data) {
         setWishlistedIds(result.data.map(item => item.media_id));
       }
@@ -100,115 +132,134 @@ const DiscoverPage = ({ navigation }) => {
     }
   };
 
-  const toggleWishlist = async (animeId) => {
-    const currentlyWishlisted = wishlistedIds.includes(animeId);
+  const toggleWishlist = async (itemId) => {
+    const currentlyWishlisted = wishlistedIds.includes(itemId);
     // Optimistic update
     if (currentlyWishlisted) {
-      setWishlistedIds(prev => prev.filter(id => id !== animeId));
+      setWishlistedIds(prev => prev.filter(id => id !== itemId));
     } else {
-      setWishlistedIds(prev => [...prev, animeId]);
+      setWishlistedIds(prev => [...prev, itemId]);
     }
-    // Persist to Supabase
-    const result = await setWishlistService('anime', String(animeId), !currentlyWishlisted);
+    const type = isGames ? 'games' : 'anime';
+    const result = await setWishlistService(type, String(itemId), !currentlyWishlisted);
     if (!result.success) {
       // Revert on failure
       if (currentlyWishlisted) {
-        setWishlistedIds(prev => [...prev, animeId]);
+        setWishlistedIds(prev => [...prev, itemId]);
       } else {
-        setWishlistedIds(prev => prev.filter(id => id !== animeId));
+        setWishlistedIds(prev => prev.filter(id => id !== itemId));
       }
     }
   };
 
-  const isWishlisted = (animeId) => wishlistedIds.includes(animeId);
+  const isWishlisted = (itemId) => wishlistedIds.includes(itemId);
 
-  const formatDate = (anime) => {
-    if (anime.season && anime.year) {
-      return `${anime.season} ${anime.year}`;
+  // ─── Formatters ────────────────────────────────────────────────
+  const formatDate = (item) => {
+    if (isGames) {
+      if (!item.released) return 'TBA';
+      const d = new Date(item.released);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
-    if (anime.year) return `${anime.year}`;
-    return "TBA";
+    // Anime
+    if (item.season && item.year) return `${item.season} ${item.year}`;
+    if (item.year) return `${item.year}`;
+    return 'TBA';
   };
 
-  const handleCardPress = (animeId) => {
-    setExpandedAnimeId(expandedAnimeId === animeId ? null : animeId);
+  const getTitle = (item) => isGames ? item.name : item.title;
+  const getCoverImage = (item) => item.coverImage;
+  const getGenres = (item) => item.genres || [];
+  const getSubInfo = (item) => {
+    if (isGames) {
+      const devs = item.developers?.join(', ');
+      return devs || null;
+    }
+    return item.studio || null;
+  };
+  const getSubInfoIcon = () => isGames ? 'code-slash-outline' : 'business-outline';
+
+  const handleCardPress = (itemId) => {
+    setExpandedItemId(expandedItemId === itemId ? null : itemId);
   };
 
-  const renderUpcomingCard = (anime) => {
-    const isExpanded = expandedAnimeId === anime.id;
-    
+  // ─── Card Renderer ─────────────────────────────────────────────
+  const renderUpcomingCard = (item) => {
+    const isExpanded = expandedItemId === item.id;
+
     return (
       <Pressable
-        key={anime.id}
+        key={item.id}
         style={[styles.card, isExpanded && styles.cardExpanded]}
-        onPress={() => handleCardPress(anime.id)}
+        onPress={() => handleCardPress(item.id)}
       >
-        <Image source={{ uri: anime.coverImage }} style={styles.cardImage} />
-        
+        <Image source={{ uri: getCoverImage(item) }} style={styles.cardImage} />
+
         {isExpanded && (
           <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.98)']}
+            colors={theme.gradientOverlay}
             locations={[0, 0.4, 1]}
             style={styles.expandedOverlay}
           >
             <Pressable
               style={styles.closeButton}
-              onPress={() => setExpandedAnimeId(null)}
+              onPress={() => setExpandedItemId(null)}
             >
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
 
             <View style={styles.expandedHeader}>
               <Text style={styles.expandedTitle} numberOfLines={3}>
-                {anime.title}
+                {getTitle(item)}
               </Text>
             </View>
 
             <View style={styles.expandedContent}>
               <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={14} color="#FFB3C6" />
-                <Text style={styles.infoText}>{formatDate(anime)}</Text>
+                <Ionicons name="calendar-outline" size={14} color={theme.accent} />
+                <Text style={styles.infoText}>{formatDate(item)}</Text>
               </View>
 
-              {anime.genres && anime.genres.length > 0 && (
+              {getGenres(item).length > 0 && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="pricetag-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="pricetag-outline" size={14} color={theme.accent} />
                   <Text style={styles.infoText} numberOfLines={1}>
-                    {anime.genres.slice(0, 3).join(", ")}
+                    {getGenres(item).slice(0, 3).join(", ")}
                   </Text>
                 </View>
               )}
 
-              {anime.studio && (
+              {getSubInfo(item) && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="business-outline" size={14} color="#FFB3C6" />
-                  <Text style={styles.infoText}>{anime.studio}</Text>
+                  <Ionicons name={getSubInfoIcon()} size={14} color={theme.accent} />
+                  <Text style={styles.infoText}>{getSubInfo(item)}</Text>
                 </View>
               )}
-
 
               <View style={styles.actionButtonsRow}>
                 <Pressable
                   style={[
                     styles.wishlistButton,
-                    isWishlisted(anime.id) && styles.wishlistButtonActive
+                    isWishlisted(item.id) && styles.wishlistButtonActive
                   ]}
-                  onPress={() => toggleWishlist(anime.id)}
+                  onPress={() => toggleWishlist(item.id)}
                 >
-                  <Ionicons 
-                    name={isWishlisted(anime.id) ? "bookmark" : "bookmark-outline"} 
-                    size={20} 
-                    color="#D4BBFF" 
+                  <Ionicons
+                    name={isWishlisted(item.id) ? "bookmark" : "bookmark-outline"}
+                    size={20}
+                    color={theme.wishlistIcon}
                   />
                 </Pressable>
 
-                <Pressable
-                  style={styles.viewDetailsButton}
-                  onPress={() => navigation.navigate("DetailsAnime", { animeId: anime.id })}
-                >
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-                </Pressable>
+                {!isGames && (
+                  <Pressable
+                    style={styles.viewDetailsButton}
+                    onPress={() => navigation.navigate("DetailsAnime", { animeId: item.id })}
+                  >
+                    <Text style={styles.viewDetailsText}>View Details</Text>
+                    <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+                  </Pressable>
+                )}
               </View>
             </View>
           </LinearGradient>
@@ -217,17 +268,18 @@ const DiscoverPage = ({ navigation }) => {
     );
   };
 
+  // ─── Render ────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
 
       <View style={styles.container}>
-        {/* Static Header — stays fixed on scroll */}
+        {/* Static Header */}
         <View style={styles.headerContainer}>
           <View>
             <Text style={styles.headerTitle}>Discover</Text>
             <Text style={styles.headerSubtitle}>
-              Explore anime, find your next obsession
+              {theme.subtitleText}
             </Text>
           </View>
           <Pressable
@@ -242,317 +294,82 @@ const DiscoverPage = ({ navigation }) => {
                 style={styles.profileIcon}
               />
             ) : (
-              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+              <Ionicons name="person-circle-outline" size={48} color={theme.profileIconColor} />
             )}
           </Pressable>
         </View>
 
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-          {/* Upcoming Anime Section */}
+          {/* Coming Soon / Upcoming Section */}
           <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionTitleLeft}>
-              <Ionicons name="time-outline" size={20} color="#FFB3C6" />
-              <Text style={styles.sectionTitle}>Coming Soon</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleLeft}>
+                <Ionicons name={theme.comingSoonIcon} size={20} color={theme.accent} />
+                <Text style={styles.sectionTitle}>{theme.comingSoonTitle}</Text>
+              </View>
+              {!isGames && (
+                <Pressable
+                  style={styles.viewAllButton}
+                  onPress={() => navigation.navigate("UpcomingPage")}
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                  <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+                </Pressable>
+              )}
             </View>
-            <Pressable
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate("UpcomingPage")}
-            >
-              <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-            </Pressable>
+            <Text style={styles.sectionSubtitle}>
+              {theme.comingSoonSubtitle}
+            </Text>
           </View>
-          <Text style={styles.sectionSubtitle}>
-            Anime that are yet to release
-          </Text>
-        </View>
 
-        {loading ? (
-          <DiscoverSkeleton />
-        ) : (
-          <FlatList
-            data={upcomingAnime}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScroll}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => renderUpcomingCard(item)}
-            style={styles.flatList}
-            scrollEnabled={true}
-          />
-        )}
+          {loading ? (
+            <DiscoverSkeleton />
+          ) : (
+            <FlatList
+              data={upcomingItems}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => renderUpcomingCard(item)}
+              style={styles.flatList}
+              scrollEnabled={true}
+            />
+          )}
 
-        {/* News Section */}
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionTitleLeft}>
-              <Ionicons name="newspaper-outline" size={20} color="#FFB3C6" />
-              <Text style={styles.sectionTitle}>Latest News</Text>
+          {/* News Section */}
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleLeft}>
+                <Ionicons name={theme.newsIcon} size={20} color={theme.accent} />
+                <Text style={styles.sectionTitle}>{theme.newsTitle}</Text>
+              </View>
+              {!isGames && (
+                <Pressable
+                  style={styles.viewAllButton}
+                  onPress={() => navigation.navigate('NewsPage')}
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                  <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+                </Pressable>
+              )}
             </View>
-            <Pressable
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate('NewsPage')}
-            >
-              <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
-            </Pressable>
+            <Text style={styles.sectionSubtitle}>{theme.newsSubtitle}</Text>
           </View>
-          <Text style={styles.sectionSubtitle}>Fresh from Anime Corner</Text>
-        </View>
 
-        {newsLoading ? (
-          <DiscoverSkeleton />
-        ) : (
-          <View style={styles.newsContainer}>
-            {news.map((article) => (
-              <NewsCard key={article.id} article={article} />
-            ))}
-          </View>
-        )}
+          {newsLoading ? (
+            <DiscoverSkeleton />
+          ) : (
+            <View style={styles.newsContainer}>
+              {news.map((article) => (
+                <NewsCard key={article.id} article={article} />
+              ))}
+            </View>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#0D0D0D",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#0D0D0D",
-  },
-  // Header — matches Home page
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  profileButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  profileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFB3C6',
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: "800",
-    fontFamily: "Agdasima",
-    color: "#fff",
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: "#888",
-    fontFamily: "Agdasima",
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  // Content
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 10,
-  },
-  // Section header
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-  },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sectionTitleLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    fontFamily: "Agdasima",
-    color: "#fff",
-    letterSpacing: 0.5,
-  },
-  viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "rgba(255, 179, 198, 0.1)",
-  },
-  viewAllText: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: "Agdasima",
-    color: "#FFB3C6",
-    letterSpacing: 0.3,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    fontFamily: "Agdasima",
-    color: "#666",
-    letterSpacing: 0.3,
-    marginTop: 4,
-    marginLeft: 28,
-  },
-  // Horizontal scroll
-  horizontalScroll: {
-    paddingHorizontal: 20,
-    gap: 14,
-    alignItems: "flex-start",
-  },
-  flatList: {
-    flexGrow: 0,
-  },
-  // News section
-  newsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 80, // Space for tab bar
-  },
-  // Card
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 14,
-    overflow: "hidden",
-    backgroundColor: "#1A1A1A",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
-  },
-  cardExpanded: {
-    width: EXPANDED_CARD_WIDTH,
-    height: CARD_HEIGHT * 1.5,
-    zIndex: 1000,
-  },
-  cardImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#2A2A2A",
-  },
-  // Expanded overlay
-  expandedOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 14,
-    justifyContent: 'flex-end',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  expandedHeader: {
-    marginBottom: 12,
-  },
-  expandedTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    fontFamily: "Agdasima",
-    color: "#fff",
-    letterSpacing: 0.3,
-    lineHeight: 20,
-  },
-  expandedContent: {
-    gap: 8,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  infoText: {
-    fontSize: 12,
-    fontFamily: "Agdasima",
-    color: "#ccc",
-    letterSpacing: 0.2,
-    flex: 1,
-  },
-  expandedDescription: {
-    fontSize: 11,
-    fontFamily: "Agdasima",
-    color: "#999",
-    letterSpacing: 0.2,
-    lineHeight: 15,
-    marginTop: 4,
-  },
-  actionButtonsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 8,
-  },
-  wishlistButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 44,
-    height: 44,
-    backgroundColor: "rgba(212, 187, 255, 0.1)",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(212, 187, 255, 0.3)",
-  },
-  wishlistButtonActive: {
-    backgroundColor: "rgba(212, 187, 255, 0.25)",
-    borderColor: "rgba(212, 187, 255, 0.5)",
-  },
-  viewDetailsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: "rgba(255, 179, 198, 0.15)",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flex: 1,
-  },
-  viewDetailsText: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: "Agdasima",
-    color: "#FFB3C6",
-    letterSpacing: 0.3,
-  },
-  // Loading
-  loadingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    gap: 12,
-  },
-  loadingText: {
-    color: "#666",
-    fontSize: 14,
-    fontFamily: "Agdasima",
-    letterSpacing: 0.3,
-  },
-});
 
 export default DiscoverPage;
