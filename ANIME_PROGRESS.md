@@ -3678,13 +3678,13 @@ _"Performance is perception. Skeletons bridge the gap between loading and loaded
 const animeTheme = {
   components: { Chart: DonutChart, SecondaryList: TopStudios },
   services: { fetchDetails: getAnimeDetails },
-  extractors: { getTitle: (d) => d.title }
+  extractors: { getTitle: (d) => d.title },
 };
 
 const gamesTheme = {
   components: { Chart: DonutChart, SecondaryList: TopDevelopers },
   services: { fetchDetails: getGameDetails },
-  extractors: { getTitle: (d) => d.name } // Different property!
+  extractors: { getTitle: (d) => d.name }, // Different property!
 };
 ```
 
@@ -3758,3 +3758,224 @@ const gamesTheme = {
 - 2. Add specific Game stats (Playtime, Achievements)
 - 3. Expand search to include Games
 
+---
+
+## Session 15: Feb 15-18, 2026
+
+### ✅ Crew Detail Page
+
+#### **crew_anime.jsx** (`/src/pages/crew_anime.jsx`)
+
+**Purpose**: Dedicated page for viewing voice actor / staff member details and their anime roles.
+
+**Features**:
+
+- **Staff Profile Header**: Large photo, full name (English + native), and key stats
+- **Bio Section**: BlurView frosted glass panel with staff biography text
+- **Stats Row**: Birthday, age, hometown, blood type, favourites count (with Ionicons)
+- **Voice Acting Roles**: Scrollable list of anime they've appeared in
+  - Each role card shows: anime cover, title, format, year, character name + character image
+  - Tappable — navigates to that anime's Details page
+- **Loading & Error States**: ActivityIndicator and error message with retry
+- **Dark Theme**: Consistent `#0D0D0D` background, `#FFB3C6` / `#D4BBFF` accents
+
+**API Integration**:
+
+- New `getStaffDetails(id)` function added to `api_anime.js`
+- GraphQL query fetches: name, image, description, dateOfBirth, age, homeTown, bloodType, favourites, characterMedia (top 25 by popularity)
+
+**Navigation**:
+
+- Registered as `CrewDetailPage` in `App.js` Stack Navigator
+- Navigated to from `details_anime.jsx` with `{ staffId, staffName }` params
+
+---
+
+### ✅ Pressable Crew Members
+
+#### **CrewMember.jsx** (`/src/components/details_page/CrewMember.jsx`)
+
+**Purpose**: Make crew member rows tappable for navigation to the Crew Detail page
+
+**Changes**:
+
+- Accepts optional `onPress` prop
+- Conditionally renders `Pressable` (if `onPress` provided) or `View` (if not)
+- Added **chevron-forward** icon (`>`) on the right as a visual indicator
+- Subtle pink highlight on press (`pressed && styles.pressed`)
+
+**Usage in details_anime.jsx**:
+
+```javascript
+<CrewMember
+  onPress={
+    member.id
+      ? () =>
+          navigation.navigate("CrewDetailPage", {
+            staffId: member.id,
+            staffName: member.name,
+          })
+      : undefined
+  }
+  // ... other props
+/>
+```
+
+---
+
+### ✅ Home Page Pagination
+
+#### **Prev / Next Page Navigation** (`/src/pages/home_anime.jsx`)
+
+**Purpose**: Allow users to browse beyond the initial 20 anime per category
+
+**Before**: Fixed 20 items, no way to see more
+
+**After**: Full page-based navigation with prev/next buttons
+
+**Features**:
+
+- **Prev / Next Buttons**: Appear at bottom of the grid in a row
+- **Page Indicator**: "Page X" label centered between buttons
+- **Replaces Content**: Each page replaces the current 20 items (not appended)
+- **Skeleton Loading**: Skeleton loader shown during page transitions (not spinner)
+- **Category Reset**: Switching category resets to page 1
+- **Scroll Padding**: `paddingBottom: 80` prevents search bar from overlapping buttons
+
+**State Added**:
+
+| State           | Purpose                         |
+| --------------- | ------------------------------- |
+| `currentPage`   | Tracks which page is displayed  |
+| `hasMore`       | Whether AniList has a next page |
+| `isLoadingMore` | True while fetching a new page  |
+
+**Functions Added**:
+
+- `handleLoadMore()` — fetches `currentPage + 1`, replaces list
+- `handlePrevPage()` — fetches `currentPage - 1`, replaces list
+
+**Styles Added**:
+
+- `paginationContainer` — row layout for prev/page/next
+- `loadMoreButton` — pink-bordered pill button
+- `loadMoreButtonPlaceholder` — invisible spacer when button hidden
+- `pageIndicator` — muted gray page label
+
+---
+
+### ✅ Card Expansion Overflow Fixes
+
+#### **Discover Page** (`/src/pages/discover_page.jsx`)
+
+**Problem**: Expanded upcoming anime cards overflowed their bounds when the description block was included
+
+**Fix**: Removed the description block from expanded card content. Expanded cards now show:
+
+- Title (3 lines max)
+- Release date
+- Genres (top 3)
+- Studio
+- Wishlist + View Details buttons
+
+#### **Upcoming Page** (`/src/pages/upcoming_page.jsx`)
+
+**Same fix applied**: Removed `anime.description` block from the expanded overlay. Content now fits cleanly within the `CARD_HEIGHT * 1.5` expanded size.
+
+---
+
+### ✅ Skeleton Loading During Pagination
+
+**Change**: The home page now shows the `SkeletonLoader` (not an `ActivityIndicator`) when loading a new page.
+
+**Before**: Spinner shown while fetching page 2+
+
+**After**: Full skeleton grid shown for both initial load AND page transitions
+
+**Implementation**:
+
+```javascript
+// Both initial load and page transitions show skeleton
+{isLoading || isLoadingMore ? (
+  <SkeletonLoader cardHeight={cardHeight} count={6} />
+) : (
+  // ... FlashList
+)}
+```
+
+---
+
+### 📊 Session 15 Statistics
+
+**Files Created**: 1
+
+- `src/pages/crew_anime.jsx` — NEW: Staff/voice actor detail page
+
+**Files Modified**: 6
+
+- `src/services/api_anime.js` — Added `getStaffDetails()` function
+- `src/components/details_page/CrewMember.jsx` — Pressable with chevron
+- `src/pages/details_anime.jsx` — Pass VA id, navigate to CrewDetailPage
+- `src/pages/home_anime.jsx` — Pagination state, prev/next, skeleton on page change
+- `src/pages/discover_page.jsx` — Removed description from expanded cards
+- `src/pages/upcoming_page.jsx` — Removed description from expanded cards
+- `App.js` — Registered `CrewDetailPage` route
+
+**New Features**: 4
+
+- ✅ Crew/VA detail page with bio and role list
+- ✅ Pressable crew members with navigation
+- ✅ Home page prev/next pagination
+- ✅ Skeleton loading during page transitions
+
+**Bugs Fixed**: 2
+
+- Expanded card overflow on Discover page
+- Expanded card overflow on Upcoming page
+
+**Git Commits**: 1
+
+- `feat: Add crew detail page, pagination, and UI improvements` (47ba7a2)
+
+---
+
+### 🎯 Key Session 15 Learnings
+
+1. **Pagination UX**: Replacing content (not appending) keeps the list manageable and mirrors traditional page-based browsing
+2. **Skeleton Consistency**: Using the same skeleton for initial load AND page transitions creates a seamless experience
+3. **Content Overflow**: Expanded cards need careful content budgeting — removing descriptions prevents overflow without needing to increase card height
+4. **Navigation Depth**: Crew → Anime → Crew chains work cleanly with Stack Navigator's built-in back stack
+5. **Pressable Indicators**: Chevron icons are a universal signal for "this is tappable and goes somewhere"
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Crew detail page with full staff profile and role list
+- ✅ Pressable crew members with visual indicator
+- ✅ Home page pagination (prev/next, skeleton, no overlap)
+- ✅ Expanded card overflow fixed on Discover and Upcoming pages
+
+**Production Ready Features**:
+
+| Feature                    | Status | Quality |
+| -------------------------- | ------ | ------- |
+| Crew Detail Page           | ✅     | 100%    |
+| Pressable Crew Members     | ✅     | 100%    |
+| Home Page Pagination       | ✅     | 100%    |
+| Skeleton on Page Change    | ✅     | 100%    |
+| Expanded Card Overflow Fix | ✅     | 100%    |
+
+**Next Priorities**:
+
+1. Add search/filter to Discover page
+2. Implement post creation (community anime lists)
+3. Add pull-to-refresh on Home and Discover pages
+4. Expand Podium stats (top voice actors, top years)
+5. Create detailed Game Profile page
+
+---
+
+_"Every voice actor has a story. Every story deserves a page."_
