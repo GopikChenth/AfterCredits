@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  StyleSheet, 
   TextInput, 
   Pressable, 
   Image, 
@@ -15,12 +14,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getMediaTheme } from '../utils/mediaThemes';
 import DateSelector from '../components/review_page/DateSelector';
 import { submitReview, getUserReview } from '../services/reviewService';
+import { useMediaType } from '../context/MediaTypeContext';
+import { getReviewPageStyles, getReviewPageTheme } from '../stylehandler/reviewPageStyles';
 
-const ReviewAnime = ({ navigation, route }) => {
-  const theme = getMediaTheme('anime');
+const ReviewPage = ({ navigation, route }) => {
+  const { mediaType } = useMediaType();
+  const styles = getReviewPageStyles(mediaType);
+  const theme = getReviewPageTheme(mediaType);
+
   // Fallback data if not passed or missing
   const { 
     title = 'Unknown Title', 
@@ -45,7 +48,7 @@ const ReviewAnime = ({ navigation, route }) => {
   const handleSave = async () => {
     // Validation
     if (rating === 0) {
-      Alert.alert('Rating Required', 'Please rate the anime before submitting.');
+      Alert.alert('Rating Required', theme.ratingLabel);
       return;
     }
 
@@ -57,9 +60,9 @@ const ReviewAnime = ({ navigation, route }) => {
     setIsSubmitting(true);
 
     try {
-      // Prepare review data (simplified - no detailed ratings)
+      // Prepare review data
       const reviewData = {
-        mediaType: 'anime',
+        mediaType: theme.mediaTypeKey,
         mediaId: mediaId,
         overallRating: rating * 2, // Convert 1-5 stars to 1-10
         content: reviewText.trim(),
@@ -100,7 +103,7 @@ const ReviewAnime = ({ navigation, route }) => {
             <Pressable onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
               <Ionicons name="close" size={28} color="#fff" />
             </Pressable>
-            <Text style={[styles.headerTitle, { fontFamily: theme.headingFont }]}>I Watched</Text>
+            <Text style={styles.headerTitle}>{theme.headerText}</Text>
             <Pressable onPress={handleSave} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
               <Ionicons name="checkmark" size={28} color={theme.accent} />
             </Pressable>
@@ -113,7 +116,7 @@ const ReviewAnime = ({ navigation, route }) => {
               style={styles.thumbnail}
               resizeMode="cover"
             />
-            <Text style={[styles.mediaTitle, { fontFamily: theme.headingFont }]}>{title}</Text>
+            <Text style={styles.mediaTitle}>{title}</Text>
           </View>
 
           <View style={styles.divider} />
@@ -132,13 +135,13 @@ const ReviewAnime = ({ navigation, route }) => {
                     <Ionicons 
                       name="star" 
                       size={32} 
-                      color={star <= rating ? theme.accent : '#E0E0E0'} 
+                      color={star <= rating ? theme.accent : theme.inactiveStar} 
                       style={{ marginRight: 6 }}
                     />
                   </Pressable>
                 ))}
               </View>
-              <Text style={[styles.smallLabel, { fontFamily: theme.contentFont }]}>Rate</Text>
+              <Text style={styles.smallLabel}>Rate</Text>
             </View>
 
             <View style={styles.likeContainer}>
@@ -146,10 +149,10 @@ const ReviewAnime = ({ navigation, route }) => {
                 <Ionicons 
                   name={liked ? "heart" : "heart"} 
                   size={32} 
-                  color={liked ? theme.accent : '#E0E0E0'} 
+                  color={liked ? theme.accent : theme.inactiveStar} 
                 />
               </Pressable>
-              <Text style={[styles.smallLabel, { fontFamily: theme.contentFont }]}>Like</Text>
+              <Text style={styles.smallLabel}>Like</Text>
             </View>
           </View>
 
@@ -157,7 +160,7 @@ const ReviewAnime = ({ navigation, route }) => {
 
           {/* Review Input */}
           <TextInput
-            style={[styles.reviewInput, { fontFamily: theme.contentFont }]}
+            style={styles.reviewInput}
             placeholder="Add review..."
             placeholderTextColor="#999"
             multiline
@@ -168,7 +171,7 @@ const ReviewAnime = ({ navigation, route }) => {
 
           {/* Tags */}
           <Pressable style={styles.tagsContainer}>
-            <Text style={[styles.tagsPlaceholder, { fontFamily: theme.contentFont }]}>Add tags...</Text>
+            <Text style={styles.tagsPlaceholder}>Add tags...</Text>
           </Pressable>
 
           <View style={styles.divider} />
@@ -182,7 +185,7 @@ const ReviewAnime = ({ navigation, route }) => {
               <View style={[styles.iconCircle, isFirstTime && { borderColor: theme.accent, backgroundColor: theme.accent + '20' }]}>
                 <Ionicons name="eye-outline" size={24} color={isFirstTime ? theme.accent : '#ccc'} />
               </View>
-              <Text style={[styles.toggleText, { fontFamily: theme.contentFont }, isFirstTime && { color: theme.accent }]}>
+              <Text style={[styles.toggleText, isFirstTime && { color: theme.accent }]}>
                 First-time watch
               </Text>
             </Pressable>
@@ -194,7 +197,7 @@ const ReviewAnime = ({ navigation, route }) => {
               <View style={[styles.iconCircle, noSpoilers && { borderColor: theme.accent, backgroundColor: theme.accent + '20' }]}>
                 <Ionicons name="eye-off-outline" size={24} color={noSpoilers ? theme.accent : '#ccc'} /> 
               </View>
-              <Text style={[styles.toggleText, { fontFamily: theme.contentFont }, noSpoilers && { color: theme.accent }]}>
+              <Text style={[styles.toggleText, noSpoilers && { color: theme.accent }]}>
                 No spoilers
               </Text>
             </Pressable>
@@ -206,136 +209,4 @@ const ReviewAnime = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#666',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  mediaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  thumbnail: {
-    width: 40,
-    height: 60,
-    borderRadius: 6,
-    marginRight: 16,
-    backgroundColor: '#f0f0f0',
-  },
-  mediaTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    flex: 1,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#595959',
-    marginHorizontal: 16,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  label: {
-    fontSize: 16,
-    color: '#666',
-  },
-  dateValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9F9F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  dateValue: {
-    fontSize: 16,
-    color: '#333',
-  },
-  interactionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 30, // More padding to center controls better
-    paddingVertical: 20,
-  },
-  ratingContainer: {
-    alignItems: 'center',
-  },
-  stars: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  likeContainer: {
-    alignItems: 'center',
-  },
-  smallLabel: {
-    fontSize: 12,
-    color: '#999',
-  },
-  reviewInput: {
-    flex: 1,
-    minHeight: 150,
-    padding: 16,
-    fontSize: 16,
-    color: '#fff',
-    backgroundColor: '#0D0D0D',
-  },
-  tagsContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  tagsPlaceholder: {
-    fontSize: 16,
-    color: '#999',
-  },
-  togglesRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  toggleItem: {
-    alignItems: 'center',
-    width: 120,
-  },
-  iconCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  toggleText: {
-    fontSize: 14,
-    color: '#999',
-    fontWeight: '500',
-  },
-});
-
-export default ReviewAnime;
+export default ReviewPage;

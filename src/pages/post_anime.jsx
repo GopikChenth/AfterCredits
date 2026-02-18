@@ -5,7 +5,6 @@ import {
   ScrollView,
   Image,
   Pressable,
-  StyleSheet,
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,12 +12,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import ListPost from '../components/Post_page/ListPost';
 import PostSkeleton from '../components/skeletons/SkeletonPost';
-import { getMediaTheme } from '../utils/mediaThemes';
 import { getUserProfile } from '../services/profile';
 import { getPosts } from '../services/postService';
+import { useMediaType } from '../context/MediaTypeContext';
+import { getPostPageStyles, getPostPageTheme } from '../stylehandler/postPageStyles';
 
 const PostPage = ({ navigation }) => {
-  const theme = getMediaTheme('anime');
+  const { mediaType } = useMediaType();
+  const styles = getPostPageStyles(mediaType);
+  const theme = getPostPageTheme(mediaType);
+
   const [userProfile, setUserProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,14 +55,14 @@ const PostPage = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
       
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <View>
-            <Text style={styles.headerTitle}>Post</Text>
-            <Text style={styles.headerSubtitle}>Curated anime lists from the community</Text>
+            <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
+            <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
           </View>
           <Pressable
             style={styles.profileButton}
@@ -73,7 +76,7 @@ const PostPage = ({ navigation }) => {
                 style={styles.profileIcon}
               />
             ) : (
-              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+              <Ionicons name="person-circle-outline" size={48} color={theme.profileIconColor} />
             )}
           </Pressable>
         </View>
@@ -103,7 +106,7 @@ const PostPage = ({ navigation }) => {
                 title={post.title}
                 description={post.description}
                 animeCovers={post.animeCovers}
-                onPress={() => navigation.navigate('PostDetailAnime', { post })}
+                onPress={() => navigation.navigate(theme.detailRoute, { post })}
               />
             ))
           )}
@@ -116,79 +119,5 @@ const PostPage = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  profileButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  profileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFB3C6',
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    fontFamily: 'Agdasima',
-    color: '#fff',
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  feed: {
-    flex: 1,
-  },
-  feedContent: {
-    paddingBottom: 10,
-  },
-  errorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    gap: 12,
-  },
-  errorText: {
-    color: '#888',
-    fontSize: 15,
-    fontFamily: 'Agdasima',
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#FFB3C6',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  retryText: {
-    color: '#0D0D0D',
-    fontSize: 14,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
-  },
-});
 
 export default PostPage;

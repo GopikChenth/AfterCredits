@@ -4,8 +4,6 @@ import {
   Text,
   FlatList,
   Pressable,
-  StyleSheet,
-  Dimensions,
   StatusBar,
   ActivityIndicator,
   Image,
@@ -16,54 +14,58 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
-import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
-import SkeletonPodiumList from '../components/skeletons/SkeletonPodiumList';
 
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 56) / 2;
+import { useMediaType } from '../context/MediaTypeContext';
+import { getPodiumListStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
 
 const STATUS_CONFIG = {
-  watching: { label: 'Watching', icon: 'eye', color: '#FBBF24', textColor: '#fff', bg: 'rgba(251,191,36,0.15)' },
-  watched: { label: 'Completed', icon: 'checkmark-circle', color: '#4ADE80', textColor: '#fff', bg: 'rgba(74,222,128,0.15)' },
-  dropped: { label: 'Dropped', icon: 'close-circle', color: '#F87171', textColor: '#fff', bg: 'rgba(248,113,113,0.15)' },
-  wishlist: { label: 'Wishlist', icon: 'bookmark', color: '#C084FC', textColor: '#fff', bg: 'rgba(192,132,252,0.15)' },
+  watching: { label: 'Watching', icon: 'eye', color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+  watched:  { label: 'Completed', icon: 'checkmark-circle', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)' },
+  dropped:  { label: 'Dropped', icon: 'close-circle', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
+  wishlist: { label: 'Wishlist', icon: 'bookmark', color: '#C084FC', bg: 'rgba(192,132,252,0.15)' },
 };
 
-const animeCache = {};
+const mediaDetailCache = {};
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const PodiumListPage = ({ route, navigation }) => {
+  const { mediaType } = useMediaType();
+  const styles = getPodiumListStyles(mediaType);
+  const theme = getPodiumPageTheme(mediaType);
+
+  // ─── Pull services + extractors from the theme ───────────
+  const { fetchDetails, formatData } = theme.services;
+  const { ListSkeleton } = theme.components;
+
   const { status } = route.params;
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.watching;
+  const cachePrefix = theme.statusMediaType + '_';
 
   const [items, setItems] = useState([]);
-  const [animeDetails, setAnimeDetails] = useState({});
+  const [mediaDetails, setMediaDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const fetchingRef = useRef(new Set());
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      let result;
-      if (status === 'wishlist') {
-        result = await getWishlist('anime');
-      } else {
-        result = await getByStatus(status, 'anime');
-      }
+      const result = status === 'wishlist'
+        ? await getWishlist(theme.statusMediaType)
+        : await getByStatus(status, theme.statusMediaType);
 
       if (result.success) {
         const data = result.data || [];
         setItems(data);
 
-        // Pre-populate from cache only
+        // Pre-populate from cache
         const cached = {};
         data.forEach(item => {
-          if (animeCache[item.media_id]) {
-            cached[item.media_id] = animeCache[item.media_id];
+          if (mediaDetailCache[cachePrefix + item.media_id]) {
+            cached[item.media_id] = mediaDetailCache[cachePrefix + item.media_id];
           }
         });
         if (Object.keys(cached).length > 0) {
-          setAnimeDetails(prev => ({ ...prev, ...cached }));
+          setMediaDetails(prev => ({ ...prev, ...cached }));
         }
       }
     } catch (error) {
@@ -71,19 +73,20 @@ const PodiumListPage = ({ route, navigation }) => {
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [status, theme.statusMediaType, cachePrefix]);
 
-  // Lazy-load details for a single media_id
+  // Lazy-load details — uses theme.services
   const fetchDetailForId = useCallback(async (mediaId) => {
-    if (animeCache[mediaId] || fetchingRef.current.has(mediaId)) return;
+    const cacheKey = cachePrefix + mediaId;
+    if (mediaDetailCache[cacheKey] || fetchingRef.current.has(mediaId)) return;
 
     fetchingRef.current.add(mediaId);
     try {
-      const result = await getAnimeDetails(parseInt(mediaId));
+      const result = await fetchDetails(mediaId);
       if (result) {
-        const formatted = formatAnimeData(result);
-        animeCache[mediaId] = formatted;
-        setAnimeDetails(prev => ({ ...prev, [mediaId]: formatted }));
+        const formatted = formatData(result);
+        mediaDetailCache[cacheKey] = formatted;
+        setMediaDetails(prev => ({ ...prev, [mediaId]: formatted }));
       }
       await delay(300);
     } catch (err) {
@@ -91,12 +94,11 @@ const PodiumListPage = ({ route, navigation }) => {
     } finally {
       fetchingRef.current.delete(mediaId);
     }
-  }, []);
+  }, [fetchDetails, formatData, cachePrefix]);
 
-  // Called when visible items change — triggers lazy fetching
   const onViewableItemsChanged = useRef(({ viewableItems }) => {
     viewableItems.forEach(({ item }) => {
-      if (!animeCache[item.media_id]) {
+      if (!mediaDetailCache[cachePrefix + item.media_id]) {
         fetchDetailForId(item.media_id);
       }
     });
@@ -113,37 +115,31 @@ const PodiumListPage = ({ route, navigation }) => {
     }, [fetchItems])
   );
 
+  // ─── Uses theme extractors: zero branching ───────────────
   const renderItem = useCallback(({ item }) => {
-    const anime = animeDetails[item.media_id];
-    const title = anime?.title || 'Loading...';
-    const coverImage = anime?.coverImage;
+    const detail = mediaDetails[item.media_id];
+    const title = theme.extractTitle(detail);
+    const coverImage = theme.extractCover(detail);
 
     return (
       <Pressable
-        style={styles.animeCard}
-        onPress={() => navigation.navigate('DetailsAnime', { animeId: item.media_id })}
+        style={styles.mediaCard}
+        onPress={() => navigation.navigate(theme.detailsRoute, { animeId: item.media_id, gameId: item.media_id })}
       >
         {coverImage ? (
-          <Image
-            source={{ uri: coverImage }}
-            style={styles.cardImage}
-            resizeMode="cover"
-          />
+          <Image source={{ uri: coverImage }} style={styles.cardImage} resizeMode="cover" />
         ) : (
           <View style={styles.cardPlaceholder}>
             <ActivityIndicator size="small" color="rgba(255,255,255,0.3)" />
           </View>
         )}
         <View style={[styles.statusDot, { backgroundColor: config.color }]} />
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.85)']}
-          style={styles.titleOverlay}
-        >
+        <LinearGradient colors={['transparent', 'rgba(0,0,0,0.85)']} style={styles.titleOverlay}>
           <Text style={styles.cardTitle} numberOfLines={2}>{title}</Text>
         </LinearGradient>
       </Pressable>
     );
-  }, [animeDetails, config, navigation]);
+  }, [mediaDetails, config, navigation, theme, styles]);
 
   const ListHeader = () => (
     <View style={styles.listHeader}>
@@ -154,7 +150,7 @@ const PodiumListPage = ({ route, navigation }) => {
         <Ionicons name={config.icon} size={16} color={config.color} />
         <Text style={[styles.statusHeaderText, { color: config.color }]}>{config.label}</Text>
       </View>
-      <Text style={styles.countText}>{items.length} anime</Text>
+      <Text style={styles.countText}>{items.length} {theme.countLabel}</Text>
     </View>
   );
 
@@ -162,27 +158,22 @@ const PodiumListPage = ({ route, navigation }) => {
     <View style={styles.emptyContainer}>
       <Ionicons name={config.icon} size={64} color="rgba(255,255,255,0.1)" />
       <Text style={styles.emptyTitle}>Nothing here yet</Text>
-      <Text style={styles.emptySubtitle}>
-        {status === 'watching' && 'Start watching anime and mark them here'}
-        {status === 'watched' && 'Mark anime as watched to track your history'}
-        {status === 'dropped' && "Anime you've dropped will appear here"}
-        {status === 'wishlist' && 'Add anime to your wishlist from the details page'}
-      </Text>
+      <Text style={styles.emptySubtitle}>{theme.emptyMessages[status]}</Text>
     </View>
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <SkeletonPodiumList count={6} />
+        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+        <ListSkeleton count={6} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
       <FlatList
         data={items}
         renderItem={renderItem}
@@ -202,147 +193,5 @@ const PodiumListPage = ({ route, navigation }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-
-  // Header
-  listHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 16,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusHeaderBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-  },
-  statusHeaderText: {
-    fontSize: 16,
-    fontWeight: '800',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-  },
-  countText: {
-    flex: 1,
-    textAlign: 'right',
-    fontSize: 14,
-    color: '#888',
-    fontFamily: 'Agdasima',
-  },
-
-  // Cards
-  animeCard: {
-    width: CARD_WIDTH,
-    height: CARD_WIDTH * 1.5,
-    borderRadius: 16,
-    backgroundColor: '#1A1A2E',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    position: 'relative',
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-  },
-  cardPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#252540',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.3)',
-    zIndex: 2,
-  },
-  titleOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    paddingTop: 30,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-  cardTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.3,
-    lineHeight: 17,
-    textShadowColor: 'rgba(0,0,0,0.8)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-
-  // States
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    color: '#888',
-    fontSize: 14,
-    fontFamily: 'Agdasima',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    fontFamily: 'Agdasima',
-    textAlign: 'center',
-    paddingHorizontal: 40,
-    lineHeight: 20,
-  },
-});
 
 export default PodiumListPage;

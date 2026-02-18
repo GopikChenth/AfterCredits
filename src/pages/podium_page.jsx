@@ -5,7 +5,6 @@ import {
   ScrollView,
   Image,
   Pressable,
-  StyleSheet,
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,25 +12,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
-import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
 import { getUserProfile } from '../services/profile';
 
-import DonutChart from '../components/podium_page/DonutChart';
-import StatusCounters from '../components/podium_page/StatusCounters';
-import TopList from '../components/podium_page/TopList';
-import SkeletonPodium from '../components/skeletons/SkeletonPodium';
+import { useMediaType } from '../context/MediaTypeContext';
+import { getPodiumPageStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
 
-const animeCache = {};
+const mediaDetailCache = {};
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const PodiumPage = ({ navigation }) => {
+  const { mediaType } = useMediaType();
+  const styles = getPodiumPageStyles(mediaType);
+  const theme = getPodiumPageTheme(mediaType);
+
+  // ─── Pull components + services straight from the theme ──
+  const { Chart, Counters, GenreList, SecondaryList, Skeleton } = theme.components;
+  const { fetchDetails, formatData } = theme.services;
+
   const [counts, setCounts] = useState({ watching: 0, watched: 0, dropped: 0, wishlist: 0 });
   const [genreStats, setGenreStats] = useState({});
-  const [studioStats, setStudioStats] = useState({});
+  const [secondaryStats, setSecondaryStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState(null);
 
   const hasFetched = useRef(false);
+  const lastMediaType = useRef(mediaType);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -43,13 +48,15 @@ const PodiumPage = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
+  // ─── Fetch status counts ─────────────────────────────────
   const fetchCounts = useCallback(async () => {
+    const mt = theme.statusMediaType;
     try {
       const [watchingRes, watchedRes, droppedRes, wishlistRes] = await Promise.all([
-        getByStatus('watching', 'anime'),
-        getByStatus('watched', 'anime'),
-        getByStatus('dropped', 'anime'),
-        getWishlist('anime'),
+        getByStatus('watching', mt),
+        getByStatus('watched', mt),
+        getByStatus('dropped', mt),
+        getWishlist(mt),
       ]);
 
       setCounts({
@@ -59,14 +66,16 @@ const PodiumPage = ({ navigation }) => {
         wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
       });
 
-      // Combine watching + watched for genre/studio analysis
       const combinedItems = [
         ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
         ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
       ];
 
       if (combinedItems.length > 0) {
-        fetchGenresAndStudios(combinedItems);
+        fetchGenresAndSecondary(combinedItems);
+      } else {
+        setGenreStats({});
+        setSecondaryStats({});
       }
     } catch (error) {
       console.error('Error fetching counts:', error);
@@ -74,112 +83,92 @@ const PodiumPage = ({ navigation }) => {
       setLoading(false);
       hasFetched.current = true;
     }
-  }, []);
+  }, [theme.statusMediaType, fetchGenresAndSecondary]);
 
-  const fetchGenresAndStudios = useCallback(async (items) => {
+  // ─── Aggregate genres + secondary from detail objects ────
+  const fetchGenresAndSecondary = useCallback(async (items) => {
     const genreCount = {};
-    const studioCount = {};
-    const BATCH_SIZE = 5; // Process 5 items at a time
+    const secondaryCount = {};
+    const BATCH_SIZE = 5;
+    const cachePrefix = theme.statusMediaType + '_';
 
-    // Separate cached and uncached items
-    const uncachedItems = items.filter(item => !animeCache[item.media_id]);
-    const cachedItems = items.filter(item => animeCache[item.media_id]);
+    const processDetail = (detail) => {
+      // Use theme extractors — no branching needed!
+      theme.extractGenres(detail).forEach(g => {
+        genreCount[g] = (genreCount[g] || 0) + 1;
+      });
+      theme.extractSecondary(detail).forEach(s => {
+        secondaryCount[s] = (secondaryCount[s] || 0) + 1;
+      });
+    };
 
-    // Process cached items immediately (no API calls needed)
-    cachedItems.forEach(item => {
-      const anime = animeCache[item.media_id];
-      
-      // Count genres
-      if (anime?.genres && Array.isArray(anime.genres)) {
-        anime.genres.forEach(genre => {
-          genreCount[genre] = (genreCount[genre] || 0) + 1;
-        });
-      }
+    const uncachedItems = items.filter(item => !mediaDetailCache[cachePrefix + item.media_id]);
+    const cachedItems = items.filter(item => mediaDetailCache[cachePrefix + item.media_id]);
 
-      // Count studios
-      if (anime?.studio) {
-        studioCount[anime.studio] = (studioCount[anime.studio] || 0) + 1;
-      }
-    });
+    cachedItems.forEach(item => processDetail(mediaDetailCache[cachePrefix + item.media_id]));
 
-    // Process uncached items in batches
     for (let i = 0; i < uncachedItems.length; i += BATCH_SIZE) {
       const batch = uncachedItems.slice(i, i + BATCH_SIZE);
-      
-      // Fetch batch in parallel
+
       const batchResults = await Promise.allSettled(
         batch.map(async (item) => {
           try {
-            const result = await getAnimeDetails(parseInt(item.media_id));
+            const result = await fetchDetails(item.media_id);
             if (result) {
-              const anime = formatAnimeData(result);
-              animeCache[item.media_id] = anime;
-              return { item, anime };
+              const formatted = formatData(result);
+              mediaDetailCache[cachePrefix + item.media_id] = formatted;
+              return formatted;
             }
           } catch (error) {
-            console.warn(`Failed to fetch anime ${item.media_id}:`, error.message);
+            console.warn(`Failed to fetch ${theme.statusMediaType} ${item.media_id}:`, error.message);
             return null;
           }
         })
       );
 
-      // Process batch results
       batchResults.forEach(result => {
         if (result.status === 'fulfilled' && result.value) {
-          const { anime } = result.value;
-          
-          // Count genres
-          if (anime?.genres && Array.isArray(anime.genres)) {
-            anime.genres.forEach(genre => {
-              genreCount[genre] = (genreCount[genre] || 0) + 1;
-            });
-          }
-
-          // Count studios
-          if (anime?.studio) {
-            studioCount[anime.studio] = (studioCount[anime.studio] || 0) + 1;
-          }
+          processDetail(result.value);
         }
       });
 
-      // Delay only between batches (not per item) - reduced from 300ms to 150ms
-      if (i + BATCH_SIZE < uncachedItems.length) {
-        await delay(150);
-      }
+      if (i + BATCH_SIZE < uncachedItems.length) await delay(150);
     }
 
     setGenreStats(genreCount);
-    setStudioStats(studioCount);
-  }, []);
+    setSecondaryStats(secondaryCount);
+  }, [theme, fetchDetails, formatData]);
 
+  // ─── Refetch on focus & mediaType change ─────────────────
   useFocusEffect(
     useCallback(() => {
-      if (!hasFetched.current) {
-        setLoading(true);
+      if (lastMediaType.current !== mediaType) {
+        lastMediaType.current = mediaType;
+        hasFetched.current = false;
       }
+      if (!hasFetched.current) setLoading(true);
       fetchCounts();
-    }, [fetchCounts])
+    }, [fetchCounts, mediaType])
   );
-
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <StatusBar barStyle="light-content" />
-        <SkeletonPodium />
+        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+        <Skeleton />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
 
-      {/* Static Header */}
+      {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Podium</Text>
-          <Text style={styles.headerSubtitle}>Your anime stats</Text>
+          <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
+          <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
         </View>
         <Pressable
           style={styles.profileButton}
@@ -193,7 +182,7 @@ const PodiumPage = ({ navigation }) => {
               style={styles.profileIcon}
             />
           ) : (
-            <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+            <Ionicons name="person-circle-outline" size={48} color={theme.profileIconColor} />
           )}
         </Pressable>
       </View>
@@ -202,13 +191,12 @@ const PodiumPage = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* Donut (left) + Counters (right) */}
+        {/* Donut + Counters */}
         <View style={styles.mainSection}>
           <Text style={styles.sectionTitle}>Status Distribution</Text>
           <View style={styles.chartRow}>
-            <DonutChart counts={counts} />
-            <StatusCounters
+            <Chart counts={counts} />
+            <Counters
               counts={counts}
               onStatusPress={(status) => navigation.navigate('PodiumListPage', { status })}
             />
@@ -217,23 +205,23 @@ const PodiumPage = ({ navigation }) => {
 
         {/* Top Genres */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Top Genres</Text>
-          <TopList 
-            data={genreStats} 
-            emptyMessage="No genre data available yet"
-            barColor="#FFB3C6"
-            countColor="#FFB3C6"
+          <Text style={styles.sectionTitle}>{theme.topGenresLabel}</Text>
+          <GenreList
+            data={genreStats}
+            emptyMessage={theme.genreEmptyMessage}
+            barColor={theme.accent}
+            countColor={theme.accent}
           />
         </View>
 
-        {/* Top Studios */}
+        {/* Top Studios / Top Developers */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Top Studios</Text>
-          <TopList 
-            data={studioStats} 
-            emptyMessage="No studio data available yet"
-            barColor="#A0C4FF"
-            countColor="#A0C4FF"
+          <Text style={styles.sectionTitle}>{theme.topSecondaryLabel}</Text>
+          <SecondaryList
+            data={secondaryStats}
+            emptyMessage={theme.secondaryEmptyMessage}
+            barColor={theme.accentSecondary}
+            countColor={theme.accentSecondary}
           />
         </View>
 
@@ -242,94 +230,5 @@ const PodiumPage = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  profileButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  profileIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FFB3C6',
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#fff',
-    fontFamily: 'Agdasima',
-    letterSpacing: 1,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#888',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-    marginTop: 2,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    color: '#888',
-    fontSize: 14,
-    fontFamily: 'Agdasima',
-  },
-
-  // Section titles
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  sectionSubtitle: {
-    fontSize: 13,
-    color: '#666',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.3,
-    marginBottom: 12,
-  },
-
-  // Main section: donut + counters
-  mainSection: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-  },
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginTop: 8,
-  },
-
-  // Stats sections (genres/studios)
-  statsSection: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
-  },
-});
 
 export default PodiumPage;

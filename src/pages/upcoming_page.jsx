@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   StatusBar,
   Image,
   Pressable,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,55 +12,94 @@ import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useMediaType } from '../context/MediaTypeContext';
 import { getUpcomingAnime, formatAnimeData } from '../services/api_anime';
+import { getUpcomingGames } from '../services/api_games';
 import { setWishlist as setWishlistService, getWishlist } from '../services/mediaStatusService';
 import SkeletonUpcoming from '../components/skeletons/SkeletonUpcoming';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48) / 2; // 2 columns with padding
-const CARD_HEIGHT = CARD_WIDTH * 1.5;
-const EXPANDED_WIDTH = width - 40; // Match discover page
+import {
+  getUpcomingPageStyles,
+  getUpcomingPageTheme,
+  CARD_WIDTH,
+  CARD_HEIGHT,
+  EXPANDED_WIDTH,
+} from '../stylehandler/upcomingPageStyles';
 
 const UpcomingPage = ({ navigation }) => {
-  const [upcomingAnime, setUpcomingAnime] = useState([]);
+  const { mediaType } = useMediaType();
+  const styles = getUpcomingPageStyles(mediaType);
+  const theme = getUpcomingPageTheme(mediaType);
+  const isGames = mediaType === 'games';
+
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [expandedAnimeId, setExpandedAnimeId] = useState(null);
+  const [expandedItemId, setExpandedItemId] = useState(null);
   const [wishlistedIds, setWishlistedIds] = useState([]);
 
   const SEASON_ORDER = { WINTER: 0, SPRING: 1, SUMMER: 2, FALL: 3 };
 
   useEffect(() => {
-    fetchUpcoming();
+    setItems([]);
+    setPage(1);
+    setHasMore(true);
+    setExpandedItemId(null);
+    fetchUpcoming(1);
     fetchWishlist();
-  }, []);
+  }, [mediaType]);
+
+  // ─── Data Fetching ───────────────────────────────────────────
 
   const fetchUpcoming = async (pageNum = 1) => {
     try {
       if (pageNum === 1) setLoading(true);
-      const result = await getUpcomingAnime(pageNum, 50);
-      if (result?.media) {
-        const formatted = result.media.map(formatAnimeData);
-        const sorted = formatted.sort((a, b) => {
-          const yearA = a.year || 9999;
-          const yearB = b.year || 9999;
-          if (yearA !== yearB) return yearA - yearB;
-          const seasonA = SEASON_ORDER[a.season] ?? 99;
-          const seasonB = SEASON_ORDER[b.season] ?? 99;
-          return seasonA - seasonB;
-        });
-        
-        if (pageNum === 1) {
-          setUpcomingAnime(sorted);
-        } else {
-          setUpcomingAnime(prev => [...prev, ...sorted]);
+
+      if (isGames) {
+        const result = await getUpcomingGames(pageNum, 20);
+        if (result?.results) {
+          const formatted = result.results.map(game => ({
+            id: game.id,
+            title: game.name,
+            coverImage: game.background_image,
+            genres: game.genres?.map(g => g.name) || [],
+            studio: game.developers?.[0]?.name || null,
+            season: null,
+            year: game.released ? new Date(game.released).getFullYear() : null,
+            releaseDate: game.released || 'TBA',
+          }));
+
+          if (pageNum === 1) {
+            setItems(formatted);
+          } else {
+            setItems(prev => [...prev, ...formatted]);
+          }
+          setHasMore(!!result.next);
         }
-        
-        setHasMore(result.pageInfo?.hasNextPage || false);
+      } else {
+        // Anime
+        const result = await getUpcomingAnime(pageNum, 50);
+        if (result?.media) {
+          const formatted = result.media.map(formatAnimeData);
+          const sorted = formatted.sort((a, b) => {
+            const yearA = a.year || 9999;
+            const yearB = b.year || 9999;
+            if (yearA !== yearB) return yearA - yearB;
+            const seasonA = SEASON_ORDER[a.season] ?? 99;
+            const seasonB = SEASON_ORDER[b.season] ?? 99;
+            return seasonA - seasonB;
+          });
+
+          if (pageNum === 1) {
+            setItems(sorted);
+          } else {
+            setItems(prev => [...prev, ...sorted]);
+          }
+          setHasMore(result.pageInfo?.hasNextPage || false);
+        }
       }
     } catch (error) {
-      console.error('Error fetching upcoming anime:', error);
+      console.error('Error fetching upcoming:', error);
     } finally {
       setLoading(false);
     }
@@ -76,9 +113,11 @@ const UpcomingPage = ({ navigation }) => {
     }
   };
 
+  // ─── Wishlist ────────────────────────────────────────────────
+
   const fetchWishlist = async () => {
     try {
-      const result = await getWishlist('anime');
+      const result = await getWishlist(theme.mediaKey);
       if (result.success && result.data) {
         setWishlistedIds(result.data.map(item => item.media_id));
       }
@@ -87,40 +126,47 @@ const UpcomingPage = ({ navigation }) => {
     }
   };
 
-  const toggleWishlist = async (animeId) => {
-    const currentlyWishlisted = wishlistedIds.includes(animeId);
+  const toggleWishlist = async (itemId) => {
+    const currentlyWishlisted = wishlistedIds.includes(itemId);
     if (currentlyWishlisted) {
-      setWishlistedIds(prev => prev.filter(id => id !== animeId));
+      setWishlistedIds(prev => prev.filter(id => id !== itemId));
     } else {
-      setWishlistedIds(prev => [...prev, animeId]);
+      setWishlistedIds(prev => [...prev, itemId]);
     }
-    const result = await setWishlistService('anime', String(animeId), !currentlyWishlisted);
+    const result = await setWishlistService(theme.mediaKey, String(itemId), !currentlyWishlisted);
     if (!result.success) {
+      // Revert on failure
       if (currentlyWishlisted) {
-        setWishlistedIds(prev => [...prev, animeId]);
+        setWishlistedIds(prev => [...prev, itemId]);
       } else {
-        setWishlistedIds(prev => prev.filter(id => id !== animeId));
+        setWishlistedIds(prev => prev.filter(id => id !== itemId));
       }
     }
   };
 
-  const isWishlisted = (animeId) => wishlistedIds.includes(animeId);
+  const isWishlisted = (itemId) => wishlistedIds.includes(itemId);
 
-  const formatDate = (anime) => {
-    if (anime.season && anime.year) return `${anime.season} ${anime.year}`;
-    if (anime.year) return `${anime.year}`;
+  // ─── Helpers ─────────────────────────────────────────────────
+
+  const formatDate = (item) => {
+    if (isGames) {
+      return item.releaseDate || 'TBA';
+    }
+    if (item.season && item.year) return `${item.season} ${item.year}`;
+    if (item.year) return `${item.year}`;
     return 'TBA';
   };
 
-  const handleCardPress = (animeId) => {
-    setExpandedAnimeId(expandedAnimeId === animeId ? null : animeId);
+  const handleCardPress = (itemId) => {
+    setExpandedItemId(expandedItemId === itemId ? null : itemId);
   };
 
-  const renderCard = ({ item: anime, index }) => {
-    const isExpanded = expandedAnimeId === anime.id;
+  // ─── Render ──────────────────────────────────────────────────
+
+  const renderCard = ({ item, index }) => {
+    const isExpanded = expandedItemId === item.id;
     const isRightColumn = index % 2 === 1;
 
-    // When expanded: span full width. Right-column cards shift left.
     const expandedStyle = isExpanded ? {
       width: EXPANDED_WIDTH,
       zIndex: 1000,
@@ -130,48 +176,48 @@ const UpcomingPage = ({ navigation }) => {
     return (
       <Pressable
         style={[styles.card, expandedStyle]}
-        onPress={() => handleCardPress(anime.id)}
+        onPress={() => handleCardPress(item.id)}
       >
-        <Image source={{ uri: anime.coverImage }} style={styles.cardImage} />
+        <Image source={{ uri: item.coverImage }} style={styles.cardImage} />
 
         {isExpanded && (
           <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.98)']}
+            colors={theme.gradientOverlay}
             locations={[0, 0.4, 1]}
             style={styles.expandedOverlay}
           >
             <Pressable
               style={styles.closeButton}
-              onPress={() => setExpandedAnimeId(null)}
+              onPress={() => setExpandedItemId(null)}
             >
               <Ionicons name="close" size={20} color="#fff" />
             </Pressable>
 
             <View style={styles.expandedHeader}>
               <Text style={styles.expandedTitle} numberOfLines={3}>
-                {anime.title}
+                {item.title}
               </Text>
             </View>
 
             <View style={styles.expandedContent}>
               <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={14} color="#FFB3C6" />
-                <Text style={styles.infoText}>{formatDate(anime)}</Text>
+                <Ionicons name="calendar-outline" size={14} color={theme.accent} />
+                <Text style={styles.infoText}>{formatDate(item)}</Text>
               </View>
 
-              {anime.genres && anime.genres.length > 0 && (
+              {item.genres && item.genres.length > 0 && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="pricetag-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="pricetag-outline" size={14} color={theme.accent} />
                   <Text style={styles.infoText} numberOfLines={1}>
-                    {anime.genres.slice(0, 3).join(', ')}
+                    {item.genres.slice(0, 3).join(', ')}
                   </Text>
                 </View>
               )}
 
-              {anime.studio && (
+              {item.studio && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="business-outline" size={14} color="#FFB3C6" />
-                  <Text style={styles.infoText}>{anime.studio}</Text>
+                  <Ionicons name="business-outline" size={14} color={theme.accent} />
+                  <Text style={styles.infoText}>{item.studio}</Text>
                 </View>
               )}
 
@@ -179,23 +225,23 @@ const UpcomingPage = ({ navigation }) => {
                 <Pressable
                   style={[
                     styles.wishlistButton,
-                    isWishlisted(anime.id) && styles.wishlistButtonActive
+                    isWishlisted(item.id) && styles.wishlistButtonActive
                   ]}
-                  onPress={() => toggleWishlist(anime.id)}
+                  onPress={() => toggleWishlist(item.id)}
                 >
                   <Ionicons
-                    name={isWishlisted(anime.id) ? 'bookmark' : 'bookmark-outline'}
+                    name={isWishlisted(item.id) ? 'bookmark' : 'bookmark-outline'}
                     size={20}
-                    color="#D4BBFF"
+                    color={theme.wishlistIcon}
                   />
                 </Pressable>
 
                 <Pressable
                   style={styles.viewDetailsButton}
-                  onPress={() => navigation.navigate('DetailsAnime', { animeId: anime.id })}
+                  onPress={() => navigation.navigate(theme.detailsRoute, { animeId: item.id })}
                 >
                   <Text style={styles.viewDetailsText}>View Details</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
+                  <Ionicons name="arrow-forward" size={14} color={theme.accent} />
                 </Pressable>
               </View>
             </View>
@@ -209,14 +255,14 @@ const UpcomingPage = ({ navigation }) => {
     if (!loading || page === 1) return null;
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#FFB3C6" />
+        <ActivityIndicator size="small" color={theme.accent} />
       </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
       
       <View style={styles.container}>
         {/* Header */}
@@ -228,8 +274,8 @@ const UpcomingPage = ({ navigation }) => {
             <Ionicons name="arrow-back" size={24} color="#fff" />
           </Pressable>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Upcoming Anime</Text>
-            <Text style={styles.headerSubtitle}>Sorted by nearest release</Text>
+            <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
+            <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
           </View>
         </View>
 
@@ -237,7 +283,7 @@ const UpcomingPage = ({ navigation }) => {
           <SkeletonUpcoming count={6} />
         ) : (
           <FlashList
-            data={upcomingAnime}
+            data={items}
             renderItem={renderCard}
             keyExtractor={(item) => String(item.id)}
             numColumns={2}
@@ -247,187 +293,12 @@ const UpcomingPage = ({ navigation }) => {
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
             ListFooterComponent={renderFooter}
-            extraData={expandedAnimeId}
+            extraData={expandedItemId}
           />
         )}
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#0D0D0D',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#1A1A1A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    fontFamily: 'Agdasima',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#888',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.3,
-    marginTop: 2,
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  // Card
-  card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 14,
-    overflow: 'hidden',
-    backgroundColor: '#1A1A1A',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    marginBottom: 16,
-    marginHorizontal: 8,
-  },
-  cardImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#2A2A2A',
-  },
-  // Expanded overlay
-  expandedOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 14,
-    justifyContent: 'flex-end',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  expandedHeader: {
-    marginBottom: 12,
-  },
-  expandedTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
-    color: '#fff',
-    letterSpacing: 0.3,
-    lineHeight: 20,
-  },
-  expandedContent: {
-    gap: 6,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  infoText: {
-    fontSize: 12,
-    fontFamily: 'Agdasima',
-    color: '#ccc',
-    letterSpacing: 0.2,
-    flex: 1,
-  },
-  expandedDescription: {
-    fontSize: 11,
-    fontFamily: 'Agdasima',
-    color: '#999',
-    letterSpacing: 0.2,
-    lineHeight: 15,
-    marginTop: 2,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 8,
-  },
-  wishlistButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 44,
-    height: 44,
-    backgroundColor: 'rgba(212, 187, 255, 0.1)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 187, 255, 0.3)',
-  },
-  wishlistButtonActive: {
-    backgroundColor: 'rgba(212, 187, 255, 0.25)',
-    borderColor: 'rgba(212, 187, 255, 0.5)',
-  },
-  viewDetailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255, 179, 198, 0.15)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    flex: 1,
-  },
-  viewDetailsText: {
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'Agdasima',
-    color: '#FFB3C6',
-    letterSpacing: 0.3,
-  },
-  // Loading
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    color: '#666',
-    fontSize: 14,
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.3,
-  },
-  footerLoader: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-});
 
 export default UpcomingPage;

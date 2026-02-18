@@ -307,15 +307,13 @@ const DiscoverPage = ({ navigation }) => {
                 <Ionicons name={theme.comingSoonIcon} size={20} color={theme.accent} />
                 <Text style={styles.sectionTitle}>{theme.comingSoonTitle}</Text>
               </View>
-              {!isGames && (
-                <Pressable
-                  style={styles.viewAllButton}
-                  onPress={() => navigation.navigate("UpcomingPage")}
-                >
-                  <Text style={styles.viewAllText}>View All</Text>
-                  <Ionicons name="arrow-forward" size={14} color={theme.accent} />
-                </Pressable>
-              )}
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => navigation.navigate("UpcomingPage")}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+              </Pressable>
             </View>
             <Text style={styles.sectionSubtitle}>
               {theme.comingSoonSubtitle}
@@ -344,15 +342,13 @@ const DiscoverPage = ({ navigation }) => {
                 <Ionicons name={theme.newsIcon} size={20} color={theme.accent} />
                 <Text style={styles.sectionTitle}>{theme.newsTitle}</Text>
               </View>
-              {!isGames && (
-                <Pressable
-                  style={styles.viewAllButton}
-                  onPress={() => navigation.navigate('NewsPage')}
-                >
-                  <Text style={styles.viewAllText}>View All</Text>
-                  <Ionicons name="arrow-forward" size={14} color={theme.accent} />
-                </Pressable>
-              )}
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => navigation.navigate('NewsPage')}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="arrow-forward" size={14} color={theme.accent} />
+              </Pressable>
             </View>
             <Text style={styles.sectionSubtitle}>{theme.newsSubtitle}</Text>
           </View>

@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   Pressable,
   Dimensions,
   StatusBar,
@@ -14,7 +15,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useMediaType } from '../context/MediaTypeContext';
-import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_games';
+import { getTrendingGames, getPopularGames, getNewReleases, getUpcomingGames } from '../services/api_games';
+import { getGamingNews } from '../services/news_games';
+import NewsCard from '../components/discover_page/NewsCard';
 import SideBar from '../components/home_page/SideBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -26,10 +29,45 @@ const GameHome = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('game');
+  const [upcomingGames, setUpcomingGames] = useState([]);
+  const [upcomingLoading, setUpcomingLoading] = useState(true);
+  const [gamingNews, setGamingNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
     loadGames();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    loadUpcomingGames();
+    loadGamingNews();
+  }, []);
+
+  const loadUpcomingGames = async () => {
+    try {
+      setUpcomingLoading(true);
+      const data = await getUpcomingGames(1, 10);
+      setUpcomingGames(data.results || []);
+    } catch (error) {
+      console.error('Error loading upcoming games:', error);
+      setUpcomingGames([]);
+    } finally {
+      setUpcomingLoading(false);
+    }
+  };
+
+  const loadGamingNews = async () => {
+    try {
+      setNewsLoading(true);
+      const articles = await getGamingNews(5);
+      setGamingNews(articles);
+    } catch (error) {
+      console.error('Error loading gaming news:', error);
+      setGamingNews([]);
+    } finally {
+      setNewsLoading(false);
+    }
+  };
 
   const loadGames = async () => {
     setLoading(true);
@@ -305,6 +343,80 @@ const GameHome = ({ navigation }) => {
                       </View>
                     </LinearGradient>
                   </Pressable>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* ── Upcoming Games Section ── */}
+          <View style={styles.upcomingSection}>
+            <View style={styles.upcomingSectionHeader}>
+              <View style={styles.upcomingSectionTitleLeft}>
+                <Ionicons name="game-controller-outline" size={20} color="#A78BFA" />
+                <Text style={styles.upcomingSectionTitle}>UPCOMING GAMES</Text>
+              </View>
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => navigation.navigate('UpcomingPage')}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="arrow-forward" size={14} color="#A78BFA" />
+              </Pressable>
+            </View>
+            <Text style={styles.upcomingSectionSubtitle}>Games that are yet to release</Text>
+
+            {upcomingLoading ? (
+              <ActivityIndicator size="small" color="#A78BFA" style={{ paddingVertical: 30 }} />
+            ) : (
+              <FlatList
+                data={upcomingGames}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={{ paddingHorizontal: 4, paddingTop: 12 }}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={styles.upcomingCard}
+                    onPress={() => navigation.navigate('GameDetails', { gameId: item.id })}
+                  >
+                    <Image source={{ uri: item.background_image }} style={styles.upcomingCardImage} />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(15,15,35,0.85)', 'rgba(15,15,35,0.98)']}
+                      style={styles.upcomingCardOverlay}
+                    />
+                    <View style={styles.upcomingCardContent}>
+                      <Text style={styles.upcomingCardTitle} numberOfLines={2}>{item.name}</Text>
+                      <Text style={styles.upcomingCardDate}>{item.released || 'TBA'}</Text>
+                    </View>
+                  </Pressable>
+                )}
+              />
+            )}
+          </View>
+
+          {/* ── Gaming News Section ── */}
+          <View style={styles.newsSection}>
+            <View style={styles.upcomingSectionHeader}>
+              <View style={styles.upcomingSectionTitleLeft}>
+                <Ionicons name="newspaper-outline" size={20} color="#A78BFA" />
+                <Text style={styles.upcomingSectionTitle}>GAMING NEWS</Text>
+              </View>
+              <Pressable
+                style={styles.viewAllButton}
+                onPress={() => navigation.navigate('NewsPage')}
+              >
+                <Text style={styles.viewAllText}>View All</Text>
+                <Ionicons name="arrow-forward" size={14} color="#A78BFA" />
+              </Pressable>
+            </View>
+            <Text style={styles.upcomingSectionSubtitle}>Fresh from Insider Gaming</Text>
+
+            {newsLoading ? (
+              <ActivityIndicator size="small" color="#A78BFA" style={{ paddingVertical: 30 }} />
+            ) : (
+              <View style={{ paddingTop: 12 }}>
+                {gamingNews.map((article) => (
+                  <NewsCard key={article.id} article={article} />
                 ))}
               </View>
             )}
@@ -692,6 +804,102 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 8,
+  },
+  // ── Upcoming Games Section ──
+  upcomingSection: {
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  upcomingSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  upcomingSectionTitleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  upcomingSectionTitle: {
+    fontFamily: 'System',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#A78BFA',
+    letterSpacing: 3,
+  },
+  upcomingSectionSubtitle: {
+    fontFamily: 'System',
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    letterSpacing: 0.3,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: 'rgba(124, 58, 237, 0.15)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.3)',
+  },
+  viewAllText: {
+    fontFamily: 'System',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#A78BFA',
+    letterSpacing: 0.3,
+  },
+  upcomingCard: {
+    width: 150,
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+    backgroundColor: '#1E1E3F',
+    borderWidth: 1,
+    borderColor: 'rgba(124, 58, 237, 0.2)',
+  },
+  upcomingCardImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1E1E3F',
+  },
+  upcomingCardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  upcomingCardContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+  },
+  upcomingCardTitle: {
+    fontFamily: 'System',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    lineHeight: 17,
+  },
+  upcomingCardDate: {
+    fontFamily: 'System',
+    fontSize: 11,
+    color: '#A78BFA',
+    marginTop: 4,
+    letterSpacing: 0.3,
+  },
+  // ── Gaming News Section ──
+  newsSection: {
+    paddingHorizontal: 16,
+    marginTop: 24,
+    paddingBottom: 24,
   },
 });
 
