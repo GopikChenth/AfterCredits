@@ -7,7 +7,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
  */
 const NavBar = ({ state, descriptors, navigation }) => {
   const tabConfig = {
-    HomeAnime: { label: 'Home', icon: '🏠' },
+    Home: { label: 'Home', icon: '🏠' },
     PostPage: { label: 'Post', icon: '📝' },
     DiscoverPage: { label: 'Discover', icon: '🔍' },
     PodiumPage: { label: 'Podium', icon: '📋' },

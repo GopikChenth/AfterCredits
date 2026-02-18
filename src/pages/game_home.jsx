@@ -28,7 +28,6 @@ const GameHome = ({ navigation }) => {
   const [activeSection, setActiveSection] = useState('game');
 
   useEffect(() => {
-    setMediaType('games');
     loadGames();
   }, [selectedCategory]);
 
@@ -318,22 +317,6 @@ const GameHome = ({ navigation }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
-        onSectionChange={(section) => {
-          setActiveSection(section);
-          // Navigate to the appropriate page based on section
-          if (section === 'game') {
-            // Already on games page, just close sidebar
-            setIsSidebarVisible(false);
-          } else if (section === 'anime') {
-            navigation.navigate('HomeAnime');
-          } else if (section === 'movie') {
-            navigation.navigate('HomeMovies');
-          } else if (section === 'comic') {
-            navigation.navigate('HomeComics');
-          } else if (section === 'manga') {
-            navigation.navigate('HomeManga');
-          }
-        }}
       />
     </View>
   );

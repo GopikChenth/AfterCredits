@@ -135,44 +135,48 @@ const baseStyles = {
     paddingVertical: 60,
     gap: 12,
   },
-  // News Card Base Styles
+
+  // ── NewsCard base layout ──
   newsCard: {
+    flexDirection: 'row',
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 12,
     borderWidth: 1,
   },
   newsImage: {
-    width: '100%',
-    height: 180,
+    width: 100,
+    height: 90,
   },
   newsImagePlaceholder: {
-    width: '100%',
-    height: 180,
     justifyContent: 'center',
     alignItems: 'center',
   },
   newsContent: {
-    padding: 14,
+    flex: 1,
+    padding: 10,
+    justifyContent: 'center',
   },
-  newsHeader: {
+  newsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+    lineHeight: 18,
+  },
+  newsDescription: {
+    fontSize: 11,
+    marginTop: 4,
+    lineHeight: 15,
+    letterSpacing: 0.1,
+  },
+  newsMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    marginTop: 6,
   },
-  newsCategoryBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  newsFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  newsLinkIcon: {
-    marginLeft: 'auto',
+  newsMetaText: {
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 };
 
@@ -409,7 +413,8 @@ const buildStyles = (theme) =>
       fontFamily: theme.fontFamily,
       letterSpacing: 0.3,
     },
-    // News Card Themed Styles
+
+    // ── NewsCard themed overrides ──
     newsCard: {
       ...baseStyles.newsCard,
       backgroundColor: theme.cardBg,
@@ -417,42 +422,32 @@ const buildStyles = (theme) =>
     },
     newsImage: {
       ...baseStyles.newsImage,
-      backgroundColor: theme.cardImageBg,
     },
     newsImagePlaceholder: {
+      ...baseStyles.newsImage,
       ...baseStyles.newsImagePlaceholder,
-      backgroundColor: theme.cardBg,
+      backgroundColor: theme.cardImageBg,
     },
-    newsCategoryBadge: {
-      ...baseStyles.newsCategoryBadge,
-      backgroundColor: theme.accentLight,
-    },
-    newsCategoryText: {
-      fontSize: 11,
-      fontWeight: '600',
-      fontFamily: theme.fontFamily,
-      color: theme.accent,
-      letterSpacing: 0.3,
-    },
-    newsTimeAgo: {
-      fontSize: 11,
-      fontFamily: theme.fontFamily,
-      color: '#666',
+    newsContent: {
+      ...baseStyles.newsContent,
     },
     newsTitle: {
-      fontSize: 17,
-      fontWeight: '700',
+      ...baseStyles.newsTitle,
       fontFamily: theme.fontFamily,
       color: '#fff',
-      letterSpacing: 0.3,
-      lineHeight: 22,
-      marginBottom: 10,
     },
-    newsAuthor: {
-      fontSize: 12,
+    newsDescription: {
+      ...baseStyles.newsDescription,
       fontFamily: theme.fontFamily,
-      color: '#888',
-      flex: 1,
+      color: '#999',
+    },
+    newsMeta: {
+      ...baseStyles.newsMeta,
+    },
+    newsMetaText: {
+      ...baseStyles.newsMetaText,
+      fontFamily: theme.fontFamily,
+      color: '#666',
     },
   });
 

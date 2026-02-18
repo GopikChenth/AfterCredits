@@ -35,13 +35,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const HomeAnime = ({ navigation }) => {
   const theme = getMediaTheme('anime');
-  const { setMediaType } = useMediaType();
   const tabBarHeight = useBottomTabBarHeight();
-  
-  // Set media type to anime when this page loads
-  useEffect(() => {
-    setMediaType('anime');
-  }, [setMediaType]);
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
@@ -431,22 +425,6 @@ const HomeAnime = ({ navigation }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
-        onSectionChange={(section) => {
-          setActiveSection(section);
-          // Navigate to the appropriate page based on section
-          if (section === 'anime') {
-            // Already on anime page, just close sidebar
-            setIsSidebarVisible(false);
-          } else if (section === 'movie') {
-            navigation.navigate('HomeMovies');
-          } else if (section === 'game') {
-            navigation.navigate('HomeGames');
-          } else if (section === 'comic') {
-            navigation.navigate('HomeComics');
-          } else if (section === 'manga') {
-            navigation.navigate('HomeManga');
-          }
-        }}
       />
     </SafeAreaView>
   );

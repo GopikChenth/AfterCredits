@@ -24,11 +24,7 @@ const HomeMovies = ({ navigation }) => {
   const theme = getMediaTheme('movie'); // 'movie' theme
   const { setMediaType } = useMediaType();
   
-  // Set media type to movies when this page loads
-  useEffect(() => {
-    setMediaType('movies');
-  }, [setMediaType]);
-  
+
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
@@ -217,22 +213,6 @@ const HomeMovies = ({ navigation }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
-        onSectionChange={(section) => {
-          setActiveSection(section);
-          // Navigate to the appropriate page based on section
-          if (section === 'movie') {
-            // Already on movie page, just close sidebar
-            setIsSidebarVisible(false);
-          } else if (section === 'anime') {
-            navigation.navigate('MainTabs', { screen: 'HomeAnime' });
-          } else if (section === 'game') {
-            navigation.navigate('HomeGames');
-          } else if (section === 'comic') {
-            navigation.navigate('HomeComics');
-          } else if (section === 'manga') {
-            navigation.navigate('HomeManga');
-          }
-        }}
       />
     </SafeAreaView>
   );

@@ -8,17 +8,44 @@ import {
   Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useNavigation } from '@react-navigation/native';
 import { getSettings } from '../../services/settings';
+import { useMediaType } from '../../context/MediaTypeContext';
 
 /**
- * SideBar - Just floating pill buttons with full-screen blur background
+ * SideBar - Floating pill buttons with full-screen blur background.
+ * Owns all media-switching logic — just sets mediaType in context.
+ * The Home tab (HomeScreen) automatically renders the correct page.
  */
+
+// Sidebar section ID → context mediaType value
+const SECTION_MEDIA_MAP = {
+  anime: 'anime',
+  game:  'games',
+  movie: 'movies',
+  comic: 'comics',
+  manga: 'manga',
+};
+
+// Reverse map: context mediaType → sidebar section ID
+const MEDIA_TO_SECTION = {
+  anime: 'anime',
+  games: 'game',
+  movies: 'movie',
+  comics: 'comic',
+  manga: 'manga',
+};
+
 const SideBar = ({
   isVisible = false,
   onClose,
-  activeSection = 'anime',
-  onSectionChange,
 }) => {
+  const navigation = useNavigation();
+  const { mediaType, setMediaType } = useMediaType();
+
+  // Derive active section from global mediaType (single source of truth)
+  const activeSection = MEDIA_TO_SECTION[mediaType] || 'anime';
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const [visibleSections, setVisibleSections] = React.useState([]);
@@ -30,17 +57,15 @@ const SideBar = ({
     { id: 'comic', label: 'Comics', icon: '📚', settingKey: 'showComics' },
     { id: 'manga', label: 'Manga', icon: '📖', settingKey: 'showManga' },
   ];
-  
+
   // Load settings and filter sections when sidebar becomes visible
-  useEffect(() =>  {
-    if (isVisible) {
-      loadVisibleSections();
-    }
+  useEffect(() => {
+    if (isVisible) loadVisibleSections();
   }, [isVisible]);
-  
+
   const loadVisibleSections = async () => {
     const settings = await getSettings();
-    const filtered = allSections.filter(section => settings[section.settingKey]);
+    const filtered = allSections.filter(s => settings[s.settingKey]);
     setVisibleSections(filtered);
   };
 
@@ -48,38 +73,37 @@ const SideBar = ({
   useEffect(() => {
     if (isVisible) {
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          useNativeDriver: true,
-          tension: 80,
-          friction: 12,
-        }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: -50,
-          duration: 150,
-          useNativeDriver: true,
-        }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: -50, duration: 150, useNativeDriver: true }),
       ]).start();
     }
   }, [isVisible]);
 
   const handleSectionPress = (sectionId) => {
-    onSectionChange?.(sectionId);
+    if (sectionId === activeSection) {
+      onClose?.();
+      return;
+    }
+
+    const newMediaType = SECTION_MEDIA_MAP[sectionId];
+    if (!newMediaType) return;
+
+    // 1. Set global media type — HomeScreen will auto-swap to the right page
+    setMediaType(newMediaType);
+
+    // 2. Navigate to Home tab so the user sees the change
+    navigation.navigate('MainTabs', { screen: 'Home' });
+
+    // 3. Close sidebar
     setTimeout(() => onClose?.(), 100);
   };
+
+
 
   // Pill blur container
   const PillBlur = ({ children, isActive }) => {

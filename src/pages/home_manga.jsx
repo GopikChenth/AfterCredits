@@ -1,15 +1,11 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useMediaType } from '../context/MediaTypeContext';
+
 
 const HomeManga = ({ navigation }) => {
-  const { setMediaType } = useMediaType();
-  
-  useEffect(() => {
-    setMediaType('manga');
-  }, [setMediaType]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
