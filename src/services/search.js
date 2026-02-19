@@ -3,7 +3,7 @@
  * Handles search across all media types: Anime, Movies, Games, Comics, Manga
  */
 
-import { searchAnime, formatAnimeData } from './api_anime';
+import { searchAnime, formatAnimeData } from './api_anilist';
 import { searchMovies, formatMovieData } from './api_movies';
 
 /**

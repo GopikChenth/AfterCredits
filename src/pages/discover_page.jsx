@@ -14,10 +14,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Anime services
-import { getUpcomingAnime, formatAnimeData } from "../services/api_anime";
+import { getUpcomingAnime, formatAnimeData } from "../services/api_anilist";
 import { getAnimeNews } from "../services/news_service";
 // Games services
-import { getUpcomingGames, formatGameData } from "../services/api_games";
+import { getUpcomingGames, formatGameData } from "../services/api_rawg";
 import { getGamingNews } from "../services/news_games";
 // Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";

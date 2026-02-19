@@ -25,7 +25,7 @@ import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
 import { getCardDimensions } from '../utils/responsiveCard';
-import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anime';
+import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anilist';
 import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';

@@ -9,8 +9,8 @@ import SkeletonPodium from '../components/skeletons/SkeletonPodium';
 import SkeletonPodiumList from '../components/skeletons/SkeletonPodiumList';
 
 // ─── Services ──────────────────────────────────────────────
-import { getAnimeDetails, formatAnimeData } from '../services/api_anime';
-import { getGameDetails, formatGameData } from '../services/api_games';
+import { getAnimeDetails, formatAnimeData } from '../services/api_anilist';
+import { getGameDetails, formatGameData } from '../services/api_rawg';
 
 /**
  * ╔═══════════════════════════════════════════════════════════════╗
@@ -116,7 +116,7 @@ const gamesTheme = {
   genreEmptyMessage: 'No genre data available yet',
   secondaryEmptyMessage: 'No developer data available yet',
 
-  detailsRoute: 'DetailsAnime', // TODO: swap to DetailsGame when available
+  detailsRoute: 'DetailsGames',
 
   // ─── Components ──────────────────────────────────────────
   components: {

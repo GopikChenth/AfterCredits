@@ -1,0 +1,406 @@
+/**
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║                                                                  ║
+ * ║    ██╗ ██████╗ ██████╗ ██████╗                                   ║
+ * ║    ██║██╔════╝ ██╔══██╗██╔══██╗                                  ║
+ * ║    ██║██║  ███╗██║  ██║██████╔╝                                  ║
+ * ║    ██║██║   ██║██║  ██║██╔══██╗                                  ║
+ * ║    ██║╚██████╔╝██████╔╝██████╔╝                                  ║
+ * ║    ╚═╝ ╚═════╝ ╚═════╝ ╚═════╝                                   ║
+ * ║                                                                  ║
+ * ║    Powered by Twitch OAuth2 · api.igdb.com/v4                    ║
+ * ║                                                                  ║
+ * ║    Purpose : Rich game details — story, modes, companies,        ║
+ * ║              age ratings, similar games, screenshots, trailers.  ║
+ * ║                                                                  ║
+ * ║    Companion to api_rawg.js (RAWG) which handles lists,          ║
+ * ║    search, and lightweight card data.                            ║
+ * ║                                                                  ║
+ * ╠══════════════════════════════════════════════════════════════════╣
+ * ║                                                                  ║
+ * ║  SETUP — 3 steps                                                 ║
+ * ║  ─────────────────────────────────────────────────────────────  ║
+ * ║                                                                  ║
+ * ║  1. Register a Twitch app                                        ║
+ * ║     → https://dev.twitch.tv/console/apps                        ║
+ * ║     → Category: "Application Integration"                       ║
+ * ║     → OAuth Redirect URL: http://localhost                       ║
+ * ║     → Copy Client ID and generate a Client Secret               ║
+ * ║                                                                  ║
+ * ║  2. Get an access token (expires every ~60 days)                 ║
+ * ║     Run this in your terminal:                                   ║
+ * ║                                                                  ║
+ * ║     curl -X POST                                    \            ║
+ * ║       "https://id.twitch.tv/oauth2/token"           \            ║
+ * ║       -d "client_id=YOUR_CLIENT_ID"                 \            ║
+ * ║       -d "client_secret=YOUR_CLIENT_SECRET"         \            ║
+ * ║       -d "grant_type=client_credentials"                        ║
+ * ║                                                                  ║
+ * ║     Copy the "access_token" from the JSON response.             ║
+ * ║                                                                  ║
+ * ║  3. Add to your .env file:                                       ║
+ * ║     EXPO_PUBLIC_IGDB_CLIENT_ID=your_client_id                   ║
+ * ║     EXPO_PUBLIC_IGDB_ACCESS_TOKEN=your_access_token             ║
+ * ║                                                                  ║
+ * ║  ⚠  For production: move to a Supabase Edge Function so your    ║
+ * ║     Client Secret is never exposed in the app bundle.           ║
+ * ║                                                                  ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIGURATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+const IGDB_BASE_URL = 'https://api.igdb.com/v4';
+
+const IGDB_CLIENT_ID     = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID     || '';
+const IGDB_ACCESS_TOKEN  = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN  || '';
+
+/** Cache durations in milliseconds */
+const CACHE_DURATION = {
+  IGDB_DETAILS:  24 * 60 * 60 * 1000,  // 24 hours
+  IGDB_SEARCH:    1 * 60 * 60 * 1000,  // 1 hour
+  IGDB_SIMILAR:  12 * 60 * 60 * 1000,  // 12 hours
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CACHE HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getCached = async (key) => {
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return null;
+    const { data, timestamp, ttl } = JSON.parse(raw);
+    if (Date.now() - timestamp < ttl) {
+      console.log(`✅ IGDB cache hit: ${key}`);
+      return data;
+    }
+    await AsyncStorage.removeItem(key);
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const setCached = async (key, data, ttl) => {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
+  } catch (e) {
+    console.warn('IGDB cache write error:', e);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CORE REQUEST
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Execute a POST request against the IGDB API.
+ * IGDB uses POST with a plain-text body (Apicalypse query language).
+ *
+ * @param {string} endpoint  - e.g. 'games', 'companies', 'screenshots'
+ * @param {string} query     - Apicalypse query string
+ * @param {string} [cacheKey]
+ * @param {number} [ttl]     - Cache TTL in ms
+ */
+const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATION.IGDB_DETAILS) => {
+  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
+    console.warn(
+      '⚠️  IGDB credentials missing.\n' +
+      '   Add EXPO_PUBLIC_IGDB_CLIENT_ID and EXPO_PUBLIC_IGDB_ACCESS_TOKEN to your .env file.\n' +
+      '   See the setup guide at the top of api_igdb.js.'
+    );
+    return [];
+  }
+
+  if (cacheKey) {
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+  }
+
+  try {
+    const response = await fetch(`${IGDB_BASE_URL}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Client-ID': IGDB_CLIENT_ID,
+        'Authorization': `Bearer ${IGDB_ACCESS_TOKEN}`,
+        'Content-Type': 'text/plain',
+        'Accept': 'application/json',
+      },
+      body: query,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`IGDB ${response.status}: ${text}`);
+    }
+
+    const data = await response.json();
+
+    if (cacheKey) await setCached(cacheKey, data, ttl);
+    return data;
+  } catch (error) {
+    console.error(`IGDB request failed [${endpoint}]:`, error.message);
+    throw error;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC API
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Search IGDB for a game by name.
+ * Used to resolve a RAWG game name → IGDB id before fetching full details.
+ *
+ * @param {string} name - Game name (from RAWG)
+ * @returns {Promise<Array>} - Array of matching games (id, name, cover)
+ */
+export const searchGameIGDB = async (name) => {
+  const cacheKey = `IGDB_SEARCH:${name.toLowerCase().replace(/\s+/g, '_')}`;
+  return igdbRequest(
+    'games',
+    `search "${name}";
+     fields id, name, cover.url, first_release_date;
+     limit 3;`,
+    cacheKey,
+    CACHE_DURATION.IGDB_SEARCH
+  );
+};
+
+/**
+ * Get full game details from IGDB by IGDB game id.
+ *
+ * @param {number} igdbId - IGDB game id
+ * @returns {Promise<Array>} - Array with one game object (full details)
+ */
+export const getGameDetailsIGDB = async (igdbId) => {
+  const cacheKey = `IGDB_DETAILS:${igdbId}`;
+  return igdbRequest(
+    'games',
+    `where id = ${igdbId};
+     fields
+       name,
+       summary,
+       storyline,
+       cover.url,
+       cover.image_id,
+       screenshots.url,
+       screenshots.image_id,
+       videos.video_id,
+       videos.name,
+       genres.name,
+       themes.name,
+       game_modes.name,
+       involved_companies.company.name,
+       involved_companies.developer,
+       involved_companies.publisher,
+       involved_companies.porting,
+       age_ratings.category,
+       age_ratings.rating,
+       similar_games.id,
+       similar_games.name,
+       similar_games.cover.url,
+       similar_games.cover.image_id,
+       similar_games.genres.name,
+       platforms.name,
+       platforms.abbreviation,
+       first_release_date,
+       total_rating,
+       total_rating_count,
+       franchise.name,
+       franchises.name,
+       collection.name,
+       status;
+     limit 1;`,
+    cacheKey,
+    CACHE_DURATION.IGDB_DETAILS
+  );
+};
+
+/**
+ * Hybrid fetch: resolve RAWG name → IGDB id → full IGDB details.
+ * Returns null if IGDB lookup fails (caller should fall back to RAWG data).
+ *
+ * @param {string} gameName - Game name from RAWG
+ * @returns {Promise<object|null>} - Formatted IGDB game object or null
+ */
+export const fetchIGDBByName = async (gameName) => {
+  try {
+    const results = await searchGameIGDB(gameName);
+    if (!results || results.length === 0) return null;
+
+    const igdbId = results[0].id;
+    const details = await getGameDetailsIGDB(igdbId);
+    if (!details || details.length === 0) return null;
+
+    return formatIGDBData(details[0]);
+  } catch (error) {
+    console.warn(`IGDB lookup failed for "${gameName}":`, error.message);
+    return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA FORMATTERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Convert raw IGDB image_id to a full URL.
+ * @param {string} imageId
+ * @param {'cover_big'|'screenshot_big'|'screenshot_huge'|'thumb'} size
+ */
+export const igdbImageUrl = (imageId, size = 'cover_big') => {
+  if (!imageId) return null;
+  return `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg`;
+};
+
+/** IGDB age rating category codes → human-readable labels */
+const AGE_RATING_CATEGORY = { 1: 'ESRB', 2: 'PEGI' };
+
+/** IGDB ESRB rating codes */
+const ESRB_RATING = {
+  6: 'RP', 7: 'EC', 8: 'E', 9: 'E10+', 10: 'T', 11: 'M', 12: 'AO',
+};
+
+/** IGDB PEGI rating codes */
+const PEGI_RATING = {
+  1: '3', 2: '7', 3: '12', 4: '16', 5: '18',
+};
+
+/** IGDB game status codes */
+const GAME_STATUS = {
+  0: 'Released', 2: 'Alpha', 3: 'Beta', 4: 'Early Access',
+  5: 'Offline', 6: 'Cancelled', 7: 'Rumoured',
+};
+
+/**
+ * Format raw IGDB game object into a clean, app-ready shape.
+ * @param {object} raw - Raw IGDB game object
+ * @returns {object} - Formatted game details
+ */
+export const formatIGDBData = (raw) => {
+  if (!raw) return null;
+
+  // Cover image
+  const coverImageId = raw.cover?.image_id;
+  const coverImage = coverImageId
+    ? igdbImageUrl(coverImageId, 'cover_big')
+    : raw.cover?.url?.replace('t_thumb', 't_cover_big') || null;
+
+  // Screenshots
+  const screenshots = (raw.screenshots || []).map(s =>
+    s.image_id
+      ? igdbImageUrl(s.image_id, 'screenshot_big')
+      : s.url?.replace('t_thumb', 't_screenshot_big') || null
+  ).filter(Boolean);
+
+  // YouTube trailers
+  const trailers = (raw.videos || []).map(v => ({
+    id: v.video_id,
+    name: v.name || 'Trailer',
+    url: `https://www.youtube.com/watch?v=${v.video_id}`,
+    thumbnail: `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`,
+  }));
+
+  // Companies
+  const developers = (raw.involved_companies || [])
+    .filter(c => c.developer)
+    .map(c => c.company?.name)
+    .filter(Boolean);
+
+  const publishers = (raw.involved_companies || [])
+    .filter(c => c.publisher)
+    .map(c => c.company?.name)
+    .filter(Boolean);
+
+  // Age ratings
+  const ageRatings = (raw.age_ratings || []).map(r => ({
+    system: AGE_RATING_CATEGORY[r.category] || 'Unknown',
+    rating: r.category === 1
+      ? (ESRB_RATING[r.rating] || 'NR')
+      : (PEGI_RATING[r.rating] || 'NR'),
+  }));
+
+  const esrb = ageRatings.find(r => r.system === 'ESRB');
+  const pegi = ageRatings.find(r => r.system === 'PEGI');
+
+  // Similar games
+  const similarGames = (raw.similar_games || []).slice(0, 10).map(g => ({
+    id: g.id,
+    name: g.name,
+    coverImage: g.cover?.image_id
+      ? igdbImageUrl(g.cover.image_id, 'cover_big')
+      : g.cover?.url?.replace('t_thumb', 't_cover_big') || null,
+    genres: (g.genres || []).map(genre => genre.name),
+  }));
+
+  // Release date
+  const releaseDate = raw.first_release_date
+    ? new Date(raw.first_release_date * 1000).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+      })
+    : 'TBA';
+
+  return {
+    igdbId: raw.id,
+    name: raw.name,
+    summary: raw.summary || '',
+    storyline: raw.storyline || '',
+    coverImage,
+    screenshots,
+    trailers,
+    genres: (raw.genres || []).map(g => g.name),
+    themes: (raw.themes || []).map(t => t.name),
+    gameModes: (raw.game_modes || []).map(m => m.name),
+    developers,
+    publishers,
+    platforms: (raw.platforms || []).map(p => ({
+      name: p.name,
+      abbreviation: p.abbreviation || p.name,
+    })),
+    ageRatings,
+    esrb: esrb?.rating || 'NR',
+    pegi: pegi?.rating || null,
+    similarGames,
+    releaseDate,
+    status: GAME_STATUS[raw.status] ?? 'Released',
+    totalRating: raw.total_rating ? Math.round(raw.total_rating) : null,
+    totalRatingCount: raw.total_rating_count || 0,
+    franchise: raw.franchise?.name || raw.franchises?.[0]?.name || null,
+    collection: raw.collection?.name || null,
+  };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CACHE MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Clear all IGDB cache entries from AsyncStorage */
+export const clearIGDBCache = async () => {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const igdbKeys = keys.filter(k => k.startsWith('IGDB_'));
+    await AsyncStorage.multiRemove(igdbKeys);
+    console.log(`🗑️ Cleared ${igdbKeys.length} IGDB cache entries`);
+  } catch (error) {
+    console.error('IGDB cache clear error:', error);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEFAULT EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default {
+  searchGameIGDB,
+  getGameDetailsIGDB,
+  fetchIGDBByName,
+  formatIGDBData,
+  igdbImageUrl,
+  clearIGDBCache,
+};

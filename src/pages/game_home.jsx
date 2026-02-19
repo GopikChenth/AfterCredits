@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useMediaType } from '../context/MediaTypeContext';
-import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_games';
+import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_rawg';
 import SideBar from '../components/home_page/SideBar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -166,7 +166,16 @@ const GameHome = ({ navigation }) => {
               <Text style={styles.sectionTitle}>FEATURED</Text>
               <Pressable
                 style={styles.featuredCard}
-                onPress={() => navigation.navigate('GameDetails', { gameId: games[0].id })}
+                onPress={() => navigation.navigate('DetailsGames', {
+                  gameId: games[0].id,
+                  gameName: games[0].name,
+                  coverImage: games[0].background_image,
+                  rating: games[0].rating,
+                  metacritic: games[0].metacritic,
+                  genres: games[0].genres?.map(g => g.name) || [],
+                  playtime: games[0].playtime,
+                  esrbRating: games[0].esrb_rating?.name || 'Not Rated',
+                })}
               >
                 <LinearGradient
                   colors={['#7C3AED20', '#F43F5E20']}
@@ -250,7 +259,16 @@ const GameHome = ({ navigation }) => {
                       styles.gameCard,
                       pressed && styles.gameCardPressed,
                     ]}
-                    onPress={() => navigation.navigate('GameDetails', { gameId: game.id })}
+                    onPress={() => navigation.navigate('DetailsGames', {
+                      gameId: game.id,
+                      gameName: game.name,
+                      coverImage: game.background_image,
+                      rating: game.rating,
+                      metacritic: game.metacritic,
+                      genres: game.genres?.map(g => g.name) || [],
+                      playtime: game.playtime,
+                      esrbRating: game.esrb_rating?.name || 'Not Rated',
+                    })}
                   >
                     <LinearGradient
                       colors={['#1E1E3F', '#2A2A5A']}
