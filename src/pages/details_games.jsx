@@ -2,14 +2,10 @@
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║              DETAILS GAMES PAGE                                  ║
  * ║                                                                  ║
- * ║  Hybrid data model:                                              ║
- * ║    • RAWG  → basic info passed via route params (id, name,       ║
- * ║              cover, rating, genres, playtime, esrb)             ║
- * ║    • IGDB  → rich details fetched here (summary, storyline,     ║
- * ║              trailers, screenshots, developers, similar games)  ║
- * ║                                                                  ║
- * ║  If IGDB is unavailable the page gracefully falls back to        ║
- * ║  RAWG-only data — nothing breaks.                               ║
+ * ║  Data source: IGDB (Twitch API)                                  ║
+ * ║    • Game is searched by name, full rich detail is fetched.      ║
+ * ║    • If IGDB is unavailable an alert is shown and user goes back. ║
+ * ║    • Route params supply instant cover/title during load.        ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
@@ -23,6 +19,7 @@ import {
   Dimensions,
   Pressable,
   ActivityIndicator,
+  Alert,
   Platform,
   Animated,
   StatusBar,
@@ -37,7 +34,7 @@ import GenrePill from '../components/details_page/GenrePill';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
-import { getGameDetails, formatGameData, getPlatformIcon, getMetacriticColor } from '../services/api_rawg';
+import { getMetacriticColor } from '../services/api_rawg';
 import { fetchIGDBByName } from '../services/api_igdb';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
 import { getMediaStatus, setMediaStatus, setWishlist } from '../services/mediaStatusService';
@@ -128,10 +125,8 @@ const GameDetail = ({ route, navigation }) => {
   } = route?.params || {};
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [rawgData,  setRawgData]  = useState(null);
-  const [igdbData,  setIgdbData]  = useState(null);   // null = loading / unavailable
+  const [igdbData,  setIgdbData]  = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error,     setError]     = useState(null);
 
   const [userStatus,   setUserStatus]   = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -155,27 +150,27 @@ const GameDetail = ({ route, navigation }) => {
 
   const fetchAll = async () => {
     setIsLoading(true);
-    setError(null);
     try {
-      // Parallel: RAWG details + IGDB rich data
-      const [rawgResult, igdbResult] = await Promise.allSettled([
-        getGameDetails(gameId),
-        gameName ? fetchIGDBByName(gameName) : Promise.resolve(null),
-      ]);
-
-      if (rawgResult.status === 'fulfilled' && rawgResult.value) {
-        setRawgData(formatGameData(rawgResult.value));
-      } else {
-        throw new Error('Failed to load game data.');
-      }
-
-      if (igdbResult.status === 'fulfilled' && igdbResult.value) {
-        setIgdbData(igdbResult.value);
-      }
-      // IGDB failure is non-fatal — we just show RAWG-only data
+      const result = await fetchIGDBByName(gameName);
+      if (!result) throw new Error('No IGDB data returned.');
+      setIgdbData(result);
     } catch (err) {
-      console.error('GameDetail fetch error:', err);
-      setError(err.message || 'Failed to load game details.');
+      console.error('GameDetail IGDB fetch error:', err);
+      Alert.alert(
+        'IGDB API Not Found',
+        'Could not load game details from IGDB. Please check your API credentials and try again.',
+        [
+          {
+            text: 'Go Back',
+            onPress: () => navigation?.goBack(),
+            style: 'cancel',
+          },
+          {
+            text: 'Retry',
+            onPress: () => fetchAll(),
+          },
+        ],
+      );
     } finally {
       setIsLoading(false);
     }
@@ -230,27 +225,27 @@ const GameDetail = ({ route, navigation }) => {
     headerOpacity.setValue(offsetY > trigger ? 1 : 0);
   };
 
-  // ── Derived data (merge RAWG + IGDB, IGDB wins where available) ────────────
+  // ── Derived data (from IGDB + route param fallbacks while loading) ──────────
 
-  const name        = igdbData?.name        || rawgData?.name        || gameName || 'Loading…';
-  const summary     = igdbData?.summary     || rawgData?.description || '';
+  const name        = igdbData?.name        || gameName  || 'Loading…';
+  const summary     = igdbData?.summary     || '';
   const storyline   = igdbData?.storyline   || '';
-  const cover       = igdbData?.coverImage  || rawgData?.coverImage  || coverImage;
-  const genres      = igdbData?.genres?.length ? igdbData.genres : (rawgData?.genres || rawgGenres);
+  const cover       = igdbData?.coverImage  || coverImage;
+  const genres      = igdbData?.genres      || rawgGenres;
   const themes      = igdbData?.themes      || [];
   const gameModes   = igdbData?.gameModes   || [];
-  const developers  = igdbData?.developers?.length ? igdbData.developers : (rawgData?.developers || []);
-  const publishers  = igdbData?.publishers?.length ? igdbData.publishers : (rawgData?.publishers || []);
-  const platforms   = igdbData?.platforms   || rawgData?.platforms?.map(p => ({ name: p.name, abbreviation: p.name.slice(0, 4) })) || [];
+  const developers  = igdbData?.developers  || [];
+  const publishers  = igdbData?.publishers  || [];
+  const platforms   = igdbData?.platforms   || [];
   const screenshots = igdbData?.screenshots || [];
   const trailers    = igdbData?.trailers    || [];
   const similarGames= igdbData?.similarGames|| [];
   const ageRatings  = igdbData?.ageRatings  || [];
-  const esrb        = igdbData?.esrb        || rawgData?.esrbRating  || 'NR';
-  const releaseDate = igdbData?.releaseDate || rawgData?.released    || 'TBA';
+  const esrb        = igdbData?.esrb        || esrbRating || 'NR';
+  const releaseDate = igdbData?.releaseDate || 'TBA';
   const franchise   = igdbData?.franchise   || null;
-  const avgPlaytime = rawgData?.playtime    || playtime              || null;
-  const metacriticScore = rawgData?.metacritic || metacritic         || null;
+  const avgPlaytime = playtime              || null;
+  const metacriticScore = metacritic        || null;
   const igdbRating  = igdbData?.totalRating || null;
 
   // ── Loading / Error states ─────────────────────────────────────────────────
@@ -263,6 +258,8 @@ const GameDetail = ({ route, navigation }) => {
     </View>
   );
 
+  // ── Loading state ──────────────────────────────────────────────────────────
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -272,23 +269,8 @@ const GameDetail = ({ route, navigation }) => {
     );
   }
 
-  if (error || !rawgData) {
-    return (
-      <View style={styles.container}>
-        <Blobs />
-        <View style={styles.errorContainer}>
-          <Ionicons name="game-controller-outline" size={48} color={ACCENT} style={{ marginBottom: 16 }} />
-          <Text style={styles.errorText}>{error || 'No game data available.'}</Text>
-          <Pressable style={styles.retryButton} onPress={fetchAll}>
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-          <Pressable style={[styles.retryButton, { backgroundColor: '#333', marginTop: 10 }]} onPress={() => navigation?.goBack()}>
-            <Text style={styles.retryText}>Go Back</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
+  // If igdbData is null (alert shown, waiting for user action) show nothing extra
+  if (!igdbData) return <View style={styles.container}><Blobs /></View>;
 
   // ── Main render ────────────────────────────────────────────────────────────
 
@@ -421,7 +403,7 @@ const GameDetail = ({ route, navigation }) => {
 
         {/* ── Stats pills ── */}
         <View style={styles.statsSection}>
-          <StatsPill label="Rating"    count={rawgData.rating ? rawgData.rating.toFixed(1) : 'N/A'} color="#A78BFA" />
+          <StatsPill label="Rating"    count={igdbRating ? `${igdbRating}%` : (rating ? rating.toFixed(1) : 'N/A')} color="#A78BFA" />
           <StatsPill label="Reviews"   count={reviewStats.count}                                     color="#22D3EE" />
           <StatsPill label="Playtime"  count={avgPlaytime ? `${avgPlaytime}h` : 'N/A'}               color="#34D399" />
         </View>
