@@ -180,22 +180,22 @@ const baseStyles = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#FFB3C6',
+  accent: '#A78BFA',
   background: '#0D0D0D',
   backButtonBg: '#1A1A1A',
   cardBg: '#1A1A1A',
   cardImageBg: '#2A2A2A',
   cardBorder: 'rgba(255,255,255,0.06)',
-  wishlistBg: 'rgba(212, 187, 255, 0.1)',
-  wishlistBorder: 'rgba(212, 187, 255, 0.3)',
-  wishlistActiveBg: 'rgba(212, 187, 255, 0.25)',
-  wishlistActiveBorder: 'rgba(212, 187, 255, 0.5)',
-  wishlistIcon: '#D4BBFF',
-  detailsBg: 'rgba(255, 179, 198, 0.15)',
+  wishlistBg: 'rgba(167, 139, 250, 0.1)',
+  wishlistBorder: 'rgba(167, 139, 250, 0.3)',
+  wishlistActiveBg: 'rgba(167, 139, 250, 0.25)',
+  wishlistActiveBorder: 'rgba(167, 139, 250, 0.5)',
+  wishlistIcon: '#C4B5FD',
+  detailsBg: 'rgba(167, 139, 250, 0.15)',
   gradientOverlay: ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.98)'],
   fontFamily: 'Agdasima',
   headerTitle: 'Upcoming Anime',
@@ -210,24 +210,51 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  background: '#0F0F23',
-  backButtonBg: '#1E1E3F',
-  cardBg: '#1E1E3F',
-  cardImageBg: '#1E1E3F',
-  cardBorder: 'rgba(124, 58, 237, 0.2)',
-  wishlistBg: 'rgba(124, 58, 237, 0.15)',
-  wishlistBorder: 'rgba(124, 58, 237, 0.3)',
-  wishlistActiveBg: 'rgba(124, 58, 237, 0.3)',
-  wishlistActiveBorder: 'rgba(167, 139, 250, 0.6)',
-  wishlistIcon: '#A78BFA',
-  detailsBg: 'rgba(124, 58, 237, 0.2)',
-  gradientOverlay: ['rgba(15,15,35,0.2)', 'rgba(15,15,35,0.8)', 'rgba(15,15,35,0.98)'],
+  accent: '#4ADE80',
+  background: '#070F0A',
+  backButtonBg: '#0F1F14',
+  cardBg: '#0F1F14',
+  cardImageBg: '#0F1F14',
+  cardBorder: 'rgba(74, 222, 128, 0.15)',
+  wishlistBg: 'rgba(74, 222, 128, 0.1)',
+  wishlistBorder: 'rgba(74, 222, 128, 0.3)',
+  wishlistActiveBg: 'rgba(74, 222, 128, 0.25)',
+  wishlistActiveBorder: 'rgba(74, 222, 128, 0.5)',
+  wishlistIcon: '#4ADE80',
+  detailsBg: 'rgba(74, 222, 128, 0.15)',
+  gradientOverlay: ['rgba(7,15,10,0.2)', 'rgba(7,15,10,0.8)', 'rgba(7,15,10,0.98)'],
   fontFamily: 'System',
   headerTitle: 'Upcoming Games',
   headerSubtitle: 'Sorted by nearest release',
   detailsRoute: 'DetailsAnime', // TODO: Create DetailsGame page
   mediaKey: 'games',
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  accent: '#FF6B35',
+  background: '#0E0A07',
+  backButtonBg: '#1F1209',
+  cardBg: '#1F1209',
+  cardImageBg: '#2A1A0E',
+  cardBorder: 'rgba(255, 107, 53, 0.15)',
+  wishlistBg: 'rgba(255, 179, 71, 0.1)',
+  wishlistBorder: 'rgba(255, 179, 71, 0.3)',
+  wishlistActiveBg: 'rgba(255, 179, 71, 0.25)',
+  wishlistActiveBorder: 'rgba(255, 179, 71, 0.5)',
+  wishlistIcon: '#FFB347',
+  detailsBg: 'rgba(255, 107, 53, 0.15)',
+  gradientOverlay: ['rgba(14,10,7,0.2)', 'rgba(14,10,7,0.8)', 'rgba(14,10,7,0.98)'],
+  fontFamily: 'System',
+  headerTitle: 'Upcoming Movies',
+  headerSubtitle: 'Sorted by nearest release',
+  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
+  mediaKey: 'movies',
 };
 
 
@@ -238,6 +265,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -323,7 +351,7 @@ const styleCache = {};
 
 /**
  * Get the themed StyleSheet for the Upcoming page.
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getUpcomingPageStyles = (mediaType = 'anime') => {
@@ -336,7 +364,7 @@ export const getUpcomingPageStyles = (mediaType = 'anime') => {
 
 /**
  * Get the raw theme tokens for the Upcoming page.
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getUpcomingPageTheme = (mediaType = 'anime') => {

@@ -1,15 +1,17 @@
 import { supabase } from './supabase';
 
 /**
- * Fetch all posts from Supabase, ordered by newest first.
+ * Fetch posts from Supabase filtered by media type, ordered by newest first.
  * Maps snake_case DB columns to camelCase for the app.
+ *
+ * @param {'anime' | 'games' | 'movies'} mediaType - The active subapp media type
  */
-export const getPosts = async () => {
+export const getPosts = async (mediaType = 'anime') => {
   try {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .eq('media_type', 'games')
+      .eq('media_type', mediaType)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -25,7 +27,7 @@ export const getPosts = async () => {
       date: row.date,
       title: row.title,
       description: row.description,
-      animeCovers: row.anime_covers || [],
+      mediaCovers: row.media_covers || [],
       createdAt: row.created_at,
     }));
 

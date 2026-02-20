@@ -88,13 +88,13 @@ const baseStyles = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#FFB3C6',
+  accent: '#A78BFA',
   background: '#0D0D0D',
-  profileIconColor: '#FFB3C6',
+  profileIconColor: '#A78BFA',
   fontFamily: 'Agdasima',
   headerTitle: 'Post',
   headerSubtitle: 'Curated anime lists from the community',
@@ -107,13 +107,30 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  background: '#0F0F23',
-  profileIconColor: '#A78BFA',
+  accent: '#4ADE80',
+  background: '#070F0A',
+  profileIconColor: '#4ADE80',
   fontFamily: 'System',
   headerTitle: 'Post',
   headerSubtitle: 'Curated game lists from the community',
   detailRoute: 'PostDetailAnime', // Shared detail page
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Palette: #FF6B35 · #FFB347 · #FF4500                       ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  accent: '#FF6B35',              // Sunset orange
+  background: '#0E0A07',          // Deep warm charcoal
+  profileIconColor: '#FFB347',    // Amber glow
+  fontFamily: 'System',
+  headerTitle: 'Post',
+  headerSubtitle: 'Curated film lists from the community',
+  detailRoute: 'PostDetailAnime', // TODO: replace with PostDetailMovies
 };
 
 
@@ -124,6 +141,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -178,7 +196,7 @@ const buildStyles = (theme) =>
 const styleCache = {};
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getPostPageStyles = (mediaType = 'anime') => {
@@ -190,7 +208,7 @@ export const getPostPageStyles = (mediaType = 'anime') => {
 };
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getPostPageTheme = (mediaType = 'anime') => {

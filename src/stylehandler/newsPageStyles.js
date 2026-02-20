@@ -78,11 +78,11 @@ const baseStyles = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#FFB3C6',
+  accent: '#A78BFA',
   background: '#0D0D0D',
   backButtonBg: '#1A1A1A',
   fontFamily: 'Agdasima',
@@ -96,12 +96,27 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  background: '#0F0F23',
-  backButtonBg: '#1E1E3F',
+  accent: '#4ADE80',
+  background: '#070F0A',
+  backButtonBg: '#0F1F14',
   fontFamily: 'System',
   headerTitle: 'Gaming News',
   headerSubtitle: 'Latest updates from Insider Gaming',
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  accent: '#FF6B35',
+  background: '#0E0A07',
+  backButtonBg: '#1F1209',
+  fontFamily: 'System',
+  headerTitle: 'Movie News',
+  headerSubtitle: 'Latest updates from the film world',
 };
 
 
@@ -112,6 +127,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -158,7 +174,7 @@ const styleCache = {};
 
 /**
  * Get the themed StyleSheet for the News page.
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getNewsPageStyles = (mediaType = 'anime') => {
@@ -171,7 +187,7 @@ export const getNewsPageStyles = (mediaType = 'anime') => {
 
 /**
  * Get the raw theme tokens for the News page.
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getNewsPageTheme = (mediaType = 'anime') => {

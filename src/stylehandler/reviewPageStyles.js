@@ -153,11 +153,11 @@ const baseStyles = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#FFB3C6',
+  accent: '#A78BFA',
   background: '#0D0D0D',
   headingFont: 'Agdasima',
   contentFont: 'Agdasima',
@@ -173,14 +173,31 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  background: '#0F0F23',
+  accent: '#4ADE80',
+  background: '#070F0A',
   headingFont: 'System',
   contentFont: 'System',
   headerText: 'I Played',
   mediaTypeKey: 'games',
   ratingLabel: 'Please rate the game before submitting.',
-  inactiveStar: '#3A3A5A',
+  inactiveStar: '#1A3A2A',
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  accent: '#FF6B35',
+  background: '#0E0A07',
+  headingFont: 'System',
+  contentFont: 'System',
+  headerText: 'I Watched',
+  mediaTypeKey: 'movies',
+  ratingLabel: 'Please rate the movie before submitting.',
+  inactiveStar: '#3A2A1A',
 };
 
 
@@ -191,6 +208,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -241,7 +259,7 @@ const buildStyles = (theme) =>
 const styleCache = {};
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getReviewPageStyles = (mediaType = 'anime') => {
@@ -253,7 +271,7 @@ export const getReviewPageStyles = (mediaType = 'anime') => {
 };
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getReviewPageTheme = (mediaType = 'anime') => {
