@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,23 +9,36 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_rawg';
+import { searchMedia, debounce } from '../services/search';
 import SideBar from '../components/home_page/SideBar';
+import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
+import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
+import InlineSearchResults from '../components/home_page/InlineSearchResults';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const GameHome = ({ navigation }) => {
   const { setMediaType } = useMediaType();
+  const tabBarHeight = useBottomTabBarHeight();
   const [selectedCategory, setSelectedCategory] = useState('trending');
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('game');
+
+  // ── Search state ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
   useEffect(() => {
     loadGames();
@@ -57,6 +70,72 @@ const GameHome = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── Search handlers ─────────────────────────────────────────────────────
+
+  const performSuggestionSearch = useCallback(
+    debounce(async (query) => {
+      if (!query || query.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const results = await searchMedia(query, 'games', 3);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Game suggestion search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+    setIsSearchSubmitted(false);
+    if (text.trim().length >= 2) {
+      performSuggestionSearch(text);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [performSuggestionSearch]);
+
+  const handleSearchSubmit = useCallback(async () => {
+    if (!searchQuery || searchQuery.trim().length < 2) return;
+    setIsSearchSubmitted(true);
+    Keyboard.dismiss();
+    setIsSearching(true);
+    try {
+      const results = await searchMedia(searchQuery, 'games', 50);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Game search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
+
+  const handleSearchCancel = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+    setIsSearchSubmitted(false);
+  }, []);
+
+  const handleSearchResultPress = (item) => {
+    navigation.navigate('DetailsGames', {
+      gameId: item.id,
+      gameName: item.title,
+      coverImage: item.coverImage,
+    });
+    handleSearchCancel();
   };
 
   return (
@@ -333,6 +412,31 @@ const GameHome = ({ navigation }) => {
 
         </ScrollView>
       </SafeAreaView>
+
+      {/* Search Bar */}
+      <KeyboardAwareSearchBar
+        theme="games"
+        placeholder="Search games..."
+        value={searchQuery}
+        onChangeText={handleSearchChange}
+        onCancel={handleSearchCancel}
+        onSubmit={handleSearchSubmit}
+        defaultBottom={8}
+        keyboardOffset={8}
+        tabBarHeight={tabBarHeight}
+      />
+
+      {/* Search Suggestions Overlay */}
+      {!isSearchSubmitted && (searchQuery.length >= 2 || isSearching) && (
+        <SearchSuggestionsOverlay
+          results={searchResults}
+          isLoading={isSearching}
+          searchQuery={searchQuery}
+          onResultPress={handleSearchResultPress}
+          onClose={handleSearchCancel}
+          theme={{ accent: '#A78BFA' }}
+        />
+      )}
 
       {/* Sidebar */}
       <SideBar 

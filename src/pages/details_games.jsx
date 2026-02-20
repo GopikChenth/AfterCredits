@@ -33,6 +33,7 @@ import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
+import CompletionChart from '../components/details_page/CompletionChart';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMetacriticColor } from '../services/api_rawg';
 import { fetchIGDBByName } from '../services/api_igdb';
@@ -160,15 +161,8 @@ const GameDetail = ({ route, navigation }) => {
         'IGDB API Not Found',
         'Could not load game details from IGDB. Please check your API credentials and try again.',
         [
-          {
-            text: 'Go Back',
-            onPress: () => navigation?.goBack(),
-            style: 'cancel',
-          },
-          {
-            text: 'Retry',
-            onPress: () => fetchAll(),
-          },
+          { text: 'Go Back', onPress: () => navigation?.goBack(), style: 'cancel' },
+          { text: 'Retry',   onPress: () => fetchAll() },
         ],
       );
     } finally {
@@ -350,32 +344,6 @@ const GameDetail = ({ route, navigation }) => {
             <Text style={styles.franchiseText}>📦 {franchise}</Text>
           )}
 
-          {/* Meta row: playtime · ESRB · Metacritic */}
-          <View style={styles.metaRow}>
-            {avgPlaytime ? (
-              <View style={styles.metaChip}>
-                <Ionicons name="time-outline" size={12} color={ACCENT2} />
-                <Text style={styles.metaChipText}>{avgPlaytime}h avg</Text>
-              </View>
-            ) : null}
-            <View style={styles.metaChip}>
-              <Ionicons name="shield-outline" size={12} color={ACCENT2} />
-              <Text style={styles.metaChipText}>ESRB {esrb}</Text>
-            </View>
-            {metacriticScore ? (
-              <View style={[styles.metaChip, { borderColor: getMetacriticColor(metacriticScore) }]}>
-                <Text style={[styles.metaChipText, { color: getMetacriticColor(metacriticScore) }]}>
-                  MC {metacriticScore}
-                </Text>
-              </View>
-            ) : null}
-            {igdbRating ? (
-              <View style={[styles.metaChip, { borderColor: ACCENT }]}>
-                <Ionicons name="star" size={12} color={ACCENT} />
-                <Text style={[styles.metaChipText, { color: ACCENT }]}>{igdbRating}%</Text>
-              </View>
-            ) : null}
-          </View>
 
           {/* Summary */}
           <Text
@@ -400,6 +368,9 @@ const GameDetail = ({ route, navigation }) => {
             </View>
           ) : null}
         </BlurView>
+
+        {/* ── Completion Time chart (IGDB time-to-beat) ── */}
+        {igdbData?.timeToBeat && <CompletionChart data={igdbData.timeToBeat} />}
 
         {/* ── Stats pills ── */}
         <View style={styles.statsSection}>
@@ -473,15 +444,6 @@ const GameDetail = ({ route, navigation }) => {
           </BlurView>
         )}
 
-        {/* ── Age Ratings ── */}
-        {ageRatings.length > 0 && (
-          <BlurView intensity={80} tint="dark" style={styles.blurCard}>
-            <Text style={styles.sectionLabel}>AGE RATINGS</Text>
-            <View style={styles.pillRow}>
-              {ageRatings.map((r, i) => <AgeRatingBadge key={i} system={r.system} rating={r.rating} />)}
-            </View>
-          </BlurView>
-        )}
 
         {/* ── Trailers (IGDB) ── */}
         {trailers.length > 0 && (

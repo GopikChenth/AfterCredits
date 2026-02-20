@@ -173,6 +173,41 @@ export const searchGameIGDB = async (name) => {
 };
 
 /**
+ * Search IGDB for games — richer version for the discover/search UI.
+ * Returns formatted results compatible with InlineSearchResults & SearchSuggestions.
+ *
+ * @param {string} query - Search query
+ * @param {number} limit - Max results (default 20)
+ * @returns {Promise<Array>} - Array of { id, title, coverImage, year, genres, popularity }
+ */
+export const searchGamesIGDB = async (query, limit = 20) => {
+  const cacheKey = `IGDB_GAME_SEARCH:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
+  const raw = await igdbRequest(
+    'games',
+    `search "${query}";
+     fields id, name, cover.url, cover.image_id, first_release_date,
+            genres.name, total_rating, total_rating_count;
+     limit ${limit};`,
+    cacheKey,
+    CACHE_DURATION.IGDB_SEARCH
+  );
+
+  return (raw || []).map(game => ({
+    id: game.id,
+    title: game.name,
+    coverImage: game.cover?.image_id
+      ? igdbImageUrl(game.cover.image_id, 'cover_big')
+      : game.cover?.url?.replace('t_thumb', 't_cover_big') || null,
+    year: game.first_release_date
+      ? new Date(game.first_release_date * 1000).getFullYear().toString()
+      : '',
+    genres: (game.genres || []).map(g => g.name),
+    popularity: game.total_rating_count || 0,
+    rating: game.total_rating ? Math.round(game.total_rating) : null,
+  }));
+};
+
+/**
  * Get full game details from IGDB by IGDB game id.
  *
  * @param {number} igdbId - IGDB game id
@@ -223,7 +258,31 @@ export const getGameDetailsIGDB = async (igdbId) => {
 };
 
 /**
- * Hybrid fetch: resolve RAWG name → IGDB id → full IGDB details.
+ * Fetch time-to-beat data for a game from IGDB.
+ *
+ * @param {number} gameId - IGDB game id
+ * @returns {Promise<object|null>} - { hastily, normally, completely } in seconds, or null
+ */
+export const getTimeToBeat = async (gameId) => {
+  try {
+    const cacheKey = `IGDB_TTB:${gameId}`;
+    const data = await igdbRequest(
+      'game_time_to_beats',
+      `where game_id = ${gameId};
+       fields hastily, normally, completely, count;
+       limit 1;`,
+      cacheKey,
+      CACHE_DURATION.IGDB_DETAILS
+    );
+    if (!data || data.length === 0) return null;
+    return data[0];
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Hybrid fetch: resolve RAWG name → IGDB id → full IGDB details + time-to-beat.
  * Returns null if IGDB lookup fails (caller should fall back to RAWG data).
  *
  * @param {string} gameName - Game name from RAWG
@@ -235,10 +294,28 @@ export const fetchIGDBByName = async (gameName) => {
     if (!results || results.length === 0) return null;
 
     const igdbId = results[0].id;
-    const details = await getGameDetailsIGDB(igdbId);
+
+    // Fetch details + time-to-beat in parallel
+    const [details, ttb] = await Promise.all([
+      getGameDetailsIGDB(igdbId),
+      getTimeToBeat(igdbId),
+    ]);
+
     if (!details || details.length === 0) return null;
 
-    return formatIGDBData(details[0]);
+    const formatted = formatIGDBData(details[0]);
+
+    // Merge time-to-beat into formatted data
+    if (ttb) {
+      const toHours = (secs) => secs && secs > 0 ? Math.round((secs / 3600) * 10) / 10 : null;
+      formatted.timeToBeat = {
+        mainStory:     toHours(ttb.hastily),
+        mainExtra:     toHours(ttb.normally),
+        completionist: toHours(ttb.completely),
+      };
+    }
+
+    return formatted;
   } catch (error) {
     console.warn(`IGDB lookup failed for "${gameName}":`, error.message);
     return null;
@@ -398,7 +475,9 @@ export const clearIGDBCache = async () => {
 
 export default {
   searchGameIGDB,
+  searchGamesIGDB,
   getGameDetailsIGDB,
+  getTimeToBeat,
   fetchIGDBByName,
   formatIGDBData,
   igdbImageUrl,

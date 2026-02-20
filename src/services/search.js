@@ -5,6 +5,7 @@
 
 import { searchAnime, formatAnimeData } from './api_anilist';
 import { searchMovies, formatMovieData } from './api_movies';
+import { searchGamesIGDB } from './api_igdb';
 
 /**
  * Search across any media type
@@ -36,9 +37,10 @@ export const searchMedia = async (query, mediaType = 'anime', limit = 20) => {
         break;
       
       case 'game':
-        // TODO: Implement game search API
-        console.log('Game search not yet implemented');
-        return [];
+      case 'games':
+        response = await searchGamesIGDB(query, limit);
+        results = response;
+        break;
       
       case 'comic':
         // TODO: Implement comic search API
