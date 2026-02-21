@@ -12,6 +12,7 @@ const CategoryPill = ({
   categories = ['Trending', 'Popular', 'New'],
   onCategoryChange,
   width = 180,
+  accentColor = '#FFB3C6',
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const currentIndexRef = useRef(0); // Track actual current index
@@ -112,7 +113,7 @@ const CategoryPill = ({
   return (
     <View style={styles.container}>
       <View 
-        style={[styles.pill, { width }]}
+        style={[styles.pill, { width, backgroundColor: accentColor }]}
         {...panResponder.panHandlers}
       >
         <Animated.View
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
     // No margin - parent controls spacing
   },
   pill: {
-    backgroundColor: '#FFB3C6', // Pastel Cherry Blossom
+    backgroundColor: '#FFB3C6',
     borderRadius: 20,
     paddingVertical: 18,
     paddingHorizontal: 20,

@@ -151,7 +151,7 @@ const AnimeDetail = ({ route, navigation }) => {
   // Format API data for display
   const formatAnimeDetails = (data) => {
     // Generate avatar colors for voice actors (Pastel Palette)
-    const avatarColors = ['#FFB3C6', '#FFDAC1', '#B5EAD7', '#C7CEEA', '#FFF0E4', '#E2F0CB', '#FF9AA2', '#A0C4FF', '#FFB7B2', '#E2F0CB'];
+    const avatarColors = ['#A78BFA', '#C4B5FD', '#B5EAD7', '#C7CEEA', '#DDD6FE', '#E2F0CB', '#818CF8', '#A0C4FF', '#9F7AEA', '#E2F0CB'];
     
     // Extract voice actors from characters
     const voiceActors = data.characters?.edges
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   retryButton: {
-    backgroundColor: '#FF69B4',
+    backgroundColor: '#A78BFA',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     right: -80,
     width: 304,
     height: 304,
-    backgroundColor: '#FF6B9D',
+    backgroundColor: '#7C3AED',
     borderRadius: 152,
     opacity: 0.15,
     transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
@@ -758,7 +758,7 @@ const styles = StyleSheet.create({
     left: -96,
     width: 248,
     height: 248,
-    backgroundColor: '#FFB3C6',
+    backgroundColor: '#A78BFA',
     borderRadius: 124,
     opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
@@ -769,7 +769,7 @@ const styles = StyleSheet.create({
     right: 48,
     width: 200,
     height: 200,
-    backgroundColor: '#FFC0CB',
+    backgroundColor: '#C4B5FD',
     borderRadius: 100,
     opacity: 0.08,
   },
@@ -859,7 +859,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    color: '#ffb3d9',
+    color: '#C4B5FD',
     marginBottom: 12,
   },
   description: {
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   expandDescriptionText: {
     fontSize: 14,
     fontFamily: 'Agdasima',
-    color: '#ffb3d9',
+    color: '#C4B5FD',
     fontWeight: '600',
     marginBottom: 15,
   },
@@ -952,7 +952,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     fontWeight: 'bold',
     fontFamily: 'Agdasima',
-    color: '#ffb3d9',
+    color: '#C4B5FD',
     marginBottom: 10,
   },
   genreList: {
@@ -1068,7 +1068,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 179, 217, 0.2)',
+    backgroundColor: 'rgba(167, 139, 250, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1087,7 +1087,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FFB3D9',
+    backgroundColor: '#A78BFA',
   },
   expandButton: {
     paddingVertical: 8,
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 179, 217, 0.2)',
+    backgroundColor: 'rgba(167, 139, 250, 0.2)',
     gap: 5,
   },
   paginationButtonDisabled: {

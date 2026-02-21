@@ -283,7 +283,7 @@ const HomeAnime = ({ navigation }) => {
             />
           ) : (
             <View style={styles.profileIconContainer}>
-              <Ionicons name="person-circle-outline" size={48} color="#FFB3C6" />
+              <Ionicons name="person-circle-outline" size={48} color="#A78BFA" />
             </View>
           )}
         </Pressable>
@@ -320,6 +320,7 @@ const HomeAnime = ({ navigation }) => {
                     categories={['Trending', 'Popular', 'New']}
                     onCategoryChange={handleCategoryChange}
                     width={160}
+                    accentColor={theme.accent}
                   />
                   <Text style={styles.animeText}>ANIME</Text>
                 </View>
@@ -363,7 +364,7 @@ const HomeAnime = ({ navigation }) => {
                             style={styles.loadMoreButton}
                             onPress={handlePrevPage}
                           >
-                            <Ionicons name="chevron-back" size={16} color="#FFB3C6" />
+                            <Ionicons name="chevron-back" size={16} color="#A78BFA" />
                             <Text style={styles.loadMoreText}>Prev</Text>
                           </Pressable>
                         ) : (
@@ -378,7 +379,7 @@ const HomeAnime = ({ navigation }) => {
                             onPress={handleLoadMore}
                           >
                             <Text style={styles.loadMoreText}>Next</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#FFB3C6" />
+                            <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
                           </Pressable>
                         ) : (
                           <View style={styles.loadMoreButtonPlaceholder} />
@@ -449,7 +450,7 @@ const styles = StyleSheet.create({
     right: -80,
     width: 304,
     height: 304,
-    backgroundColor: '#FF6B9D',
+    backgroundColor: '#7C3AED',
     borderRadius: 152,
     opacity: 0.15,
     transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
     left: -96,
     width: 248,
     height: 248,
-    backgroundColor: '#FFB3C6',
+    backgroundColor: '#A78BFA',
     borderRadius: 124,
     opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
@@ -471,7 +472,7 @@ const styles = StyleSheet.create({
     right: 48,
     width: 200,
     height: 200,
-    backgroundColor: '#FFC0CB',
+    backgroundColor: '#C4B5FD',
     borderRadius: 100,
     opacity: 0.08,
   },
@@ -521,7 +522,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#FFB3C6',
+    backgroundColor: '#A78BFA',
   },
   scrollView: {
     flex: 1,
@@ -585,7 +586,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryButton: {
-    backgroundColor: '#FFB3C6',
+    backgroundColor: '#A78BFA',
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 8,
@@ -613,19 +614,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255, 179, 198, 0.15)',
+    backgroundColor: 'rgba(167, 139, 250, 0.15)',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 179, 198, 0.3)',
+    borderColor: 'rgba(167, 139, 250, 0.3)',
     minWidth: 90,
   },
   loadMoreButtonPlaceholder: {
     minWidth: 90,
   },
   loadMoreText: {
-    color: '#FFB3C6',
+    color: '#A78BFA',
     fontSize: 14,
     fontWeight: '600',
     fontFamily: 'Agdasima',
