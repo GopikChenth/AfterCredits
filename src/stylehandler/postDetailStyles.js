@@ -101,11 +101,11 @@ const baseStyles = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#FFB3C6',
+  accent: '#A78BFA',
   background: '#0D0D0D',
   avatarBg: '#2A2A2A',
   gridImageBg: '#2A2A2A',
@@ -120,13 +120,29 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  background: '#0F0F23',
-  avatarBg: '#1E1E3F',
-  gridImageBg: '#1E1E3F',
+  accent: '#4ADE80',
+  background: '#070F0A',
+  avatarBg: '#0F1F14',
+  gridImageBg: '#0F1F14',
   fontFamily: 'System',
   fontFamilyBold: 'System',
   detailsRoute: 'DetailsAnime', // TODO: Create DetailsGame page
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  accent: '#FF6B35',
+  background: '#0E0A07',
+  avatarBg: '#2A1A0E',
+  gridImageBg: '#2A1A0E',
+  fontFamily: 'System',
+  fontFamilyBold: 'System',
+  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
 };
 
 
@@ -137,6 +153,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -186,7 +203,7 @@ const buildStyles = (theme) =>
 const styleCache = {};
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getPostDetailStyles = (mediaType = 'anime') => {
@@ -198,7 +215,7 @@ export const getPostDetailStyles = (mediaType = 'anime') => {
 };
 
 /**
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getPostDetailTheme = (mediaType = 'anime') => {

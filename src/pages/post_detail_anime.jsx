@@ -77,9 +77,10 @@ const PostDetailPage = ({ route, navigation }) => {
 
         {/* Grid - 4 columns */}
         <View style={styles.grid}>
-          {post.animeCovers.map((cover, index) => {
+          {(post.mediaCovers || []).map((cover, index) => {
             if (imageErrors[index]) return null;
-            const animeId = getAnimeIdFromUrl(cover.imageUrl);
+            // For anime: extract AniList ID from CDN URL. For others: use cover.mediaId if present.
+            const animeId = getAnimeIdFromUrl(cover.imageUrl) || cover.mediaId || null;
             return (
               <Pressable
                 key={index}

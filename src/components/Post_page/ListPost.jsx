@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress }) => {
+const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress, accent = '#FFB3C6' }) => {
   const [imageErrors, setImageErrors] = useState({});
 
   const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(username || 'user')}`;
@@ -42,7 +42,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
         style={styles.coverStrip}
         contentContainerStyle={styles.coverStripContent}
       >
-        {animeCovers.map((cover, index) => (
+        {(animeCovers || []).map((cover, index) => (
           !imageErrors[index] && (
             <Image
               key={index}
@@ -60,9 +60,15 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       )}
 
       {/* View List Button */}
-      <Pressable style={styles.viewListButton} onPress={onPress}>
-        <Text style={styles.viewListText}>View List</Text>
-        <Ionicons name="arrow-forward" size={14} color="#FFB3C6" />
+      <Pressable
+        style={[styles.viewListButton, {
+          backgroundColor: `${accent}14`,
+          borderColor: `${accent}26`,
+        }]}
+        onPress={onPress}
+      >
+        <Text style={[styles.viewListText, { color: accent }]}>View List</Text>
+        <Ionicons name="arrow-forward" size={14} color={accent} />
       </Pressable>
     </View>
   );

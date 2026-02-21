@@ -34,15 +34,17 @@ const CARD_WIDTH = (width - 56) / 2;
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                      ANIME THEME  🌸                          ║
+// ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
   // ─── Visual tokens ───────────────────────────────────────
-  accent: '#FFB3C6',
-  accentSecondary: '#A0C4FF',
+  accent: '#A78BFA',
+  accentSecondary: '#818CF8',
   background: '#0D0D0D',
-  profileIconColor: '#FFB3C6',
+  cardBg: '#1A1A2E',
+  cardPlaceholderBg: '#252540',
+  profileIconColor: '#A78BFA',
   fontFamily: 'Agdasima',
   fontFamilyBold: 'Agdasima-Bold',
 
@@ -76,7 +78,6 @@ const animeTheme = {
   },
 
   // ─── Data extraction ────────────────────────────────────
-  // How to extract genres and the secondary stat from a formatted detail object
   extractGenres: (detail) => detail?.genres || [],
   extractSecondary: (detail) => detail?.studio ? [detail.studio] : [],
   extractTitle: (detail) => detail?.title || 'Loading...',
@@ -98,10 +99,12 @@ const animeTheme = {
 
 const gamesTheme = {
   // ─── Visual tokens ───────────────────────────────────────
-  accent: '#A78BFA',
-  accentSecondary: '#67E8F9',
-  background: '#0F0F23',
-  profileIconColor: '#A78BFA',
+  accent: '#4ADE80',
+  accentSecondary: '#34D399',
+  background: '#070F0A',
+  cardBg: '#0F1F14',
+  cardPlaceholderBg: '#1A3A2A',
+  profileIconColor: '#4ADE80',
   fontFamily: 'System',
   fontFamilyBold: 'System',
 
@@ -120,11 +123,11 @@ const gamesTheme = {
 
   // ─── Components ──────────────────────────────────────────
   components: {
-    Chart: DonutChart,             // Same chart for now
-    Counters: StatusCounters,       // Same counters
-    GenreList: TopList,             // Same list component
-    SecondaryList: TopList,         // Same list (could be swapped for a custom component later)
-    Skeleton: SkeletonPodium,       // Could be a different game skeleton later
+    Chart: DonutChart,
+    Counters: StatusCounters,
+    GenreList: TopList,
+    SecondaryList: TopList,
+    Skeleton: SkeletonPodium,
     ListSkeleton: SkeletonPodiumList,
   },
 
@@ -151,12 +154,75 @@ const gamesTheme = {
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
+// ║                     MOVIES THEME  🎬                          ║
+// ║    Theme: Sunset — warm amber, burnt orange, deep charcoal    ║
+// ╚═══════════════════════════════════════════════════════════════╝
+
+const moviesTheme = {
+  // ─── Visual tokens ───────────────────────────────────────
+  accent: '#FF6B35',
+  accentSecondary: '#FFB347',
+  background: '#0E0A07',
+  cardBg: '#1F1209',
+  cardPlaceholderBg: '#3A2A1A',
+  profileIconColor: '#FFB347',
+  fontFamily: 'System',
+  fontFamilyBold: 'System',
+
+  // ─── Labels ──────────────────────────────────────────────
+  headerTitle: 'Podium',
+  headerSubtitle: 'Your movie stats',
+  statusMediaType: 'movie',
+  countLabel: 'movies',
+
+  topGenresLabel: 'Top Genres',
+  topSecondaryLabel: 'Top Directors',
+  genreEmptyMessage: 'No genre data available yet',
+  secondaryEmptyMessage: 'No director data available yet',
+
+  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
+
+  // ─── Components ──────────────────────────────────────────
+  components: {
+    Chart: DonutChart,
+    Counters: StatusCounters,
+    GenreList: TopList,
+    SecondaryList: TopList,
+    Skeleton: SkeletonPodium,
+    ListSkeleton: SkeletonPodiumList,
+  },
+
+  // ─── Service functions ───────────────────────────────────
+  // TODO: Replace with movie API functions when available
+  services: {
+    fetchDetails: (mediaId) => null,
+    formatData: (result) => result,
+  },
+
+  // ─── Data extraction ────────────────────────────────────
+  extractGenres: (detail) => detail?.genres || [],
+  extractSecondary: (detail) => detail?.directors || [],
+  extractTitle: (detail) => detail?.title || 'Loading...',
+  extractCover: (detail) => detail?.coverImage,
+
+  // ─── Empty state messages (list page) ───────────────────
+  emptyMessages: {
+    watching: 'Start watching movies and mark them here',
+    watched: 'Mark movies as watched to track your history',
+    dropped: "Movies you've dropped will appear here",
+    wishlist: 'Add movies to your wishlist from the details page',
+  },
+};
+
+
+// ╔═══════════════════════════════════════════════════════════════╗
 // ║                    THEME MAP & REGISTRY                       ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -301,11 +367,11 @@ const buildPodiumListStyles = (theme) =>
     countText: { ...basePodiumListStyles.countText, fontFamily: theme.fontFamily },
     mediaCard: {
       ...basePodiumListStyles.mediaCard,
-      backgroundColor: theme.background === '#0F0F23' ? '#1A1A3E' : '#1A1A2E',
+      backgroundColor: theme.cardBg || '#1A1A2E',
     },
     cardPlaceholder: {
       ...basePodiumListStyles.cardPlaceholder,
-      backgroundColor: theme.background === '#0F0F23' ? '#252550' : '#252540',
+      backgroundColor: theme.cardPlaceholderBg || '#252540',
     },
     cardTitle: { ...basePodiumListStyles.cardTitle, fontFamily: theme.fontFamily },
     emptyTitle: { ...basePodiumListStyles.emptyTitle, fontFamily: theme.fontFamily },

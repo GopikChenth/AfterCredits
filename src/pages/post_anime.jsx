@@ -30,14 +30,14 @@ const PostPage = ({ navigation }) => {
   const fetchPosts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    const result = await getPosts();
+    const result = await getPosts(mediaType);
     if (result.success) {
       setPosts(result.data);
     } else {
       setError(result.error || 'Failed to load posts');
     }
     setIsLoading(false);
-  }, []);
+  }, [mediaType]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -105,7 +105,8 @@ const PostPage = ({ navigation }) => {
                 date={post.date}
                 title={post.title}
                 description={post.description}
-                animeCovers={post.animeCovers}
+                animeCovers={post.mediaCovers}
+                accent={theme.accent}
                 onPress={() => navigation.navigate(theme.detailRoute, { post })}
               />
             ))

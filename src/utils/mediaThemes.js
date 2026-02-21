@@ -44,9 +44,9 @@ export const initializeFonts = () => {
 export const MEDIA_THEMES = {
   anime: {
     name: 'Anime',
-    accent: '#FFB3C6',      // Pastel Cherry Blossom
-    accentLight: '#FFE5EC', // Light Pastel Pink
-    accentGlow: 'rgba(255, 179, 198, 0.6)',
+    accent: '#A78BFA',      // Violet Night
+    accentLight: '#C4B5FD', // Light Lavender
+    accentGlow: 'rgba(167, 139, 250, 0.6)',
     headingFont: 'Agdasima',
     contentFont: 'Agdasima',
   },
@@ -60,9 +60,9 @@ export const MEDIA_THEMES = {
   },
   game: {
     name: 'Games',
-    accent: '#B5EAD7',      // Pastel Mint Green
-    accentLight: '#E2F0CB', // Pastel Yellow-Green
-    accentGlow: 'rgba(181, 234, 215, 0.6)',
+    accent: '#4ADE80',      // Emerald Green
+    accentLight: '#86EFAC', // Light Green
+    accentGlow: 'rgba(74, 222, 128, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },

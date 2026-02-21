@@ -190,29 +190,29 @@ const baseStyles = {
 // ┃    ██║  ██║██║ ╚████║██║██║ ╚═╝ ██║███████╗                   ┃
 // ┃    ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝╚═╝     ╚═╝╚══════╝                   ┃
 // ┃                                                               ┃
-// ┃    Theme: Pastel Cherry Blossom  🌸                           ┃
-// ┃    Palette: #FFB3C6 · #FFE5EC · #D4BBFF                      ┃
+// ┃    Theme: Violet Night  💜                                    ┃
+// ┃    Palette: #A78BFA · #818CF8 · #C4B5FD                      ┃
 // ┃    Font: Agdasima                                             ┃
 // ┃                                                               ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 const animeTheme = {
-  accent: '#FFB3C6',
-  accentLight: 'rgba(255, 179, 198, 0.1)',
-  accentBorder: 'rgba(255, 179, 198, 0.3)',
+  accent: '#A78BFA',
+  accentLight: 'rgba(167, 139, 250, 0.1)',
+  accentBorder: 'rgba(167, 139, 250, 0.3)',
   background: '#0D0D0D',
   cardBg: '#1A1A1A',
   cardImageBg: '#2A2A2A',
   cardBorder: 'rgba(255,255,255,0.06)',
-  wishlistBg: 'rgba(212, 187, 255, 0.1)',
-  wishlistBorder: 'rgba(212, 187, 255, 0.3)',
-  wishlistActiveBg: 'rgba(212, 187, 255, 0.25)',
-  wishlistActiveBorder: 'rgba(212, 187, 255, 0.5)',
-  wishlistIcon: '#D4BBFF',
-  detailsBg: 'rgba(255, 179, 198, 0.15)',
+  wishlistBg: 'rgba(167, 139, 250, 0.1)',
+  wishlistBorder: 'rgba(167, 139, 250, 0.3)',
+  wishlistActiveBg: 'rgba(167, 139, 250, 0.25)',
+  wishlistActiveBorder: 'rgba(167, 139, 250, 0.5)',
+  wishlistIcon: '#C4B5FD',
+  detailsBg: 'rgba(167, 139, 250, 0.15)',
   gradientOverlay: ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.98)'],
   fontFamily: 'Agdasima',
-  profileIconColor: '#FFB3C6',
+  profileIconColor: '#A78BFA',
   subtitleText: 'Explore anime, find your next obsession',
   comingSoonTitle: 'Coming Soon',
   comingSoonSubtitle: 'Anime that are yet to release',
@@ -232,35 +232,77 @@ const animeTheme = {
 // ┃    ╚██████╔╝██║  ██║██║ ╚═╝ ██║███████╗███████║               ┃
 // ┃     ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝               ┃
 // ┃                                                               ┃
-// ┃    Theme: Retro-Futurism Neon  🎮                             ┃
-// ┃    Palette: #A78BFA · #7C3AED · #F43F5E                      ┃
+// ┃    Theme: Emerald Matrix  🎮                                  ┃
+// ┃    Palette: #4ADE80 · #22C55E · #16A34A                      ┃
 // ┃    Font: System                                               ┃
 // ┃                                                               ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 const gamesTheme = {
-  accent: '#A78BFA',
-  accentLight: 'rgba(124, 58, 237, 0.15)',
-  accentBorder: 'rgba(124, 58, 237, 0.4)',
-  background: '#0F0F23',
-  cardBg: '#1E1E3F',
-  cardImageBg: '#1E1E3F',
-  cardBorder: 'rgba(124, 58, 237, 0.2)',
-  wishlistBg: 'rgba(124, 58, 237, 0.15)',
-  wishlistBorder: 'rgba(124, 58, 237, 0.3)',
-  wishlistActiveBg: 'rgba(124, 58, 237, 0.3)',
-  wishlistActiveBorder: 'rgba(167, 139, 250, 0.6)',
-  wishlistIcon: '#A78BFA',
-  detailsBg: 'rgba(124, 58, 237, 0.2)',
-  gradientOverlay: ['rgba(15,15,35,0.2)', 'rgba(15,15,35,0.8)', 'rgba(15,15,35,0.98)'],
+  accent: '#4ADE80',
+  accentLight: 'rgba(74, 222, 128, 0.12)',
+  accentBorder: 'rgba(74, 222, 128, 0.35)',
+  background: '#070F0A',
+  cardBg: '#0F1F14',
+  cardImageBg: '#0F1F14',
+  cardBorder: 'rgba(74, 222, 128, 0.15)',
+  wishlistBg: 'rgba(74, 222, 128, 0.1)',
+  wishlistBorder: 'rgba(74, 222, 128, 0.3)',
+  wishlistActiveBg: 'rgba(74, 222, 128, 0.25)',
+  wishlistActiveBorder: 'rgba(74, 222, 128, 0.5)',
+  wishlistIcon: '#4ADE80',
+  detailsBg: 'rgba(74, 222, 128, 0.15)',
+  gradientOverlay: ['rgba(7,15,10,0.2)', 'rgba(7,15,10,0.8)', 'rgba(7,15,10,0.98)'],
   fontFamily: 'System',
-  profileIconColor: '#A78BFA',
+  profileIconColor: '#4ADE80',
   subtitleText: 'Upcoming releases, news & more',
   comingSoonTitle: 'Upcoming Games',
   comingSoonSubtitle: 'Games that are yet to release',
   comingSoonIcon: 'game-controller-outline',
   newsTitle: 'Gaming News',
   newsSubtitle: 'Fresh from Insider Gaming',
+  newsIcon: 'newspaper-outline',
+};
+
+
+// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+// ┃                                                               ┃
+// ┃    ███╗   ███╗ ██████╗ ██╗   ██╗██╗███████╗███████╗           ┃
+// ┃    ████╗ ████║██╔═══██╗██║   ██║██║██╔════╝██╔════╝           ┃
+// ┃    ██╔████╔██║██║   ██║██║   ██║██║█████╗  ███████╗           ┃
+// ┃    ██║╚██╔╝██║██║   ██║╚██╗ ██╔╝██║██╔══╝  ╚════██║           ┃
+// ┃    ██║ ╚═╝ ██║╚██████╔╝ ╚████╔╝ ██║███████╗███████║           ┃
+// ┃    ╚═╝     ╚═╝ ╚═════╝   ╚═══╝  ╚═╝╚══════╝╚══════╝           ┃
+// ┃                                                               ┃
+// ┃    Theme: Sunset Amber  🎬                                    ┃
+// ┃    Palette: #FF6B35 · #FFB347 · #FF4500                      ┃
+// ┃    Font: System                                               ┃
+// ┃                                                               ┃
+// ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+const moviesTheme = {
+  accent: '#FF6B35',
+  accentLight: 'rgba(255, 107, 53, 0.12)',
+  accentBorder: 'rgba(255, 107, 53, 0.35)',
+  background: '#0E0A07',
+  cardBg: '#1F1209',
+  cardImageBg: '#2A1A0E',
+  cardBorder: 'rgba(255, 107, 53, 0.15)',
+  wishlistBg: 'rgba(255, 179, 71, 0.1)',
+  wishlistBorder: 'rgba(255, 179, 71, 0.3)',
+  wishlistActiveBg: 'rgba(255, 179, 71, 0.25)',
+  wishlistActiveBorder: 'rgba(255, 179, 71, 0.5)',
+  wishlistIcon: '#FFB347',
+  detailsBg: 'rgba(255, 107, 53, 0.15)',
+  gradientOverlay: ['rgba(14,10,7,0.2)', 'rgba(14,10,7,0.8)', 'rgba(14,10,7,0.98)'],
+  fontFamily: 'System',
+  profileIconColor: '#FFB347',
+  subtitleText: 'Discover films, find your next watch',
+  comingSoonTitle: 'Coming Soon',
+  comingSoonSubtitle: 'Movies hitting theaters soon',
+  comingSoonIcon: 'film-outline',
+  newsTitle: 'Movie News',
+  newsSubtitle: 'Fresh from the film world',
   newsIcon: 'newspaper-outline',
 };
 
@@ -272,6 +314,7 @@ const gamesTheme = {
 const THEME_MAP = {
   anime: animeTheme,
   games: gamesTheme,
+  movies: moviesTheme,
 };
 
 
@@ -460,7 +503,7 @@ const styleCache = {};
 
 /**
  * Get the themed StyleSheet for the Discover page.
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {StyleSheet}
  */
 export const getDiscoverStyles = (mediaType = 'anime') => {
@@ -473,7 +516,7 @@ export const getDiscoverStyles = (mediaType = 'anime') => {
 
 /**
  * Get the raw theme tokens (colors, fonts, content labels).
- * @param {'anime' | 'games'} mediaType
+ * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
 export const getDiscoverTheme = (mediaType = 'anime') => {

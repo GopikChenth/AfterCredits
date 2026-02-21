@@ -19,6 +19,8 @@ import { getAnimeNews } from "../services/news_service";
 // Games services
 import { getUpcomingGames, formatGameData } from "../services/api_rawg";
 import { getGamingNews } from "../services/news_games";
+// Movies services
+import { getMovieNews } from "../services/news_movies";
 // Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";
@@ -34,7 +36,8 @@ const DiscoverPage = ({ navigation }) => {
   const styles = getDiscoverStyles(mediaType);
   const theme = getDiscoverTheme(mediaType);
 
-  const isGames = mediaType === 'games';
+  const isGames  = mediaType === 'games';
+  const isMovies = mediaType === 'movies';
 
   const [upcomingItems, setUpcomingItems] = useState([]);
   const [news, setNews] = useState([]);
@@ -69,9 +72,14 @@ const DiscoverPage = ({ navigation }) => {
   const fetchNews = async () => {
     try {
       setNewsLoading(true);
-      const articles = isGames
-        ? await getGamingNews(7)
-        : await getAnimeNews(7);
+      let articles;
+      if (isMovies) {
+        articles = await getMovieNews(7);
+      } else if (isGames) {
+        articles = await getGamingNews(7);
+      } else {
+        articles = await getAnimeNews(7);
+      }
       setNews(articles);
     } catch (error) {
       console.error("Error fetching news:", error);
@@ -122,7 +130,7 @@ const DiscoverPage = ({ navigation }) => {
 
   const fetchWishlist = async () => {
     try {
-      const type = isGames ? 'games' : 'anime';
+      const type = isGames ? 'games' : isMovies ? 'movies' : 'anime';
       const result = await getWishlist(type);
       if (result.success && result.data) {
         setWishlistedIds(result.data.map(item => item.media_id));
