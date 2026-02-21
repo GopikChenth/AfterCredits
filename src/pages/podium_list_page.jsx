@@ -124,7 +124,12 @@ const PodiumListPage = ({ route, navigation }) => {
     return (
       <Pressable
         style={styles.mediaCard}
-        onPress={() => navigation.navigate(theme.detailsRoute, { animeId: item.media_id, gameId: item.media_id })}
+        onPress={() => navigation.navigate(theme.detailsRoute, {
+            animeId: item.media_id,
+            gameId: item.media_id,
+            gameName: theme.extractTitle(detail),
+            coverImage: theme.extractCover(detail),
+          })}
       >
         {coverImage ? (
           <Image source={{ uri: coverImage }} style={styles.cardImage} resizeMode="cover" />

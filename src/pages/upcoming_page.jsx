@@ -13,8 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useMediaType } from '../context/MediaTypeContext';
-import { getUpcomingAnime, formatAnimeData } from '../services/api_anime';
-import { getUpcomingGames } from '../services/api_games';
+import { getUpcomingAnime, formatAnimeData } from '../services/api_anilist';
+import { getUpcomingGames } from '../services/api_rawg';
 import { setWishlist as setWishlistService, getWishlist } from '../services/mediaStatusService';
 import SkeletonUpcoming from '../components/skeletons/SkeletonUpcoming';
 import {

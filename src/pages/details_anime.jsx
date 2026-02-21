@@ -25,7 +25,7 @@ import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMediaTheme } from '../utils/mediaThemes';
-import { getAnimeDetails, getStatusText } from '../services/api_anime';
+import { getAnimeDetails, getStatusText } from '../services/api_anilist';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
 import { getMediaStatus, setMediaStatus, setWishlist } from '../services/mediaStatusService';
 
