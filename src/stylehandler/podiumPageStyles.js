@@ -119,7 +119,7 @@ const gamesTheme = {
   // ─── Labels ──────────────────────────────────────────────
   headerTitle: 'Podium',
   headerSubtitle: 'Your gaming stats',
-  statusMediaType: 'game',
+  statusMediaType: 'games',
   countLabel: 'games',
 
   topGenresLabel: 'Top Genres',
