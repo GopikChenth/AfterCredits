@@ -1,129 +1,116 @@
-import React, { useState, useRef } from 'react';
-import { View, Pressable, Text, StyleSheet, Animated, Modal } from 'react-native';
+import React from 'react';
+import { View, Pressable, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const STATUS_OPTIONS = [
-  { key: null, label: 'Set Status', icon: 'add-circle-outline', bg: 'rgba(255,255,255,0.1)', border: 'rgba(255,255,255,0.2)', text: '#fff' },
-  { key: 'watching', label: 'Watching', icon: 'eye', bg: '#FFF3B0', border: '#F0E68C', text: '#7A6B00' },
-  { key: 'watched', label: 'Watched', icon: 'checkmark-circle', bg: '#B5EAD7', border: '#8FD4B4', text: '#1B6B3A' },
-  { key: 'dropped', label: 'Dropped', icon: 'close-circle', bg: '#FFB5B5', border: '#F09090', text: '#8B1A1A' },
+// Label sets per media type — DB keys never change, only display text does
+const STATUS_LABELS = {
+  games:  { watching: 'Playing',  watched: 'Completed', dropped: 'Dropped' },
+  anime:  { watching: 'Watching', watched: 'Completed', dropped: 'Dropped' },
+  movies: { watching: 'Watching', watched: 'Completed', dropped: 'Dropped' },
+};
+
+const STATUS_CONFIG = [
+  {
+    key: 'watching',
+    icon: 'game-controller-outline',
+    iconActive: 'game-controller',
+    color: '#FBBF24',
+    activeBg: 'rgba(251,191,36,0.18)',
+    activeBorder: 'rgba(251,191,36,0.5)',
+  },
+  {
+    key: 'watched',
+    icon: 'checkmark-circle-outline',
+    iconActive: 'checkmark-circle',
+    color: '#4ADE80',
+    activeBg: 'rgba(74,222,128,0.18)',
+    activeBorder: 'rgba(74,222,128,0.5)',
+  },
+  {
+    key: 'dropped',
+    icon: 'close-circle-outline',
+    iconActive: 'close-circle',
+    color: '#F87171',
+    activeBg: 'rgba(248,113,113,0.18)',
+    activeBorder: 'rgba(248,113,113,0.5)',
+  },
 ];
 
 /**
- * StatusTag - A single cycling status pill + wishlist pill
- * @param {string} status - Current status ('watching' | 'watched' | 'dropped' | null)
- * @param {boolean} isWishlisted - Whether item is in wishlist
- * @param {function} onStatusChange - Callback when status changes
- * @param {function} onWishlistToggle - Callback when wishlist is toggled
+ * StatusTag — 4 inline tappable chips: Playing/Watching, Completed, Dropped, Wishlist
+ * @param {string|null} status   - 'watching' | 'watched' | 'dropped' | null
+ * @param {boolean} isWishlisted
+ * @param {function} onStatusChange
+ * @param {function} onWishlistToggle
+ * @param {'games'|'anime'|'movies'} mediaType
  */
-const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle, mediaType = 'anime' }) => {
+  const labels = STATUS_LABELS[mediaType] || STATUS_LABELS.anime;
 
-  const currentStatus = STATUS_OPTIONS.find(s => s.key === status) || STATUS_OPTIONS[0];
-
-  const handleStatusSelect = (key) => {
-    // Animate press
-    Animated.sequence([
-      Animated.timing(scaleAnim, { toValue: 0.92, duration: 80, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
-    ]).start();
-
-    setShowDropdown(false);
-    onStatusChange(key);
-
-    // Auto-remove from wishlist when marked as watched
-    if (key === 'watched' && isWishlisted) {
-      onWishlistToggle(false);
+  // Use eye icon for anime/movies watching, game-controller for games
+  const resolvedConfig = STATUS_CONFIG.map(cfg => {
+    if (cfg.key === 'watching') {
+      return {
+        ...cfg,
+        icon: mediaType === 'games' ? 'game-controller-outline' : 'eye-outline',
+        iconActive: mediaType === 'games' ? 'game-controller' : 'eye',
+      };
     }
-  };
+    return cfg;
+  });
 
-  const handleWishlistPress = () => {
-    onWishlistToggle(!isWishlisted);
+  const handleStatusPress = (key) => {
+    // Toggle: tap active status to clear it
+    onStatusChange(status === key ? null : key);
   };
 
   return (
     <View style={styles.wrapper}>
-      {/* Status Pill */}
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <Pressable
-          style={[
-            styles.pill,
-            { backgroundColor: currentStatus.bg, borderColor: currentStatus.border },
-          ]}
-          onPress={() => setShowDropdown(true)}
-        >
-          <Ionicons name={currentStatus.icon} size={18} color={currentStatus.text} />
-          <Text style={[styles.pillLabel, { color: currentStatus.text }]}>
-            {currentStatus.label}
-          </Text>
-          <Ionicons name="chevron-down" size={14} color={currentStatus.text} style={{ marginLeft: 2 }} />
-        </Pressable>
-      </Animated.View>
+      {/* Status chips */}
+      {resolvedConfig.map((cfg) => {
+        const isActive = status === cfg.key;
+        return (
+          <Pressable
+            key={cfg.key}
+            style={[
+              styles.chip,
+              isActive
+                ? { backgroundColor: cfg.activeBg, borderColor: cfg.activeBorder }
+                : styles.chipInactive,
+            ]}
+            onPress={() => handleStatusPress(cfg.key)}
+          >
+            <Ionicons
+              name={isActive ? cfg.iconActive : cfg.icon}
+              size={16}
+              color={isActive ? cfg.color : 'rgba(255,255,255,0.45)'}
+            />
+            <Text style={[styles.chipLabel, { color: isActive ? cfg.color : 'rgba(255,255,255,0.45)' }]}>
+              {labels[cfg.key]}
+            </Text>
+          </Pressable>
+        );
+      })}
 
-      {/* Wishlist Pill */}
+      {/* Wishlist chip */}
       <Pressable
         style={[
-          styles.pill,
+          styles.chip,
           isWishlisted
-            ? { backgroundColor: '#D4BBFF', borderColor: '#B89AE8' }
-            : { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.2)' },
+            ? { backgroundColor: 'rgba(192,132,252,0.18)', borderColor: 'rgba(192,132,252,0.5)' }
+            : styles.chipInactive,
         ]}
-        onPress={handleWishlistPress}
+        onPress={() => onWishlistToggle(!isWishlisted)}
       >
         <Ionicons
           name={isWishlisted ? 'bookmark' : 'bookmark-outline'}
-          size={18}
-          color={isWishlisted ? '#5B2D8E' : '#fff'}
+          size={16}
+          color={isWishlisted ? '#C084FC' : 'rgba(255,255,255,0.45)'}
         />
-        <Text style={[styles.pillLabel, { color: isWishlisted ? '#5B2D8E' : '#fff' }]}>
+        <Text style={[styles.chipLabel, { color: isWishlisted ? '#C084FC' : 'rgba(255,255,255,0.45)' }]}>
           Wishlist
         </Text>
       </Pressable>
-
-      {/* Dropdown Modal */}
-      <Modal
-        visible={showDropdown}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDropdown(false)}
-      >
-        <Pressable style={styles.overlay} onPress={() => setShowDropdown(false)}>
-          <View style={styles.dropdown}>
-            <Text style={styles.dropdownTitle}>Set Status</Text>
-            {STATUS_OPTIONS.filter(s => s.key !== null).map((option) => (
-              <Pressable
-                key={option.key}
-                style={[
-                  styles.dropdownItem,
-                  { backgroundColor: option.bg, borderColor: option.border },
-                  status === option.key && styles.dropdownItemActive,
-                ]}
-                onPress={() => handleStatusSelect(option.key)}
-              >
-                <Ionicons name={option.icon} size={20} color={option.text} />
-                <Text style={[styles.dropdownItemLabel, { color: option.text }]}>
-                  {option.label}
-                </Text>
-                {status === option.key && (
-                  <Ionicons name="checkmark" size={18} color={option.text} style={{ marginLeft: 'auto' }} />
-                )}
-              </Pressable>
-            ))}
-
-            {/* Clear status option */}
-            {status && (
-              <Pressable
-                style={[styles.dropdownItem, { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.15)' }]}
-                onPress={() => handleStatusSelect(null)}
-              >
-                <Ionicons name="remove-circle-outline" size={20} color="#aaa" />
-                <Text style={[styles.dropdownItemLabel, { color: '#aaa' }]}>Clear Status</Text>
-              </Pressable>
-            )}
-          </View>
-        </Pressable>
-      </Modal>
     </View>
   );
 };
@@ -131,67 +118,27 @@ const StatusTag = ({ status, isWishlisted, onStatusChange, onWishlistToggle }) =
 const styles = StyleSheet.create({
   wrapper: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 38,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    gap: 6,
-    minWidth: 110,
-  },
-  pillLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dropdown: {
-    backgroundColor: '#1A1A2E',
-    borderRadius: 16,
-    padding: 16,
-    width: 260,
+    flexWrap: 'wrap',
     gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
-  dropdownTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
-    textAlign: 'center',
-    marginBottom: 4,
-    letterSpacing: 1,
-  },
-  dropdownItem: {
+  chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    gap: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
     borderWidth: 1.5,
-    gap: 10,
   },
-  dropdownItemActive: {
-    borderWidth: 2.5,
+  chipInactive: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
-  dropdownItemLabel: {
-    fontSize: 14,
+  chipLabel: {
+    fontSize: 12,
     fontWeight: '700',
     fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 });
 

@@ -204,7 +204,6 @@ const GameDetail = ({ route, navigation }) => {
 
   const handleStatusChange = async (newStatus) => {
     setUserStatus(newStatus);
-    if (newStatus === 'played' && isWishlisted) setIsWishlisted(false);
     await setMediaStatus('games', gameId, newStatus);
   };
 
