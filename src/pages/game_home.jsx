@@ -11,6 +11,7 @@ import {
   Image,
   Keyboard,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +19,15 @@ import { useMediaType } from '../context/MediaTypeContext';
 import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_rawg';
 import { searchMedia, debounce } from '../services/search';
 import SideBar from '../components/home_page/SideBar';
+import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.35;
 
 const GameHome = ({ navigation }) => {
   const { setMediaType } = useMediaType();
@@ -31,6 +35,9 @@ const GameHome = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState('trending');
   const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('game');
 
@@ -40,37 +47,56 @@ const GameHome = ({ navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
-  useEffect(() => {
-    loadGames();
-  }, [selectedCategory]);
-
-
-
-  const loadGames = async () => {
-    setLoading(true);
+  const loadGames = useCallback(async (category = selectedCategory, page = 1) => {
+    if (page === 1) setLoading(true);
+    else setIsLoadingMore(true);
     try {
       let data;
-      switch (selectedCategory) {
-        case 'trending':
-          data = await getTrendingGames(1, 10);
-          break;
+      switch (category) {
         case 'popular':
-          data = await getPopularGames(1, 10);
+          data = await getPopularGames(page, 20);
           break;
         case 'new':
-          data = await getNewReleases(1, 10);
+          data = await getNewReleases(page, 20);
           break;
+        case 'trending':
         default:
-          data = await getTrendingGames(1, 10);
+          data = await getTrendingGames(page, 20);
       }
       setGames(data.results || []);
+      setCurrentPage(page);
+      setHasMore(!!data.next); // RAWG returns next=null on last page
     } catch (error) {
       console.error('Error loading games:', error);
       setGames([]);
     } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    loadGames(selectedCategory, 1);
+  }, [selectedCategory]);
+
+  const handleCategoryChange = useCallback((category) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+    setHasMore(true);
+    loadGames(category, 1);
+  }, [loadGames]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      loadGames(selectedCategory, currentPage + 1);
+    }
+  }, [isLoadingMore, hasMore, currentPage, selectedCategory, loadGames]);
+
+  const handlePrevPage = useCallback(() => {
+    if (!isLoadingMore && currentPage > 1) {
+      loadGames(selectedCategory, currentPage - 1);
+    }
+  }, [isLoadingMore, currentPage, selectedCategory, loadGames]);
 
   // ── Search handlers ─────────────────────────────────────────────────────
 
@@ -153,277 +179,152 @@ const GameHome = ({ navigation }) => {
       </View>
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Show full inline results when Enter is pressed */}
-          {isSearchSubmitted ? (
-            <InlineSearchResults
-              results={searchResults}
-              isLoading={isSearching}
-              searchQuery={searchQuery}
-              onResultPress={handleSearchResultPress}
-              onClearSearch={handleSearchCancel}
-              theme={{ accent: '#A78BFA' }}
-            />
-          ) : (
-            <>
-          {/* Retro Header */}
-          <View style={styles.header}>
+
+        {/* ── Header ── */}
+        <View style={styles.header}>
+          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)}>
+            <LinearGradient colors={['#7C3AED', '#A78BFA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
+              <Ionicons name="menu" size={24} color="#E2E8F0" />
+            </LinearGradient>
+          </Pressable>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>GAMES</Text>
+            <View style={styles.titleGlow} />
+          </View>
+          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')}>
+            <LinearGradient colors={['#F43F5E', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
+              <Ionicons name="person" size={24} color="#E2E8F0" />
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        {/* ── Category arcade buttons ── */}
+        <View style={styles.categoryContainer}>
+          {['trending', 'popular', 'new'].map((category) => (
             <Pressable
-              style={styles.menuButton}
-              onPress={() => setIsSidebarVisible(!isSidebarVisible)}
+              key={category}
+              onPress={() => handleCategoryChange(category)}
+              style={({ pressed }) => [
+                styles.categoryButton,
+                selectedCategory === category && styles.categoryButtonActive,
+                pressed && styles.categoryButtonPressed,
+              ]}
             >
               <LinearGradient
-                colors={['#7C3AED', '#A78BFA']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.neonButton}
+                colors={selectedCategory === category ? ['#7C3AED', '#A78BFA'] : ['#1E1E3F', '#2A2A5A']}
+                start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+                style={styles.categoryGradient}
               >
-                <Ionicons name="menu" size={24} color="#E2E8F0" />
+                <View style={styles.categoryHighlight} />
+                <View style={styles.categoryFace}>
+                  <Text style={[styles.categoryText, selectedCategory === category && styles.categoryTextActive]}>
+                    {category.toUpperCase()}
+                  </Text>
+                </View>
+                {selectedCategory === category && <View style={styles.categoryGlow} />}
               </LinearGradient>
             </Pressable>
+          ))}
+        </View>
 
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>GAMES</Text>
-              <View style={styles.titleGlow} />
-            </View>
-
-            <Pressable
-              style={styles.profileButton}
-              onPress={() => navigation.navigate('ProfilePage')}
-            >
-              <LinearGradient
-                colors={['#F43F5E', '#EC4899']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.neonButton}
-              >
-                <Ionicons name="person" size={24} color="#E2E8F0" />
-              </LinearGradient>
-            </Pressable>
-          </View>
-
-          {/* Category Pills - Skeuomorphic Arcade Buttons */}
-          <View style={styles.categoryContainer}>
-            {['trending', 'popular', 'new'].map((category) => (
-              <Pressable
-                key={category}
-                onPress={() => setSelectedCategory(category)}
-                style={({ pressed }) => [
-                  styles.categoryButton,
-                  selectedCategory === category && styles.categoryButtonActive,
-                  pressed && styles.categoryButtonPressed,
-                ]}
-              >
-                <LinearGradient
-                  colors={
-                    selectedCategory === category
-                      ? ['#7C3AED', '#A78BFA']
-                      : ['#1E1E3F', '#2A2A5A']
-                  }
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.categoryGradient}
+        {/* ── Search submitted → inline results ── */}
+        {isSearchSubmitted ? (
+          <InlineSearchResults
+            results={searchResults}
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            onResultPress={handleSearchResultPress}
+            onClearSearch={handleSearchCancel}
+            theme={{ accent: '#A78BFA' }}
+          />
+        ) : loading || isLoadingMore ? (
+          <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
+        ) : (
+          <View style={styles.listWrapper}>
+            <FlashList
+              data={games}
+              keyExtractor={(item) => item.id.toString()}
+              estimatedItemSize={CARD_HEIGHT + 12}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.flashListContent}
+              renderItem={({ item: game }) => (
+                <Pressable
+                  style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
+                  onPress={() => navigation.navigate('DetailsGames', {
+                    gameId: game.id,
+                    gameName: game.name,
+                    coverImage: game.background_image,
+                    rating: game.rating,
+                    metacritic: game.metacritic,
+                    genres: game.genres?.map(g => g.name) || [],
+                    playtime: game.playtime,
+                    esrbRating: game.esrb_rating?.name || 'Not Rated',
+                  })}
                 >
-                  {/* Top Highlight */}
-                  <View style={styles.categoryHighlight} />
-                  
-                  {/* Button Face */}
-                  <View style={styles.categoryFace}>
-                    <Text
-                      style={[
-                        styles.categoryText,
-                        selectedCategory === category && styles.categoryTextActive,
-                      ]}
-                    >
-                      {category.toUpperCase()}
-                    </Text>
-                  </View>
-
-                  {/* Neon Glow */}
-                  {selectedCategory === category && (
-                    <View style={styles.categoryGlow} />
+                  {/* Cover */}
+                  {game.background_image ? (
+                    <Image source={{ uri: game.background_image }} style={styles.cardImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.cardImage, styles.cardPlaceholder]}>
+                      <Ionicons name="game-controller-outline" size={32} color="rgba(167,139,250,0.3)" />
+                    </View>
                   )}
-                </LinearGradient>
-              </Pressable>
-            ))}
-          </View>
 
-          {/* Featured Game - Holographic Card */}
-          {!loading && games.length > 0 && (
-            <View style={styles.featuredSection}>
-              <Text style={styles.sectionTitle}>FEATURED</Text>
-              <Pressable
-                style={styles.featuredCard}
-                onPress={() => navigation.navigate('DetailsGames', {
-                  gameId: games[0].id,
-                  gameName: games[0].name,
-                  coverImage: games[0].background_image,
-                  rating: games[0].rating,
-                  metacritic: games[0].metacritic,
-                  genres: games[0].genres?.map(g => g.name) || [],
-                  playtime: games[0].playtime,
-                  esrbRating: games[0].esrb_rating?.name || 'Not Rated',
-                })}
-              >
-                <LinearGradient
-                  colors={['#7C3AED20', '#F43F5E20']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.featuredGradient}
-                >
-                  {/* Holographic Border */}
-                  <View style={styles.holoBorder} />
-                  
-                  {/* Game Cover Image */}
-                  {games[0].background_image && (
-                    <Image
-                      source={{ uri: games[0].background_image }}
-                      style={styles.featuredImage}
-                    />
-                  )}
-                  
-                  {/* Dark overlay for text readability */}
+                  {/* Gradient overlay */}
                   <LinearGradient
-                    colors={['transparent', 'rgba(15,15,35,0.7)', 'rgba(15,15,35,0.95)']}
-                    style={styles.featuredImageOverlay}
+                    colors={['transparent', 'rgba(15,15,35,0.82)', 'rgba(15,15,35,0.97)']}
+                    style={styles.cardOverlay}
                   />
 
-                  <View style={styles.featuredContent}>
-                    <Text style={styles.featuredTitle} numberOfLines={2}>
-                      {games[0].name}
-                    </Text>
-                    
-                    {/* Metacritic Score Badge */}
-                    {games[0].metacritic && (
-                      <View style={styles.scoreBadge}>
-                        <LinearGradient
-                          colors={
-                            games[0].metacritic >= 75
-                              ? ['#10B981', '#059669']
-                              : games[0].metacritic >= 50
-                              ? ['#FFBE0B', '#F59E0B']
-                              : ['#EF4444', '#DC2626']
-                          }
-                          style={styles.scoreGradient}
-                        >
-                          <Text style={styles.scoreText}>{games[0].metacritic}</Text>
-                        </LinearGradient>
-                      </View>
-                    )}
+                  {/* Metacritic badge */}
+                  {game.metacritic && (
+                    <View style={[
+                      styles.metacriticBadge,
+                      { backgroundColor: game.metacritic >= 75 ? '#10B981' : game.metacritic >= 50 ? '#FFBE0B' : '#EF4444' },
+                    ]}>
+                      <Text style={styles.metacriticText}>{game.metacritic}</Text>
+                    </View>
+                  )}
 
-                    {/* Platform Badges */}
-                    <View style={styles.platformRow}>
-                      {games[0].platforms?.slice(0, 3).map((p, idx) => (
-                        <View key={idx} style={styles.platformBadge}>
-                          <Text style={styles.platformText}>
-                            {p.platform.name.substring(0, 3).toUpperCase()}
-                          </Text>
-                        </View>
+                  {/* Info */}
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{game.name}</Text>
+                    <View style={styles.ratingRow}>
+                      {[...Array(5)].map((_, i) => (
+                        <Ionicons key={i} name={i < Math.round(game.rating) ? 'star' : 'star-outline'} size={11} color="#FFBE0B" />
                       ))}
                     </View>
                   </View>
-                </LinearGradient>
-              </Pressable>
-            </View>
-          )}
 
-          {/* Game Grid - Arcade Cabinet Style */}
-          <View style={styles.gridSection}>
-            <Text style={styles.sectionTitle}>
-              {selectedCategory.toUpperCase()} GAMES
-            </Text>
+                  {/* Neon bottom accent */}
+                  <View style={styles.cardAccent} />
+                </Pressable>
+              )}
+              ListFooterComponent={
+                (currentPage > 1 || hasMore) ? (
+                  <View style={styles.paginationContainer}>
+                    {currentPage > 1 ? (
+                      <Pressable style={styles.pageButton} onPress={handlePrevPage}>
+                        <Ionicons name="chevron-back" size={16} color="#A78BFA" />
+                        <Text style={styles.pageButtonText}>Prev</Text>
+                      </Pressable>
+                    ) : <View style={styles.pageButtonPlaceholder} />}
 
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#7C3AED" />
-                <Text style={styles.loadingText}>LOADING...</Text>
-              </View>
-            ) : (
-              <View style={styles.gameGrid}>
-                {games.slice(1).map((game, index) => (
-                  <Pressable
-                    key={game.id}
-                    style={({ pressed }) => [
-                      styles.gameCard,
-                      pressed && styles.gameCardPressed,
-                    ]}
-                    onPress={() => navigation.navigate('DetailsGames', {
-                      gameId: game.id,
-                      gameName: game.name,
-                      coverImage: game.background_image,
-                      rating: game.rating,
-                      metacritic: game.metacritic,
-                      genres: game.genres?.map(g => g.name) || [],
-                      playtime: game.playtime,
-                      esrbRating: game.esrb_rating?.name || 'Not Rated',
-                    })}
-                  >
-                    <LinearGradient
-                      colors={['#1E1E3F', '#2A2A5A']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 0, y: 1 }}
-                      style={styles.cardGradient}
-                    >
-                      {/* Arcade Screen Bezel */}
-                      <View style={styles.cardBezel}>
-                        {/* Game Cover Image */}
-                        {game.background_image && (
-                          <Image
-                            source={{ uri: game.background_image }}
-                            style={styles.cardImage}
-                          />
-                        )}
-                        
-                        {/* Gradient overlay for text readability */}
-                        <LinearGradient
-                          colors={['transparent', 'rgba(15,15,35,0.85)', 'rgba(15,15,35,0.98)']}
-                          style={styles.cardImageOverlay}
-                        />
-                        
-                        {/* Game Info */}
-                        <View style={styles.cardContent}>
-                          <Text style={styles.cardTitle} numberOfLines={2}>
-                            {game.name}
-                          </Text>
+                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
 
-                          {/* Rating Stars */}
-                          <View style={styles.ratingRow}>
-                            {[...Array(5)].map((_, i) => (
-                              <Ionicons
-                                key={i}
-                                name={i < Math.round(game.rating) ? 'star' : 'star-outline'}
-                                size={12}
-                                color="#FFBE0B"
-                              />
-                            ))}
-                          </View>
-
-                          {/* Metacritic Mini Badge */}
-                          {game.metacritic && (
-                            <View style={styles.miniScoreBadge}>
-                              <Text style={styles.miniScoreText}>
-                                {game.metacritic}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-
-                        {/* Neon Accent Line */}
-                        <View style={styles.cardAccent} />
-                      </View>
-                    </LinearGradient>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+                    {hasMore ? (
+                      <Pressable style={styles.pageButton} onPress={handleLoadMore}>
+                        <Text style={styles.pageButtonText}>Next</Text>
+                        <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
+                      </Pressable>
+                    ) : <View style={styles.pageButtonPlaceholder} />}
+                  </View>
+                ) : null
+              }
+            />
           </View>
-            </>
-          )}
-        </ScrollView>
+        )}
       </SafeAreaView>
 
       {/* Search Bar */}
@@ -748,10 +649,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   gameCard: {
-    width: (SCREEN_WIDTH - 48) / 2,
-    height: 180,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     borderRadius: 12,
     overflow: 'hidden',
+    margin: 6,
   },
   gameCardPressed: {
     transform: [{ scale: 0.95 }],
@@ -790,9 +692,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#00000040',
   },
   cardContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
   },
   cardTitle: {
     fontFamily: 'System',
@@ -927,6 +831,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginTop: 24,
     paddingBottom: 24,
+  },
+
+  // ── FlashList grid ──
+  listWrapper: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  flashListContent: {
+    paddingBottom: 100,
+    paddingTop: 8,
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  cardPlaceholder: {
+    backgroundColor: '#1E1E3F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metacriticBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  metacriticText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#fff',
+  },
+
+  // ── Pagination row ──
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 8,
+  },
+  pageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(124,58,237,0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.35)',
+    minWidth: 90,
+    justifyContent: 'center',
+  },
+  pageButtonPlaceholder: {
+    minWidth: 90,
+  },
+  pageButtonText: {
+    color: '#A78BFA',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  pageIndicator: {
+    color: '#888',
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
 });
 
