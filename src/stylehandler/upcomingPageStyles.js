@@ -278,7 +278,7 @@ const moviesTheme = {
   fontFamily: 'System',
   headerTitle: 'Upcoming Movies',
   headerSubtitle: 'Sorted by nearest release',
-  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
+  detailsRoute: 'DetailsMovies',
   mediaKey: 'movies',
 };
 

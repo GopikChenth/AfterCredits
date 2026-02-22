@@ -21,6 +21,7 @@ import { getUpcomingGames, formatGameData } from "../services/api_rawg";
 import { getGamingNews } from "../services/news_games";
 // Movies services
 import { getMovieNews } from "../services/news_movies";
+import { getUpcomingMovies, formatMovieData } from "../services/api_movies";
 // Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";
@@ -92,7 +93,19 @@ const DiscoverPage = ({ navigation }) => {
     try {
       setLoading(true);
 
-      if (isGames) {
+      if (isMovies) {
+        // TMDB API — upcoming movies
+        const result = await getUpcomingMovies(1, 20);
+        if (result?.results) {
+          // Sort by release date (nearest first)
+          const sorted = result.results.sort((a, b) => {
+            const dateA = a.year || 9999;
+            const dateB = b.year || 9999;
+            return dateA - dateB;
+          });
+          setUpcomingItems(sorted);
+        }
+      } else if (isGames) {
         // RAWG API — upcoming games
         const result = await getUpcomingGames(1, 20);
         if (result?.results) {
@@ -148,7 +161,7 @@ const DiscoverPage = ({ navigation }) => {
     } else {
       setWishlistedIds(prev => [...prev, itemId]);
     }
-    const type = isGames ? 'games' : 'anime';
+    const type = isGames ? 'games' : isMovies ? 'movies' : 'anime';
     const result = await setWishlistService(type, String(itemId), !currentlyWishlisted);
     if (!result.success) {
       // Revert on failure
@@ -169,6 +182,9 @@ const DiscoverPage = ({ navigation }) => {
       const d = new Date(item.released);
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
+    if (isMovies) {
+      return item.year ? `${item.year}` : 'TBA';
+    }
     // Anime
     if (item.season && item.year) return `${item.season} ${item.year}`;
     if (item.year) return `${item.year}`;
@@ -183,9 +199,12 @@ const DiscoverPage = ({ navigation }) => {
       const devs = item.developers?.join(', ');
       return devs || null;
     }
+    if (isMovies) {
+      return item.description ? item.description.substring(0, 80) + '…' : null;
+    }
     return item.studio || null;
   };
-  const getSubInfoIcon = () => isGames ? 'code-slash-outline' : 'business-outline';
+  const getSubInfoIcon = () => isGames ? 'code-slash-outline' : isMovies ? 'film-outline' : 'business-outline';
 
   const handleCardPress = (itemId) => {
     setExpandedItemId(expandedItemId === itemId ? null : itemId);
@@ -268,7 +287,13 @@ const DiscoverPage = ({ navigation }) => {
                             gameName: item.name,
                             coverImage: item.coverImage,
                           })
-                        : navigation.navigate('DetailsAnime', { animeId: item.id })
+                        : isMovies
+                          ? navigation.navigate('DetailsMovies', {
+                              movieId: item.id,
+                              movieTitle: item.title,
+                              coverImage: item.coverImage,
+                            })
+                          : navigation.navigate('DetailsAnime', { animeId: item.id })
                     }
                   >
                     <Text style={styles.viewDetailsText}>View Details</Text>

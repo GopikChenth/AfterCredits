@@ -1,103 +1,139 @@
 /**
- * Movie API Service (Mock)
- * Placeholder service for Movie data until TMDB integration
+ * Movie API Service — TMDB v3
+ * Fetches trending, popular, now-playing, and search results from The Movie Database.
  */
+import axios from 'axios';
 
-// Mock Data
-const MOCK_MOVIES = [
-  {
-    id: 1,
-    title: "Dune: Part Two",
-    year: 2024,
-    coverImage: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
-    description: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.",
-    score: 85,
-    popularity: 95000,
-  },
-  {
-    id: 2,
-    title: "Oppenheimer",
-    year: 2023,
-    coverImage: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-    description: "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
-    score: 81,
-    popularity: 88000,
-  },
-  {
-    id: 3,
-    title: "The Batman",
-    year: 2022,
-    coverImage: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50x9T2Ov8lW.jpg",
-    description: "In his second year of fighting crime, Batman uncovers corruption in Gotham City that connects to his own family while facing a serial killer known as the Riddler.",
-    score: 77,
-    popularity: 72000,
-  },
-  {
-    id: 4,
-    title: "Spider-Man: Across the Spider-Verse",
-    year: 2023,
-    coverImage: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
-    description: "After reuniting with Gwen Stacy, Brooklyn's full-time, friendly neighborhood Spider-Man is catapulted across the Multiverse.",
-    score: 84,
-    popularity: 90000,
-  },
-  {
-    id: 5,
-    title: "Interstellar",
-    year: 2014,
-    coverImage: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-    description: "The adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel.",
-    score: 86,
-    popularity: 92000,
-  },
-  {
-    id: 6,
-    title: "Inception",
-    year: 2010,
-    coverImage: "https://image.tmdb.org/t/p/w500/9gk7admal4zl248sKidtwi9x3Oq.jpg",
-    description: "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life.",
-    score: 83,
-    popularity: 98000,
-  },
-];
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY;
+const IMG_BASE = 'https://image.tmdb.org/t/p/w500';
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// ── helpers ──────────────────────────────────────────────────────────
+
+const tmdb = axios.create({
+  baseURL: TMDB_BASE,
+  params: { api_key: API_KEY, language: 'en-US' },
+});
+
+/**
+ * Normalise a TMDB movie object into the shape the app expects.
+ */
+export const formatMovieData = (movie) => ({
+  id: movie.id,
+  title: movie.title || movie.original_title || 'Untitled',
+  year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+  coverImage: movie.poster_path ? `${IMG_BASE}${movie.poster_path}` : null,
+  backdropImage: movie.backdrop_path ? `${IMG_BASE}${movie.backdrop_path}` : null,
+  description: movie.overview || '',
+  score: movie.vote_average ? Math.round(movie.vote_average * 10) : 0, // 0-100 scale
+  popularity: Math.round(movie.popularity) || 0,
+  type: 'MOVIE',
+});
+
+// ── public API ───────────────────────────────────────────────────────
 
 export const getTrendingMovies = async (page = 1, perPage = 20) => {
-  await delay(800); // Simulate network latency
-  return { media: MOCK_MOVIES };
+  try {
+    const { data } = await tmdb.get('/trending/movie/week', { params: { page } });
+    return {
+      media: data.results.map(formatMovieData),
+      pageInfo: {
+        currentPage: data.page,
+        totalPages: data.total_pages,
+        hasNextPage: data.page < data.total_pages,
+      },
+    };
+  } catch (err) {
+    console.error('TMDB getTrendingMovies error:', err.message);
+    throw err;
+  }
 };
 
 export const getPopularMovies = async (page = 1, perPage = 20) => {
-  await delay(800);
-  return { media: [...MOCK_MOVIES].reverse() };
+  try {
+    const { data } = await tmdb.get('/movie/popular', { params: { page } });
+    return {
+      media: data.results.map(formatMovieData),
+      pageInfo: {
+        currentPage: data.page,
+        totalPages: data.total_pages,
+        hasNextPage: data.page < data.total_pages,
+      },
+    };
+  } catch (err) {
+    console.error('TMDB getPopularMovies error:', err.message);
+    throw err;
+  }
 };
 
 export const getNewMovies = async (page = 1, perPage = 20) => {
-  await delay(800);
-  return { media: MOCK_MOVIES.slice(0, 3) };
+  try {
+    const { data } = await tmdb.get('/movie/now_playing', { params: { page } });
+    return {
+      media: data.results.map(formatMovieData),
+      pageInfo: {
+        currentPage: data.page,
+        totalPages: data.total_pages,
+        hasNextPage: data.page < data.total_pages,
+      },
+    };
+  } catch (err) {
+    console.error('TMDB getNewMovies error:', err.message);
+    throw err;
+  }
 };
 
-export const formatMovieData = (movie) => {
-  return {
-    id: movie.id,
-    title: movie.title,
-    year: movie.year,
-    coverImage: movie.coverImage,
-    description: movie.description,
-    score: movie.score,
-    popularity: movie.popularity || 0,
-    type: 'MOVIE'
-  };
+export const searchMovies = async (query, page = 1, perPage = 20) => {
+  try {
+    const { data } = await tmdb.get('/search/movie', {
+      params: { query, page, include_adult: false },
+    });
+    return {
+      media: data.results.map(formatMovieData),
+      pageInfo: {
+        currentPage: data.page,
+        totalPages: data.total_pages,
+        hasNextPage: data.page < data.total_pages,
+      },
+    };
+  } catch (err) {
+    console.error('TMDB searchMovies error:', err.message);
+    throw err;
+  }
 };
 
-export const searchMovies = async (searchTerm, page = 1, perPage = 20) => {
-  await delay(600);
-  // Filter mock movies by search term
-  const filtered = MOCK_MOVIES.filter(movie => 
-    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  return { media: filtered };
+export const getMovieDetails = async (movieId) => {
+  try {
+    const { data } = await tmdb.get(`/movie/${movieId}`, {
+      params: { append_to_response: 'credits,recommendations,reviews,videos,images' },
+    });
+    return data;
+  } catch (err) {
+    console.error('TMDB getMovieDetails error:', err.message);
+    throw err;
+  }
+};
+
+/**
+ * Upcoming movies (future release dates).
+ * Uses TMDB's /movie/upcoming endpoint which returns movies with
+ * release dates in the near future.
+ */
+export const getUpcomingMovies = async (page = 1, perPage = 20) => {
+  try {
+    const { data } = await tmdb.get('/movie/upcoming', { params: { page } });
+    return {
+      results: data.results.map(formatMovieData),
+      pageInfo: {
+        currentPage: data.page,
+        totalPages: data.total_pages,
+        hasNextPage: data.page < data.total_pages,
+      },
+    };
+  } catch (err) {
+    console.error('TMDB getUpcomingMovies error:', err.message);
+    throw err;
+  }
 };
 
 export default {
@@ -105,5 +141,7 @@ export default {
   getPopularMovies,
   getNewMovies,
   searchMovies,
-  formatMovieData
+  getMovieDetails,
+  getUpcomingMovies,
+  formatMovieData,
 };

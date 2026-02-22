@@ -11,6 +11,7 @@ import SkeletonPodiumList from '../components/skeletons/SkeletonPodiumList';
 // ─── Services ──────────────────────────────────────────────
 import { getAnimeDetails, formatAnimeData } from '../services/api_anilist';
 import { getGameDetails, formatGameData } from '../services/api_rawg';
+import { getMovieDetails, formatMovieData } from '../services/api_movies';
 
 /**
  * ╔═══════════════════════════════════════════════════════════════╗
@@ -188,15 +189,15 @@ const moviesTheme = {
   // ─── Labels ──────────────────────────────────────────────
   headerTitle: 'Podium',
   headerSubtitle: 'Your movie stats',
-  statusMediaType: 'movie',
+  statusMediaType: 'movies',
   countLabel: 'movies',
 
   topGenresLabel: 'Top Genres',
-  topSecondaryLabel: 'Top Directors',
+  topSecondaryLabel: 'Top Production',
   genreEmptyMessage: 'No genre data available yet',
-  secondaryEmptyMessage: 'No director data available yet',
+  secondaryEmptyMessage: 'No production data available yet',
 
-  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
+  detailsRoute: 'DetailsMovies',
 
   // ─── Components ──────────────────────────────────────────
   components: {
@@ -209,15 +210,22 @@ const moviesTheme = {
   },
 
   // ─── Service functions ───────────────────────────────────
-  // TODO: Replace with movie API functions when available
   services: {
-    fetchDetails: (mediaId) => null,
-    formatData: (result) => result,
+    fetchDetails: (mediaId) => getMovieDetails(mediaId),
+    formatData: (result) => ({
+      id: result.id,
+      title: result.title || result.original_title || 'Untitled',
+      coverImage: result.poster_path
+        ? `https://image.tmdb.org/t/p/w500${result.poster_path}`
+        : null,
+      genres: (result.genres || []).map(g => g.name),
+      productionCompanies: (result.production_companies || []).map(c => c.name),
+    }),
   },
 
   // ─── Data extraction ────────────────────────────────────
   extractGenres: (detail) => detail?.genres || [],
-  extractSecondary: (detail) => detail?.directors || [],
+  extractSecondary: (detail) => detail?.productionCompanies || [],
   extractTitle: (detail) => detail?.title || 'Loading...',
   extractCover: (detail) => detail?.coverImage,
 

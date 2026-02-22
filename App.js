@@ -15,6 +15,7 @@ import PodiumPage from './src/pages/podium_page';
 // Stack Pages (pushed on top when needed)
 import DetailsAnime from './src/pages/details_anime';
 import DetailsGames from './src/pages/details_games';
+import DetailsMovies from './src/pages/details_movies';
 import ReviewPage from './src/pages/review_anime';
 import UpcomingPage from './src/pages/upcoming_page';
 import NewsPage from './src/pages/news_page';
@@ -82,6 +83,7 @@ export default function App() {
             {/* Push screens (on top of tabs) */}
             <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
             <Stack.Screen name="DetailsGames" component={DetailsGames} />
+            <Stack.Screen name="DetailsMovies" component={DetailsMovies} />
             <Stack.Screen name="ReviewAnime" component={ReviewPage} />
             <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
             <Stack.Screen name="NewsPage" component={NewsPage} />

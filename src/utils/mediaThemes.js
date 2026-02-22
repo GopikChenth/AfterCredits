@@ -52,9 +52,9 @@ export const MEDIA_THEMES = {
   },
   movie: {
     name: 'Movies',
-    accent: '#FF9AA2',      // Pastel Red/Coral
-    accentLight: '#FFDAC1', // Pastel Peach
-    accentGlow: 'rgba(255, 154, 162, 0.6)',
+    accent: '#FF6B35',      // Sunset Orange
+    accentLight: '#FFB347', // Amber
+    accentGlow: 'rgba(255, 107, 53, 0.6)',
     headingFont: 'Arial',
     contentFont: 'Arial',
   },

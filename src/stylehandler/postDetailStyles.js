@@ -142,7 +142,7 @@ const moviesTheme = {
   gridImageBg: '#2A1A0E',
   fontFamily: 'System',
   fontFamilyBold: 'System',
-  detailsRoute: 'DetailsAnime', // TODO: replace with DetailsMovies
+  detailsRoute: 'DetailsMovies',
 };
 
 
