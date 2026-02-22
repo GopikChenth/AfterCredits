@@ -169,6 +169,7 @@ const UpcomingPage = ({ navigation }) => {
 
     const expandedStyle = isExpanded ? {
       width: EXPANDED_WIDTH,
+      height: CARD_HEIGHT * 1.25,
       zIndex: 1000,
       ...(isRightColumn ? { marginLeft: -(EXPANDED_WIDTH - CARD_WIDTH) } : {}),
     } : {};
