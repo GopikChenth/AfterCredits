@@ -1,1136 +1,10 @@
 {
-  "version": "2.6",
+  "version": "2.8",
   "children": [
     {
       "type": "frame",
-      "id": "UwgNe",
-      "x": 0,
-      "y": 0,
-      "name": "Home Screen",
-      "clip": true,
-      "width": 402,
-      "height": 874,
-      "fill": "$bg",
-      "layout": "vertical",
-      "children": [
-        {
-          "type": "frame",
-          "id": "iMiLD",
-          "name": "Status Bar",
-          "width": "fill_container",
-          "height": 62,
-          "fill": "$bg",
-          "padding": [
-            21,
-            33,
-            0,
-            33
-          ],
-          "justifyContent": "space_between",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "PxX9W",
-              "name": "statusTime",
-              "fill": "$text",
-              "content": "9:41",
-              "fontFamily": "Inter",
-              "fontSize": 15,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "mnXk5",
-              "name": "statusIcons",
-              "width": 77,
-              "height": 13
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "XoDtC",
-          "name": "Content",
-          "width": "fill_container",
-          "layout": "vertical",
-          "gap": 20,
-          "padding": [
-            0,
-            24
-          ],
-          "children": [
-            {
-              "type": "frame",
-              "id": "RSZhx",
-              "name": "Header",
-              "width": "fill_container",
-              "justifyContent": "space_between",
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "text",
-                  "id": "7fMHX",
-                  "name": "headerTitle",
-                  "fill": "$text",
-                  "content": "Discover",
-                  "lineHeight": 1.05,
-                  "fontFamily": "Inter",
-                  "fontSize": 36,
-                  "fontWeight": "600",
-                  "letterSpacing": -0.5
-                },
-                {
-                  "type": "frame",
-                  "id": "Y9mf7",
-                  "name": "notifBtn",
-                  "width": 44,
-                  "height": 44,
-                  "fill": "$surface",
-                  "cornerRadius": 12,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "0tO6k",
-                      "name": "notifIcon",
-                      "width": 20,
-                      "height": 20,
-                      "iconFontName": "bell",
-                      "iconFontFamily": "lucide",
-                      "fill": "$text"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "nSrb5",
-              "name": "Search",
-              "width": "fill_container",
-              "height": 50,
-              "fill": "$surface",
-              "cornerRadius": 12,
-              "gap": 12,
-              "padding": [
-                0,
-                16
-              ],
-              "alignItems": "center",
-              "children": [
-                {
-                  "type": "icon_font",
-                  "id": "xdqUU",
-                  "name": "searchIcon",
-                  "width": 18,
-                  "height": 18,
-                  "iconFontName": "search",
-                  "iconFontFamily": "lucide",
-                  "fill": "$text-muted"
-                },
-                {
-                  "type": "text",
-                  "id": "PXTdq",
-                  "name": "searchText",
-                  "fill": "$text-muted",
-                  "content": "Search anime...",
-                  "fontFamily": "Inter",
-                  "fontSize": 14,
-                  "fontWeight": "normal"
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "EK19O",
-              "name": "Metrics Section",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 14,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "W75Z5",
-                  "name": "metricsHeader",
-                  "fill": "$text",
-                  "content": "Your stats",
-                  "fontFamily": "Inter",
-                  "fontSize": 14,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "frame",
-                  "id": "pqt3Y",
-                  "name": "metricsRow",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "PZKDD",
-                      "name": "Watched Card",
-                      "width": "fill_container",
-                      "fill": "$surface",
-                      "cornerRadius": 16,
-                      "layout": "vertical",
-                      "gap": 12,
-                      "padding": [
-                        20,
-                        18
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "ADwcC",
-                          "name": "metric1Val",
-                          "fill": "$text",
-                          "content": "247",
-                          "fontFamily": "Inter",
-                          "fontSize": 32,
-                          "fontWeight": "600",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "text",
-                          "id": "HqyZy",
-                          "name": "metric1Label",
-                          "fill": "$text-secondary",
-                          "content": "Anime watched",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "8bhQj",
-                      "name": "Hours Card",
-                      "width": "fill_container",
-                      "fill": "$surface",
-                      "cornerRadius": 16,
-                      "layout": "vertical",
-                      "gap": 12,
-                      "padding": [
-                        20,
-                        18
-                      ],
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "I2uhx",
-                          "name": "metric2Val",
-                          "fill": "$text",
-                          "content": "1,847",
-                          "fontFamily": "Inter",
-                          "fontSize": 32,
-                          "fontWeight": "600",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "text",
-                          "id": "vH7Wo",
-                          "name": "metric2Label",
-                          "fill": "$text-secondary",
-                          "content": "Hours watched",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "TEiCJ",
-              "name": "Trending Section",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 14,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "I0VjF",
-                  "name": "trendingHeader",
-                  "width": "fill_container",
-                  "justifyContent": "space_between",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "aaCoQ",
-                      "name": "trendingTitle",
-                      "fill": "$text",
-                      "content": "Trending this week",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "tIJdR",
-                      "name": "viewAllLink",
-                      "fill": "$accent",
-                      "content": "View all",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "o7pae",
-                  "name": "animeCardsRow",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "KtCqm",
-                      "name": "Anime Card 1",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "mclee",
-                        "link": "https://unsplash.com/@mclee",
-                        "author": "MChe Lee"
-                      },
-                      "width": 160,
-                      "height": 240,
-                      "fill": {
-                        "type": "image",
-                        "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1581077332445-2058161b194f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzAxOTgwMDd8&ixlib=rb-4.1.0&q=80&w=1080",
-                        "mode": "fill"
-                      },
-                      "cornerRadius": 16
-                    },
-                    {
-                      "type": "frame",
-                      "id": "oT9jE",
-                      "name": "Anime Card 2",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "susannschuster",
-                        "link": "https://unsplash.com/@susannschuster",
-                        "author": "Susann Schuster"
-                      },
-                      "width": 160,
-                      "height": 240,
-                      "fill": {
-                        "type": "image",
-                        "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1625189659340-887baac3ea32?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzAxOTgwMDh8&ixlib=rb-4.1.0&q=80&w=1080",
-                        "mode": "fill"
-                      },
-                      "cornerRadius": 16,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "$border"
-                      }
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "j9NWR",
-              "name": "Recent Activity",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 14,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "TAaTk",
-                  "name": "recentHeader",
-                  "fill": "$text",
-                  "content": "Recent activity",
-                  "fontFamily": "Inter",
-                  "fontSize": 14,
-                  "fontWeight": "600"
-                },
-                {
-                  "type": "frame",
-                  "id": "QtBW7",
-                  "name": "Activity Card",
-                  "width": "fill_container",
-                  "fill": "$surface",
-                  "cornerRadius": 16,
-                  "layout": "vertical",
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "eAW7D",
-                      "name": "activityRow1",
-                      "width": "fill_container",
-                      "gap": 14,
-                      "padding": 16,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "GLpDf",
-                          "name": "activityAvatar1",
-                          "width": 40,
-                          "height": 40,
-                          "fill": "$accent-soft",
-                          "cornerRadius": 20
-                        },
-                        {
-                          "type": "frame",
-                          "id": "gw3Kd",
-                          "name": "activityContent1",
-                          "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 2,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "8w29Z",
-                              "name": "activityTitle1",
-                              "fill": "$text",
-                              "content": "Started watching Attack on Titan",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "text",
-                              "id": "vtE8Z",
-                              "name": "activityMeta1",
-                              "fill": "$text-muted",
-                              "content": "2 hours ago",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "normal"
-                            }
-                          ]
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "91dKL",
-                      "name": "divider1",
-                      "width": "fill_container",
-                      "padding": [
-                        0,
-                        16,
-                        0,
-                        70
-                      ],
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "I2s3t",
-                          "name": "dividerLine1",
-                          "width": "fill_container",
-                          "height": 1,
-                          "fill": "$border"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "dfGpg",
-                      "name": "activityRow2",
-                      "width": "fill_container",
-                      "gap": 14,
-                      "padding": 16,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "frame",
-                          "id": "MrWiy",
-                          "name": "activityAvatar2",
-                          "width": 40,
-                          "height": 40,
-                          "fill": "$accent-soft",
-                          "cornerRadius": 20
-                        },
-                        {
-                          "type": "frame",
-                          "id": "vVgVZ",
-                          "name": "activityContent2",
-                          "width": "fill_container",
-                          "layout": "vertical",
-                          "gap": 2,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "OL8lD",
-                              "name": "activityTitle2",
-                              "fill": "$text",
-                              "content": "Rated Demon Slayer 5 stars",
-                              "fontFamily": "Inter",
-                              "fontSize": 14,
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "text",
-                              "id": "AhYm5",
-                              "name": "activityMeta2",
-                              "fill": "$text-muted",
-                              "content": "5 hours ago",
-                              "fontFamily": "Inter",
-                              "fontSize": 12,
-                              "fontWeight": "normal"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "lrHxn",
-          "name": "Tab Bar Container",
-          "width": "fill_container",
-          "padding": [
-            12,
-            21,
-            21,
-            21
-          ],
-          "justifyContent": "center",
-          "children": [
-            {
-              "type": "frame",
-              "id": "k31Hx",
-              "name": "Tab Bar",
-              "width": "fill_container",
-              "fill": "$surface",
-              "cornerRadius": 36,
-              "padding": 4,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "SzIM4",
-                  "name": "Home Tab",
-                  "width": "fill_container",
-                  "fill": "$accent",
-                  "cornerRadius": 26,
-                  "layout": "vertical",
-                  "gap": 4,
-                  "padding": [
-                    8,
-                    0
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "7xFGM",
-                      "name": "tab1Icon",
-                      "width": 18,
-                      "height": 18,
-                      "iconFontName": "house",
-                      "iconFontFamily": "lucide",
-                      "fill": "#FFFFFF"
-                    },
-                    {
-                      "type": "text",
-                      "id": "2N3Gl",
-                      "name": "tab1Label",
-                      "fill": "#FFFFFF",
-                      "content": "Home",
-                      "fontFamily": "Inter",
-                      "fontSize": 10,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "7kwuN",
-                  "name": "Search Tab",
-                  "width": "fill_container",
-                  "cornerRadius": 26,
-                  "layout": "vertical",
-                  "gap": 4,
-                  "padding": [
-                    8,
-                    0
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "FBrh5",
-                      "name": "tab2Icon",
-                      "width": 18,
-                      "height": 18,
-                      "iconFontName": "search",
-                      "iconFontFamily": "lucide",
-                      "fill": "$text-muted"
-                    },
-                    {
-                      "type": "text",
-                      "id": "VICMd",
-                      "name": "tab2Label",
-                      "fill": "$text-muted",
-                      "content": "Search",
-                      "fontFamily": "Inter",
-                      "fontSize": 10,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "G1Jp9",
-                  "name": "Library Tab",
-                  "width": "fill_container",
-                  "cornerRadius": 26,
-                  "layout": "vertical",
-                  "gap": 4,
-                  "padding": [
-                    8,
-                    0
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "s88L0",
-                      "name": "tab3Icon",
-                      "width": 18,
-                      "height": 18,
-                      "iconFontName": "library",
-                      "iconFontFamily": "lucide",
-                      "fill": "$text-muted"
-                    },
-                    {
-                      "type": "text",
-                      "id": "vROAK",
-                      "name": "tab3Label",
-                      "fill": "$text-muted",
-                      "content": "Library",
-                      "fontFamily": "Inter",
-                      "fontSize": 10,
-                      "fontWeight": "500"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "4rbjD",
-                  "name": "Profile Tab",
-                  "width": "fill_container",
-                  "cornerRadius": 26,
-                  "layout": "vertical",
-                  "gap": 4,
-                  "padding": [
-                    8,
-                    0
-                  ],
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "BazJn",
-                      "name": "tab4Icon",
-                      "width": 18,
-                      "height": 18,
-                      "iconFontName": "user",
-                      "iconFontFamily": "lucide",
-                      "fill": "$text-muted"
-                    },
-                    {
-                      "type": "text",
-                      "id": "8Djjb",
-                      "name": "tab4Label",
-                      "fill": "$text-muted",
-                      "content": "Profile",
-                      "fontFamily": "Inter",
-                      "fontSize": 10,
-                      "fontWeight": "500"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
-      "id": "iNYh9",
-      "x": 500,
-      "y": 0,
-      "name": "Anime Detail Screen",
-      "clip": true,
-      "width": 402,
-      "height": 874,
-      "fill": "$bg",
-      "layout": "vertical",
-      "children": [
-        {
-          "type": "frame",
-          "id": "oBOjX",
-          "name": "Status Bar",
-          "width": "fill_container",
-          "height": 62,
-          "fill": "$bg",
-          "padding": [
-            21,
-            33,
-            0,
-            33
-          ],
-          "justifyContent": "space_between",
-          "alignItems": "center",
-          "children": [
-            {
-              "type": "text",
-              "id": "a8A2P",
-              "name": "detailTime",
-              "fill": "$text",
-              "content": "9:41",
-              "fontFamily": "Inter",
-              "fontSize": 15,
-              "fontWeight": "600"
-            },
-            {
-              "type": "frame",
-              "id": "cdeiX",
-              "name": "detailStatusIcons",
-              "width": 77,
-              "height": 13
-            }
-          ]
-        },
-        {
-          "type": "frame",
-          "id": "BkUNq",
-          "name": "Detail Content",
-          "width": "fill_container",
-          "layout": "vertical",
-          "children": [
-            {
-              "type": "frame",
-              "id": "rLSlt",
-              "name": "Hero Section",
-              "metadata": {
-                "type": "unsplash",
-                "username": "messrro",
-                "link": "https://unsplash.com/@messrro",
-                "author": "MeSSrro"
-              },
-              "width": "fill_container",
-              "height": 300,
-              "fill": {
-                "type": "image",
-                "enabled": true,
-                "url": "https://images.unsplash.com/photo-1613834927572-30b08aec7b6d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzAxOTgwODV8&ixlib=rb-4.1.0&q=80&w=1080",
-                "mode": "fill"
-              },
-              "layout": "vertical",
-              "padding": [
-                20,
-                24
-              ],
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "vD6Ao",
-                  "name": "backBtn",
-                  "width": 44,
-                  "height": 44,
-                  "fill": "#FFFFFF",
-                  "cornerRadius": 12,
-                  "justifyContent": "center",
-                  "alignItems": "center",
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "Y6UVh",
-                      "name": "backIcon",
-                      "width": 20,
-                      "height": 20,
-                      "iconFontName": "arrow-left",
-                      "iconFontFamily": "lucide",
-                      "fill": "$text"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "type": "frame",
-              "id": "7z2bB",
-              "name": "Info Section",
-              "width": "fill_container",
-              "layout": "vertical",
-              "gap": 20,
-              "padding": 24,
-              "children": [
-                {
-                  "type": "frame",
-                  "id": "DkQHU",
-                  "name": "titleSection",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "63G7j",
-                      "name": "animeTitle",
-                      "fill": "$text",
-                      "content": "Attack on Titan",
-                      "fontFamily": "Inter",
-                      "fontSize": 32,
-                      "fontWeight": "600",
-                      "letterSpacing": -0.5
-                    },
-                    {
-                      "type": "frame",
-                      "id": "ww9is",
-                      "name": "animeMeta",
-                      "width": "fill_container",
-                      "gap": 8,
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "fUIVA",
-                          "name": "metaYear",
-                          "fill": "$text-secondary",
-                          "content": "2013",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "n0ONu",
-                          "name": "metaDot",
-                          "fill": "$text-secondary",
-                          "content": "•",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "roNp6",
-                          "name": "metaSeasons",
-                          "fill": "$text-secondary",
-                          "content": "4 Seasons",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "EuRCB",
-                          "name": "metaDot2",
-                          "fill": "$text-secondary",
-                          "content": "•",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        },
-                        {
-                          "type": "text",
-                          "id": "TGlY5",
-                          "name": "metaGenre",
-                          "fill": "$text-secondary",
-                          "content": "Action, Drama",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "eSpHx",
-                  "name": "ratingSection",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "75V5J",
-                      "name": "Rating Card",
-                      "width": "fill_container",
-                      "fill": "$surface",
-                      "cornerRadius": 16,
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        20,
-                        18
-                      ],
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "hvXS7",
-                          "name": "ratingValue",
-                          "fill": "$text",
-                          "content": "9.2",
-                          "fontFamily": "Inter",
-                          "fontSize": 32,
-                          "fontWeight": "600",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "text",
-                          "id": "rMm1b",
-                          "name": "ratingLabel",
-                          "fill": "$text-secondary",
-                          "content": "Average rating",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "GMbRH",
-                      "name": "Episodes Card",
-                      "width": "fill_container",
-                      "fill": "$surface",
-                      "cornerRadius": 16,
-                      "layout": "vertical",
-                      "gap": 8,
-                      "padding": [
-                        20,
-                        18
-                      ],
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "jsypu",
-                          "name": "episodesValue",
-                          "fill": "$text",
-                          "content": "87",
-                          "fontFamily": "Inter",
-                          "fontSize": 32,
-                          "fontWeight": "600",
-                          "letterSpacing": -0.5
-                        },
-                        {
-                          "type": "text",
-                          "id": "CTYaI",
-                          "name": "episodesLabel",
-                          "fill": "$text-secondary",
-                          "content": "Total episodes",
-                          "fontFamily": "Inter",
-                          "fontSize": 13,
-                          "fontWeight": "normal"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "L1u8A",
-                  "name": "descSection",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "nTuDx",
-                      "name": "descTitle",
-                      "fill": "$text",
-                      "content": "Synopsis",
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "600"
-                    },
-                    {
-                      "type": "text",
-                      "id": "hxuz4",
-                      "name": "descText",
-                      "fill": "$text-secondary",
-                      "textGrowth": "fixed-width",
-                      "width": "fill_container",
-                      "content": "Humans are nearly exterminated by giant creatures called Titans. Titans are typically several stories tall, seem to have no intelligence, devour human beings and worst of all, seem to do it for the pleasure.",
-                      "lineHeight": 1.4,
-                      "fontFamily": "Inter",
-                      "fontSize": 14,
-                      "fontWeight": "normal"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "Qa0Vu",
-                  "name": "actionSection",
-                  "width": "fill_container",
-                  "gap": 12,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "27ckK",
-                      "name": "Watch Button",
-                      "width": "fill_container",
-                      "height": 50,
-                      "fill": "$accent",
-                      "cornerRadius": 12,
-                      "gap": 8,
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "icon_font",
-                          "id": "W2QXr",
-                          "name": "watchIcon",
-                          "width": 18,
-                          "height": 18,
-                          "iconFontName": "play",
-                          "iconFontFamily": "lucide",
-                          "fill": "#FFFFFF"
-                        },
-                        {
-                          "type": "text",
-                          "id": "HA7dW",
-                          "name": "watchText",
-                          "fill": "#FFFFFF",
-                          "content": "Start watching",
-                          "fontFamily": "Inter",
-                          "fontSize": 14,
-                          "fontWeight": "600"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "frame",
-                      "id": "BRqlM",
-                      "name": "Add Button",
-                      "width": 50,
-                      "height": 50,
-                      "fill": "$surface",
-                      "cornerRadius": 12,
-                      "stroke": {
-                        "thickness": 1,
-                        "fill": "$border"
-                      },
-                      "justifyContent": "center",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "icon_font",
-                          "id": "ps8Ih",
-                          "name": "addIcon",
-                          "width": 20,
-                          "height": 20,
-                          "iconFontName": "plus",
-                          "iconFontFamily": "lucide",
-                          "fill": "$text"
-                        }
-                      ]
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "X0cfs",
-                  "name": "seasonSection",
-                  "width": "fill_container",
-                  "layout": "vertical",
-                  "gap": 14,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "QwYpb",
-                      "name": "seasonHeader",
-                      "width": "fill_container",
-                      "justifyContent": "space_between",
-                      "alignItems": "center",
-                      "children": [
-                        {
-                          "type": "text",
-                          "id": "3bXFy",
-                          "name": "seasonTitle",
-                          "fill": "$text",
-                          "content": "Episodes",
-                          "fontFamily": "Inter",
-                          "fontSize": 14,
-                          "fontWeight": "600"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "rx3D6",
-                          "name": "seasonDropdown",
-                          "height": 36,
-                          "fill": "$surface",
-                          "cornerRadius": 8,
-                          "stroke": {
-                            "thickness": 1,
-                            "fill": "$border"
-                          },
-                          "gap": 8,
-                          "padding": [
-                            0,
-                            12
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "wcvpX",
-                              "name": "seasonText",
-                              "fill": "$text",
-                              "content": "Season 1",
-                              "fontFamily": "Inter",
-                              "fontSize": 13,
-                              "fontWeight": "500"
-                            },
-                            {
-                              "type": "icon_font",
-                              "id": "TngFT",
-                              "name": "seasonChevron",
-                              "width": 16,
-                              "height": 16,
-                              "iconFontName": "chevron-down",
-                              "iconFontFamily": "lucide",
-                              "fill": "$text-muted"
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "type": "frame",
       "id": "Dr5vt",
-      "x": -531,
+      "x": 373,
       "y": 0,
       "name": "Profile Page",
       "width": 390,
@@ -1769,56 +643,2818 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "C9TVD",
+      "x": 1002,
+      "y": 0,
+      "name": "Home Screen v2",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "$bg",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "zGXCE",
+          "name": "Status Bar",
+          "width": "fill_container",
+          "height": 50,
+          "fill": "$bg",
+          "padding": [
+            0,
+            24
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "TBgrt",
+              "name": "statusTime",
+              "fill": "$text",
+              "content": "1:21",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "tJgN7",
+              "name": "statusRight",
+              "gap": 6,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AktJq",
+                  "name": "batteryText",
+                  "fill": "$text",
+                  "content": "65%",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wP6YK",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "$bg",
+          "padding": [
+            0,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "JWP3B",
+              "name": "menuBtn",
+              "width": 36,
+              "height": 36,
+              "layout": "vertical",
+              "gap": 5,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "erutL",
+                  "name": "menuLine1",
+                  "fill": "$text",
+                  "width": 24,
+                  "height": 2.5
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "KKuYy",
+                  "name": "menuLine2",
+                  "fill": "$text",
+                  "width": 16,
+                  "height": 2.5
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "DiiNw",
+                  "name": "menuLine3",
+                  "fill": "$text",
+                  "width": 20,
+                  "height": 2.5
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "ztaTD",
+              "name": "headerTitle",
+              "fill": "$text",
+              "content": "AfterCredits",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "700"
+            },
+            {
+              "type": "ellipse",
+              "id": "mHpwj",
+              "name": "avatarBtn",
+              "fill": "$pink-card",
+              "width": 36,
+              "height": 36
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "5WWS6",
+          "name": "Scroll Content",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": [
+            8,
+            16,
+            16,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "XDSNg",
+              "name": "Top Row",
+              "width": "fill_container",
+              "height": 230,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "p6v0F",
+                  "name": "Left Column",
+                  "width": 160,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "wmDId",
+                      "name": "Trending Pill",
+                      "width": "fill_container",
+                      "height": 60,
+                      "fill": "$pink-soft",
+                      "cornerRadius": 24,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Kn2J0",
+                          "name": "trendingLabel",
+                          "fill": "$text",
+                          "content": "Trending",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2NfUV",
+                      "name": "Midnight Heart Card",
+                      "clip": true,
+                      "width": 160,
+                      "height": 160,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746021478.png",
+                        "mode": "fill"
+                      },
+                      "cornerRadius": 16,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "yoxry",
+                          "name": "overlay",
+                          "width": 160,
+                          "height": 160,
+                          "fill": {
+                            "type": "gradient",
+                            "gradientType": "linear",
+                            "enabled": true,
+                            "rotation": 0,
+                            "size": {
+                              "height": 1
+                            },
+                            "colors": [
+                              {
+                                "color": "#00000000",
+                                "position": 0.4
+                              },
+                              {
+                                "color": "#000000CC",
+                                "position": 1
+                              }
+                            ]
+                          },
+                          "layout": "vertical",
+                          "padding": [
+                            0,
+                            8,
+                            8,
+                            8
+                          ],
+                          "justifyContent": "end",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "xMzu6",
+                              "name": "midnightTitle",
+                              "fill": "#FFFFFF",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Tune In to the Midnight Heart",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            },
+                            {
+                              "type": "text",
+                              "id": "RZI2y",
+                              "name": "midnightYear",
+                              "fill": "#CCCCCC",
+                              "content": "2026",
+                              "fontFamily": "Inter",
+                              "fontSize": 10,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "b5wpG",
+                  "name": "Hells Paradise Card",
+                  "clip": true,
+                  "width": 186,
+                  "height": 230,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746029648.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e0sGp",
+                      "name": "overlay",
+                      "width": 186,
+                      "height": 230,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.4
+                          },
+                          {
+                            "color": "#000000CC",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZZhBr",
+                          "name": "hellsParadiseTitle",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Hell's Paradise Season 2",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ItQaw",
+                          "name": "hellsParadiseYear",
+                          "fill": "#CCCCCC",
+                          "content": "2026",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "s525Y",
+              "name": "Mid Row",
+              "width": "fill_container",
+              "height": 240,
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XPbRU",
+                  "name": "Hero Party Card",
+                  "clip": true,
+                  "width": 160,
+                  "height": 240,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746047272.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "P92aA",
+                      "name": "overlay",
+                      "width": 160,
+                      "height": 240,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.4
+                          },
+                          {
+                            "color": "#000000CC",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HVpsF",
+                          "name": "heroTitle",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "There was a Cute Girl in the Hero's Party, so I Tried Confessing to Her",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "dD4LO",
+                          "name": "heroYear",
+                          "fill": "#CCCCCC",
+                          "content": "2026",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hlpEe",
+                  "name": "Frieren Card",
+                  "clip": true,
+                  "width": 186,
+                  "height": 240,
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746055316.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pY8GZ",
+                      "name": "overlay",
+                      "width": 186,
+                      "height": 240,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.4
+                          },
+                          {
+                            "color": "#000000CC",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "eyXD5",
+                          "name": "frierenTitle",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Frieren: Beyond Journey's End Season 2",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "MnZq9",
+                          "name": "frierenYear",
+                          "fill": "#CCCCCC",
+                          "content": "2026",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "T4BS9",
+              "name": "Search Bar",
+              "width": "fill_container",
+              "height": 48,
+              "fill": "#EEEEEE",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": [
+                0,
+                16
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "MMFD0",
+                  "name": "searchIcon",
+                  "width": 18,
+                  "height": 18,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$text-muted"
+                },
+                {
+                  "type": "text",
+                  "id": "oTAnL",
+                  "name": "searchText",
+                  "fill": "$text-muted",
+                  "content": "Search anime...",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "1Lr6C",
+          "name": "Tab Bar Container",
+          "width": "fill_container",
+          "height": 80,
+          "fill": "$bg",
+          "stroke": {
+            "align": "inside",
+            "thickness": {
+              "top": 1
+            },
+            "fill": "$border"
+          },
+          "padding": [
+            8,
+            20,
+            16,
+            20
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "QLBCI",
+              "name": "Tab Home",
+              "width": 60,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "xrVP6",
+                  "name": "tabHomeIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontName": "house",
+                  "iconFontFamily": "lucide",
+                  "fill": "$tab-active"
+                },
+                {
+                  "type": "text",
+                  "id": "DpeNU",
+                  "name": "tabHomeLabel",
+                  "fill": "$tab-active",
+                  "content": "Home",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 2,
+                  "id": "JtuLb",
+                  "name": "Active Indicator",
+                  "fill": "$tab-active",
+                  "width": 24,
+                  "height": 3
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "bVpUw",
+              "name": "Tab Search",
+              "width": 60,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "H5dwX",
+                  "name": "tabSearchIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontName": "search",
+                  "iconFontFamily": "lucide",
+                  "fill": "$tab-inactive"
+                },
+                {
+                  "type": "text",
+                  "id": "y8xjE",
+                  "name": "tabSearchLabel",
+                  "fill": "$tab-inactive",
+                  "content": "Search",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SZcPJ",
+              "name": "Tab Library",
+              "width": 60,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "RJAnk",
+                  "name": "tabLibraryIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontName": "library",
+                  "iconFontFamily": "lucide",
+                  "fill": "$tab-inactive"
+                },
+                {
+                  "type": "text",
+                  "id": "vFQcJ",
+                  "name": "tabLibraryLabel",
+                  "fill": "$tab-inactive",
+                  "content": "Library",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L0jhQ",
+              "name": "Tab Profile",
+              "width": 60,
+              "layout": "vertical",
+              "gap": 4,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "90FE6",
+                  "name": "tabProfileIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontName": "user",
+                  "iconFontFamily": "lucide",
+                  "fill": "$tab-inactive"
+                },
+                {
+                  "type": "text",
+                  "id": "t4pHR",
+                  "name": "tabProfileLabel",
+                  "fill": "$tab-inactive",
+                  "content": "Profile",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PNUbF",
+      "x": 1492,
+      "y": 0,
+      "name": "Anime Detail Screen v2",
+      "clip": true,
+      "width": 390,
+      "height": 1600,
+      "fill": "$bg",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": [
+        0,
+        0,
+        32,
+        0
+      ],
+      "children": [
+        {
+          "type": "frame",
+          "id": "uTjJn",
+          "name": "Hero Section",
+          "clip": true,
+          "width": "fill_container",
+          "height": 320,
+          "fill": {
+            "type": "image",
+            "enabled": true,
+            "url": "./images/generated-1771746129027.png",
+            "mode": "fill"
+          },
+          "layout": "none",
+          "children": [
+            {
+              "type": "rectangle",
+              "id": "p0i7M",
+              "x": 0,
+              "y": 0,
+              "name": "Hero Gradient",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 0,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#00000000",
+                    "position": 0.4
+                  },
+                  {
+                    "color": "#00000099",
+                    "position": 1
+                  }
+                ]
+              },
+              "width": 390,
+              "height": 320
+            },
+            {
+              "type": "frame",
+              "id": "ep3Im",
+              "x": 16,
+              "y": 70,
+              "name": "Back Button",
+              "width": 36,
+              "height": 36,
+              "fill": "#00000055",
+              "cornerRadius": 18,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "DLLFy",
+                  "name": "backIcon",
+                  "width": 20,
+                  "height": 20,
+                  "iconFontName": "arrow-left",
+                  "iconFontFamily": "lucide",
+                  "fill": "#FFFFFF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "WwCtO",
+              "x": 16,
+              "y": 232,
+              "name": "Hero Title Group",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "l5oFB",
+                  "name": "heroTitle",
+                  "fill": "#FFFFFF",
+                  "textGrowth": "fixed-width",
+                  "width": 320,
+                  "content": "Tune In to the Midnight Heart",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "Pgy4y",
+                  "name": "heroSubtitle",
+                  "fill": "#FFFFFFCC",
+                  "content": "Mayonaka Heart Tune",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "t2ann",
+              "x": 310,
+              "y": 270,
+              "name": "LIVE Badge",
+              "width": 52,
+              "height": 24,
+              "fill": "#FF3A3A",
+              "cornerRadius": 6,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "A3Zrr",
+                  "name": "liveBadgeText",
+                  "fill": "#FFFFFF",
+                  "content": "LIVE",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "GCJTK",
+              "x": 0,
+              "y": 0,
+              "name": "Status Bar",
+              "width": 390,
+              "height": 50,
+              "fill": "#00000000",
+              "padding": [
+                0,
+                24
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "CVsXL",
+                  "name": "statusTimeHero",
+                  "fill": "#FFFFFF",
+                  "content": "1:21",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "MPs1U",
+                  "name": "statusBatteryHero",
+                  "fill": "#FFFFFF",
+                  "content": "65%",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wn1vi",
+          "name": "Info Card",
+          "width": "fill_container",
+          "fill": "$pink-light",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "7c9Jp",
+              "name": "Info Header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "mFxHa",
+                  "name": "infoTitle",
+                  "fill": "$text",
+                  "textGrowth": "fixed-width",
+                  "width": 240,
+                  "content": "Tune In to the Midnight Heart",
+                  "fontFamily": "Inter",
+                  "fontSize": 17,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "8ighL",
+                  "name": "infoYear",
+                  "fill": "$text-secondary",
+                  "content": "2026",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "fXBiv",
+              "name": "infoStudio",
+              "fill": "$text-secondary",
+              "content": "Gekkou",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "IJFxU",
+              "name": "infoDesc",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "When Arisu Yamabuki was all alone in bed at night, he was able to find solace in the voice of a radio host who went by \"Apollo.\" However, one day, she simply stopped broadcasting without any explanation. Years then passed, and Arisu is now a second-year...",
+              "lineHeight": 1.5,
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "z2cpR",
+              "name": "readMore",
+              "fill": "$tab-active",
+              "content": "Read More",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "8o5mb",
+              "name": "infoEpisodes",
+              "fill": "$text",
+              "content": "12 Episodes",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "text",
+              "id": "D2OIP",
+              "name": "infoStatus",
+              "fill": "$text",
+              "content": "Status: Airing",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "QPXKt",
+          "name": "Stats Row",
+          "width": "fill_container",
+          "gap": 10,
+          "padding": [
+            0,
+            16
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "7mOsY",
+              "name": "Popularity Pill",
+              "width": "fill_container",
+              "height": 72,
+              "fill": "$pink-accent",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "J9VfL",
+                  "name": "popularityLabel",
+                  "fill": "#FFFFFF",
+                  "content": "Popularity",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "Z9MxI",
+                  "name": "popularityValue",
+                  "fill": "#FFFFFF",
+                  "content": "22752",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "xG2nw",
+              "name": "Reviews Pill",
+              "width": "fill_container",
+              "height": 72,
+              "fill": "$green-stat",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "cgiMe",
+                  "name": "reviewsLabel",
+                  "fill": "$text",
+                  "content": "Reviews",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "6XVml",
+                  "name": "reviewsValue",
+                  "fill": "$text",
+                  "content": "0",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PhlAx",
+              "name": "Score Pill",
+              "width": "fill_container",
+              "height": 72,
+              "fill": "$blue-stat",
+              "cornerRadius": 20,
+              "layout": "vertical",
+              "gap": 2,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "NeWo4",
+                  "name": "scoreLabel",
+                  "fill": "$text",
+                  "content": "Score",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "text",
+                  "id": "Ash4r",
+                  "name": "scoreValue",
+                  "fill": "$text",
+                  "content": "69%",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ECSUx",
+          "name": "Genre & Voice Actors Card",
+          "width": "fill_container",
+          "fill": "$surface-pink",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "3vH2C",
+              "name": "Genre Section",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "NTBLk",
+                  "name": "genreTitle",
+                  "fill": "$text",
+                  "content": "GENRE",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "nq4b8",
+                  "name": "Genre Pills",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "YaPro",
+                      "name": "Comedy Pill",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 20,
+                      "padding": [
+                        8,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ubaW0",
+                          "name": "comedyText",
+                          "fill": "$text",
+                          "content": "Comedy",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "KG8Le",
+                      "name": "Romance Pill",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 20,
+                      "padding": [
+                        8,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DaSC6",
+                          "name": "romanceText",
+                          "fill": "$text",
+                          "content": "Romance",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "7hdLF",
+              "name": "Voice Actors Section",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gLiQQ",
+                  "name": "vaTitle",
+                  "fill": "$text",
+                  "content": "VOICE ACTORS",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "UJqag",
+                  "name": "VA Row 1",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "JfxKI",
+                      "name": "va1Avatar",
+                      "fill": "#E8E8E8",
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "frame",
+                      "id": "3GAzl",
+                      "name": "va1Info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "v8AX2",
+                          "name": "va1Name",
+                          "fill": "$text",
+                          "content": "Sayumi Suzushiro",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "agz8g",
+                          "name": "va1Role",
+                          "fill": "$text-secondary",
+                          "content": "Voice of Iko Kirino",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "qdtGv",
+                  "name": "VA Row 2",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "NmHHg",
+                      "name": "va2Avatar",
+                      "fill": "#F5C9A0",
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "frame",
+                      "id": "99Cb8",
+                      "name": "va2Info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "PNIsW",
+                          "name": "va2Name",
+                          "fill": "$text",
+                          "content": "Miku Itou",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "f8EGY",
+                          "name": "va2Role",
+                          "fill": "$text-secondary",
+                          "content": "Voice of Shinobu Uzuki",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "K1aFL",
+                  "name": "VA Row 3",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "jMDDX",
+                      "name": "va3Avatar",
+                      "fill": "#A8E6CF",
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ag7oV",
+                      "name": "va3Info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "NcZgT",
+                          "name": "va3Name",
+                          "fill": "$text",
+                          "content": "Momoko Seto",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "N4R3D",
+                          "name": "va3Role",
+                          "fill": "$text-secondary",
+                          "content": "Voice of Rikka Inohana",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YGOzR",
+                  "name": "VA Row 4",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "8genD",
+                      "name": "va4Avatar",
+                      "fill": "#B8D4F0",
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VNKm7",
+                      "name": "va4Info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "UPhgA",
+                          "name": "va4Name",
+                          "fill": "$text",
+                          "content": "Rumi Ookubo",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "8VAoY",
+                          "name": "va4Role",
+                          "fill": "$text-secondary",
+                          "content": "Voice of Nene Himekawa",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MK7Z7",
+                  "name": "VA Row 5",
+                  "width": "fill_container",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "HBCMK",
+                      "name": "va5Avatar",
+                      "fill": "#F5EDD0",
+                      "width": 44,
+                      "height": 44
+                    },
+                    {
+                      "type": "frame",
+                      "id": "1FGs3",
+                      "name": "va5Info",
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZreVd",
+                          "name": "va5Name",
+                          "fill": "$text",
+                          "content": "Rikuya Yasuda",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "fAoc1",
+                          "name": "va5Role",
+                          "fill": "$text-secondary",
+                          "content": "Voice of Arisu Yamabuki",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uhloT",
+                  "name": "Show All Button",
+                  "width": "fill_container",
+                  "padding": [
+                    8,
+                    0
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "zZLeA",
+                      "name": "showAllText",
+                      "fill": "$text-secondary",
+                      "content": "Show All (8)",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "5zrDJ",
+          "name": "Reviews Card",
+          "width": "fill_container",
+          "fill": "$surface-pink",
+          "cornerRadius": 24,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "QGfeE",
+              "name": "Reviews Header",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "rZqqQ",
+                  "name": "reviewsTitle",
+                  "fill": "$text",
+                  "content": "REVIEWS",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "letterSpacing": 1
+                },
+                {
+                  "type": "frame",
+                  "id": "4hwdc",
+                  "name": "Add Review Btn",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "$text",
+                  "cornerRadius": 18,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "NJKQX",
+                      "name": "addIcon",
+                      "width": 20,
+                      "height": 20,
+                      "iconFontName": "plus",
+                      "iconFontFamily": "lucide",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "UQTmV",
+              "name": "noReviewsText",
+              "fill": "$pink-accent",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "No reviews yet. Be the first to review!",
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "rAkfB",
+          "name": "Related Shows Section",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 14,
+          "padding": [
+            16,
+            16,
+            32,
+            16
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "TktzW",
+              "name": "relatedTitle",
+              "fill": "$text",
+              "content": "Related Shows",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "700"
+            },
+            {
+              "type": "frame",
+              "id": "QioyL",
+              "name": "Related Row",
+              "width": "fill_container",
+              "height": 160,
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qLwYg",
+                  "name": "Related Card 1",
+                  "clip": true,
+                  "width": 130,
+                  "height": "fill_container",
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746206043.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "EyEIt",
+                      "name": "overlay",
+                      "width": 130,
+                      "height": 160,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.5
+                          },
+                          {
+                            "color": "#000000AA",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "1KntW",
+                          "name": "rel1Title",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": 114,
+                          "content": "The Quintessential Quintuplets",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "szU8p",
+                  "name": "Related Card 2",
+                  "clip": true,
+                  "width": 130,
+                  "height": "fill_container",
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746214039.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "oobHY",
+                      "name": "overlay",
+                      "width": 130,
+                      "height": 160,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.5
+                          },
+                          {
+                            "color": "#000000AA",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "wjijD",
+                          "name": "rel2Title",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": 114,
+                          "content": "Tying the Knot with an Amagami Sister",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "uN06q",
+                  "name": "Related Card 3",
+                  "clip": true,
+                  "width": 130,
+                  "height": "fill_container",
+                  "fill": {
+                    "type": "image",
+                    "enabled": true,
+                    "url": "./images/generated-1771746223155.png",
+                    "mode": "fill"
+                  },
+                  "cornerRadius": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "tmtrf",
+                      "name": "overlay",
+                      "width": 130,
+                      "height": 160,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 0,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0.5
+                          },
+                          {
+                            "color": "#000000AA",
+                            "position": 1
+                          }
+                        ]
+                      },
+                      "layout": "vertical",
+                      "padding": [
+                        0,
+                        8,
+                        8,
+                        8
+                      ],
+                      "justifyContent": "end",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "wFxTR",
+                          "name": "rel3Title",
+                          "fill": "#FFFFFF",
+                          "textGrowth": "fixed-width",
+                          "width": 114,
+                          "content": "We Never Learn BOKUBEN",
+                          "fontFamily": "Inter",
+                          "fontSize": 10,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "fODKd",
+      "x": 1982,
+      "y": 0,
+      "name": "Pinterest Home",
+      "clip": true,
+      "width": 390,
+      "height": 950,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "0fpE3",
+          "name": "Status Bar",
+          "width": "fill_container",
+          "height": 44,
+          "fill": "#FFFFFF",
+          "children": [
+            {
+              "type": "text",
+              "id": "VI6WP",
+              "name": "sbTime",
+              "content": "1:21",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "Y18Fz",
+              "name": "sbRight",
+              "gap": 6,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "NeLuX",
+                  "name": "sbBattery",
+                  "content": "65%",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f0oHr",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 56,
+          "fill": "#FFFFFF",
+          "layout": "none",
+          "children": [
+            {
+              "type": "frame",
+              "id": "81aEA",
+              "x": 16,
+              "y": 12,
+              "name": "Hamburger",
+              "width": 40,
+              "height": 32,
+              "layout": "vertical",
+              "gap": 5,
+              "children": [
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 1,
+                  "id": "fzb40",
+                  "name": "hLine1",
+                  "fill": "#1A1A1A",
+                  "width": 20,
+                  "height": 2
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 1,
+                  "id": "QlAmJ",
+                  "name": "hLine2",
+                  "fill": "#1A1A1A",
+                  "width": 20,
+                  "height": 2
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": 1,
+                  "id": "bVwac",
+                  "name": "hLine3",
+                  "fill": "#1A1A1A",
+                  "width": 20,
+                  "height": 2
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SEsIc",
+              "x": 50,
+              "y": 10,
+              "name": "TitleBox",
+              "width": 290,
+              "height": 36,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2as1o",
+                  "name": "titleInner",
+                  "fill": "#FF4D73",
+                  "content": "AfterCredits",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 20,
+                  "fontWeight": "700"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "oOZJt",
+              "x": 342,
+              "y": 10,
+              "name": "Avatar",
+              "width": 40,
+              "height": 36,
+              "fill": "#FF8FAB",
+              "cornerRadius": 18,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Dejvq",
+                  "name": "avatarInitial",
+                  "content": "A",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "YYTky",
+          "name": "Category Pills",
+          "width": "fill_container",
+          "height": 48,
+          "gap": 8,
+          "children": [
+            {
+              "type": "frame",
+              "id": "rfYON",
+              "name": "pillAll",
+              "width": 45,
+              "height": 32,
+              "fill": "#FF4D73",
+              "cornerRadius": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "QCe8w",
+                  "name": "pillAllText",
+                  "fill": "#FFFFFF",
+                  "content": "All",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hwqut",
+              "name": "pillAction",
+              "width": 60,
+              "height": 32,
+              "fill": "#FFDDE8",
+              "cornerRadius": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8Hewx",
+                  "name": "pillActionText",
+                  "fill": "#FF4D73",
+                  "content": "Action",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9tEUa",
+              "name": "pillRomance",
+              "width": 78,
+              "height": 32,
+              "fill": "#FFDDE8",
+              "cornerRadius": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8ss9j",
+                  "name": "pillRomanceText",
+                  "fill": "#FF4D73",
+                  "content": "Romance",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "nUJDk",
+              "name": "pillFantasy",
+              "width": 69,
+              "height": 32,
+              "fill": "#FFDDE8",
+              "cornerRadius": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "JTxu2",
+                  "name": "pillFantasyText",
+                  "fill": "#FF4D73",
+                  "content": "Fantasy",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9lmAk",
+              "name": "pillShounen",
+              "width": 76,
+              "height": 32,
+              "fill": "#FFDDE8",
+              "cornerRadius": 16,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pEL7i",
+                  "name": "pillShounenText",
+                  "fill": "#FF4D73",
+                  "content": "Shounen",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "7XjJf",
+          "name": "Masonry Grid",
+          "width": "fill_container",
+          "height": 730,
+          "gap": 8,
+          "children": [
+            {
+              "type": "frame",
+              "id": "IujE8",
+              "name": "Col Left",
+              "width": 178,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ytF3Y",
+                  "name": "Card Frieren",
+                  "clip": true,
+                  "width": 178,
+                  "height": 260,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "JXtVQ",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746915153.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 260
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JyFPb",
+                      "x": 0,
+                      "y": 175,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 85,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Mxx4P",
+                      "x": 0,
+                      "y": 210,
+                      "name": "label",
+                      "width": 178,
+                      "height": 45,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "QCfqR",
+                          "name": "card1title",
+                          "fill": "#FFFFFF",
+                          "content": "Frieren: Beyond Journey's End",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "JdYM1",
+                          "name": "card1year",
+                          "fill": "#FFFFFFAA",
+                          "content": "2023",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "0w82G",
+                  "name": "Card Demon Slayer",
+                  "clip": true,
+                  "width": 178,
+                  "height": 190,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "oWIh9",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746926584.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 190
+                    },
+                    {
+                      "type": "frame",
+                      "id": "cE0IJ",
+                      "x": 0,
+                      "y": 115,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 75,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bBjqt",
+                      "x": 0,
+                      "y": 145,
+                      "name": "label",
+                      "width": 178,
+                      "height": 40,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FPnQG",
+                          "name": "card2title",
+                          "fill": "#FFFFFF",
+                          "content": "Demon Slayer",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "4p9CG",
+                          "name": "card2year",
+                          "fill": "#FFFFFFAA",
+                          "content": "2019",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "8oasF",
+                  "name": "Card Spy x Family",
+                  "clip": true,
+                  "width": 178,
+                  "height": 220,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "8BKFw",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746938827.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 220
+                    },
+                    {
+                      "type": "frame",
+                      "id": "i2zVy",
+                      "x": 0,
+                      "y": 143,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 77,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "9ThBW",
+                      "x": 0,
+                      "y": 175,
+                      "name": "label",
+                      "width": 178,
+                      "height": 45,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "D8MP4",
+                          "name": "card3title",
+                          "fill": "#FFFFFF",
+                          "content": "Spy x Family",
+                          "fontFamily": "Inter",
+                          "fontSize": 11,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "9ZPGE",
+                          "name": "card3year",
+                          "fill": "#FFFFFFAA",
+                          "content": "2022",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pPx8t",
+              "name": "Col Right",
+              "width": 178,
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "CdHoU",
+                  "name": "Card Attack on Titan",
+                  "clip": true,
+                  "width": 178,
+                  "height": 200,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "m6KuJ",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746950739.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 200
+                    },
+                    {
+                      "type": "frame",
+                      "id": "y2FOE",
+                      "x": 0,
+                      "y": 110,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 90,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "w7WiJ",
+                      "x": 0,
+                      "y": 144,
+                      "name": "label",
+                      "width": 178,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "qHuxY",
+                          "name": "card4title",
+                          "fill": "#FFFFFF",
+                          "content": "Attack on Titan",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "MgQnD",
+                          "name": "card4year",
+                          "fill": "#FFFFFFAA",
+                          "content": "2013",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "z3C9p",
+                  "name": "Card One Piece",
+                  "clip": true,
+                  "width": 178,
+                  "height": 250,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "yjdLq",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746962701.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 250
+                    },
+                    {
+                      "type": "frame",
+                      "id": "TurTi",
+                      "x": 0,
+                      "y": 155,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 95,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AM8in",
+                      "x": 0,
+                      "y": 190,
+                      "name": "label",
+                      "width": 178,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yMEV2",
+                          "name": "card5title",
+                          "fill": "#FFFFFF",
+                          "content": "One Piece",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "yb2OB",
+                          "name": "card5year",
+                          "fill": "#FFFFFFAA",
+                          "content": "1999",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "yUOjG",
+                  "name": "Card Jujutsu Kaisen",
+                  "clip": true,
+                  "width": 178,
+                  "height": 220,
+                  "cornerRadius": 16,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "rectangle",
+                      "id": "Vmxpz",
+                      "x": 0,
+                      "y": 0,
+                      "name": "img",
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "./images/generated-1771746973889.png",
+                        "mode": "fill"
+                      },
+                      "width": 178,
+                      "height": 220
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GjIgf",
+                      "x": 0,
+                      "y": 130,
+                      "name": "overlay",
+                      "width": 178,
+                      "height": 90,
+                      "fill": {
+                        "type": "gradient",
+                        "gradientType": "linear",
+                        "enabled": true,
+                        "rotation": 180,
+                        "size": {
+                          "height": 1
+                        },
+                        "colors": [
+                          {
+                            "color": "#00000000",
+                            "position": 0
+                          },
+                          {
+                            "color": "#000000DD",
+                            "position": 0
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "sqq4Y",
+                      "x": 0,
+                      "y": 162,
+                      "name": "label",
+                      "width": 178,
+                      "layout": "vertical",
+                      "gap": 2,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AQDhS",
+                          "name": "card6title",
+                          "fill": "#FFFFFF",
+                          "content": "Jujutsu Kaisen",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "700"
+                        },
+                        {
+                          "type": "text",
+                          "id": "S84aG",
+                          "name": "card6year",
+                          "fill": "#FFFFFFAA",
+                          "content": "2020",
+                          "fontFamily": "Inter",
+                          "fontSize": 11
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "85qZs",
+          "name": "Tab Bar",
+          "width": "fill_container",
+          "height": 72,
+          "fill": "#FFFFFF",
+          "layout": "none",
+          "children": [
+            {
+              "type": "frame",
+              "id": "6Sx11",
+              "x": 10,
+              "y": 8,
+              "name": "Tab Home",
+              "width": 70,
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "CYTam",
+                  "name": "tabHomeIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "#FF4D73"
+                },
+                {
+                  "type": "text",
+                  "id": "bOWW5",
+                  "name": "tabHomeLabel",
+                  "fill": "#FF4D73",
+                  "content": "Home",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "600"
+                },
+                {
+                  "type": "rectangle",
+                  "cornerRadius": [
+                    2,
+                    2,
+                    0,
+                    0
+                  ],
+                  "id": "1e7pA",
+                  "name": "tabHomeIndicator",
+                  "fill": "#FF4D73",
+                  "width": 24,
+                  "height": 3
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "AcdPJ",
+              "x": 160,
+              "y": 4,
+              "name": "Tab Post",
+              "width": 70,
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "aWoHZ",
+                  "name": "tabPostBtn",
+                  "width": 44,
+                  "height": 44,
+                  "fill": "#FF4D73",
+                  "cornerRadius": 22,
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "rxlqe",
+                      "name": "tabPostIcon",
+                      "width": 24,
+                      "height": 24,
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#FFFFFF"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pHZEw",
+              "x": 240,
+              "y": 8,
+              "name": "Tab Discover",
+              "width": 70,
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "nSL87",
+                  "name": "tabDiscoverIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "#AAAAAA"
+                },
+                {
+                  "type": "text",
+                  "id": "tN9x7",
+                  "name": "tabDiscoverLabel",
+                  "fill": "#AAAAAA",
+                  "content": "Discover",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "va2VK",
+              "x": 320,
+              "y": 8,
+              "name": "Tab Podium",
+              "width": 60,
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "ZmE1a",
+                  "name": "tabPodiumIcon",
+                  "width": 24,
+                  "height": 24,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "#AAAAAA"
+                },
+                {
+                  "type": "text",
+                  "id": "O2x2q",
+                  "name": "tabPodiumLabel",
+                  "fill": "#AAAAAA",
+                  "content": "Podium",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "500"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "variables": {
-    "accent": {
-      "type": "color",
-      "value": "#C67A52"
-    },
-    "accent-soft": {
-      "type": "color",
-      "value": "#C67A5220"
-    },
     "bg": {
       "type": "color",
-      "value": "#FAF8F4"
+      "value": "#FFFFFF"
+    },
+    "bg-warm": {
+      "type": "color",
+      "value": "#F9F9F9"
+    },
+    "blue-stat": {
+      "type": "color",
+      "value": "#C7D9F7"
     },
     "border": {
       "type": "color",
-      "value": "#E5E2DC"
+      "value": "#EEEEEE"
     },
-    "border-strong": {
+    "card-shadow": {
       "type": "color",
-      "value": "#D0CCC4"
+      "value": "#00000020"
     },
-    "negative": {
+    "green-stat": {
       "type": "color",
-      "value": "#C4574C"
+      "value": "#B5EAD7"
     },
-    "positive": {
+    "overlay-dark": {
       "type": "color",
-      "value": "#5A9E6F"
+      "value": "#00000066"
+    },
+    "pill-white": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "pink-accent": {
+      "type": "color",
+      "value": "#FF8FAB"
+    },
+    "pink-card": {
+      "type": "color",
+      "value": "#FFCAD4"
+    },
+    "pink-light": {
+      "type": "color",
+      "value": "#FFDDE8"
+    },
+    "pink-soft": {
+      "type": "color",
+      "value": "#FFB3C6"
     },
     "surface": {
       "type": "color",
       "value": "#FFFFFF"
     },
-    "surface-warm": {
+    "surface-pink": {
       "type": "color",
-      "value": "#F5F2EC"
+      "value": "#FFD6E0"
+    },
+    "tab-active": {
+      "type": "color",
+      "value": "#FF4D73"
+    },
+    "tab-inactive": {
+      "type": "color",
+      "value": "#AAAAAA"
     },
     "text": {
       "type": "color",
-      "value": "#2C2C2C"
+      "value": "#1A1A1A"
     },
     "text-muted": {
       "type": "color",
-      "value": "#9A9A9A"
+      "value": "#999999"
     },
     "text-secondary": {
       "type": "color",
-      "value": "#6B6B6B"
+      "value": "#555555"
+    },
+    "text-white": {
+      "type": "color",
+      "value": "#FFFFFF"
     }
   }
 }
