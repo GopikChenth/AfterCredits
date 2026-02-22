@@ -90,6 +90,14 @@ const animeTheme = {
     dropped: "Anime you've dropped will appear here",
     wishlist: 'Add anime to your wishlist from the details page',
   },
+
+  // ─── Status label overrides ──────────────────────────────
+  statusLabels: {
+    watching: 'Watching',
+    watched: 'Completed',
+    dropped: 'Dropped',
+    wishlist: 'Wishlist',
+  },
 };
 
 
@@ -149,6 +157,14 @@ const gamesTheme = {
     watched: 'Mark games as completed to track your history',
     dropped: "Games you've dropped will appear here",
     wishlist: 'Add games to your wishlist from the details page',
+  },
+
+  // ─── Status label overrides ──────────────────────────────
+  statusLabels: {
+    watching: 'Playing',
+    watched: 'Completed',
+    dropped: 'Dropped',
+    wishlist: 'Wishlist',
   },
 };
 
@@ -211,6 +227,14 @@ const moviesTheme = {
     watched: 'Mark movies as watched to track your history',
     dropped: "Movies you've dropped will appear here",
     wishlist: 'Add movies to your wishlist from the details page',
+  },
+
+  // ─── Status label overrides ──────────────────────────────
+  statusLabels: {
+    watching: 'Watching',
+    watched: 'Completed',
+    dropped: 'Dropped',
+    wishlist: 'Wishlist',
   },
 };
 

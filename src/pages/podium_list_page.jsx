@@ -19,10 +19,10 @@ import { useMediaType } from '../context/MediaTypeContext';
 import { getPodiumListStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
 
 const STATUS_CONFIG = {
-  watching: { label: 'Watching', icon: 'eye', color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
-  watched:  { label: 'Completed', icon: 'checkmark-circle', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)' },
-  dropped:  { label: 'Dropped', icon: 'close-circle', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
-  wishlist: { label: 'Wishlist', icon: 'bookmark', color: '#C084FC', bg: 'rgba(192,132,252,0.15)' },
+  watching: { icon: 'eye', color: '#FBBF24', bg: 'rgba(251,191,36,0.15)' },
+  watched:  { icon: 'checkmark-circle', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)' },
+  dropped:  { icon: 'close-circle', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
+  wishlist: { icon: 'bookmark', color: '#C084FC', bg: 'rgba(192,132,252,0.15)' },
 };
 
 const mediaDetailCache = {};
@@ -38,7 +38,10 @@ const PodiumListPage = ({ route, navigation }) => {
   const { ListSkeleton } = theme.components;
 
   const { status } = route.params;
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.watching;
+  const config = {
+    ...(STATUS_CONFIG[status] || STATUS_CONFIG.watching),
+    label: theme.statusLabels?.[status] || status,
+  };
   const cachePrefix = theme.statusMediaType + '_';
 
   const [items, setItems] = useState([]);

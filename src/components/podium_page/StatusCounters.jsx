@@ -2,17 +2,25 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const ALL_STATUSES = [
-  { key: 'watching', label: 'Watching', icon: 'eye', color: '#FBBF24' },
-  { key: 'watched', label: 'Completed', icon: 'checkmark-circle', color: '#4ADE80' },
-  { key: 'dropped', label: 'Dropped', icon: 'close-circle', color: '#F87171' },
-  { key: 'wishlist', label: 'Wishlist', icon: 'bookmark', color: '#C084FC' },
+const DEFAULT_LABELS = {
+  watching: 'Watching',
+  watched: 'Completed',
+  dropped: 'Dropped',
+  wishlist: 'Wishlist',
+};
+
+const ALL_STATUS_KEYS = [
+  { key: 'watching', icon: 'eye', color: '#FBBF24' },
+  { key: 'watched', icon: 'checkmark-circle', color: '#4ADE80' },
+  { key: 'dropped', icon: 'close-circle', color: '#F87171' },
+  { key: 'wishlist', icon: 'bookmark', color: '#C084FC' },
 ];
 
-const StatusCounters = ({ counts, onStatusPress }) => {
+const StatusCounters = ({ counts, onStatusPress, labels }) => {
+  const resolvedLabels = { ...DEFAULT_LABELS, ...labels };
   return (
     <View style={styles.countersContainer}>
-      {ALL_STATUSES.map((status) => {
+      {ALL_STATUS_KEYS.map((status) => {
         const count = counts[status.key] || 0;
         return (
           <Pressable
@@ -24,7 +32,7 @@ const StatusCounters = ({ counts, onStatusPress }) => {
             onPress={() => onStatusPress(status.key)}
           >
             <View style={[styles.counterDot, { backgroundColor: status.color }]} />
-            <Text style={styles.counterLabel}>{status.label}</Text>
+            <Text style={styles.counterLabel}>{resolvedLabels[status.key]}</Text>
             <Text style={[styles.counterValue, { color: status.color }]}>{count}</Text>
             <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
           </Pressable>

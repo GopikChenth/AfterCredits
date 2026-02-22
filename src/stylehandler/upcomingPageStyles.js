@@ -176,6 +176,31 @@ const baseStyles = {
     paddingVertical: 20,
     alignItems: 'center',
   },
+  // Collapsed card title overlay
+  collapsedOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 10,
+    paddingTop: 24,
+    paddingBottom: 10,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  collapsedTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.2,
+    lineHeight: 16,
+  },
+  collapsedDate: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+    letterSpacing: 0.2,
+  },
 };
 
 
@@ -226,7 +251,7 @@ const gamesTheme = {
   fontFamily: 'System',
   headerTitle: 'Upcoming Games',
   headerSubtitle: 'Sorted by nearest release',
-  detailsRoute: 'DetailsAnime', // TODO: Create DetailsGame page
+  detailsRoute: 'DetailsGames',
   mediaKey: 'games',
 };
 

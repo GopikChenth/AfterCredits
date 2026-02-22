@@ -198,6 +198,7 @@ const PodiumPage = ({ navigation }) => {
             <Chart counts={counts} />
             <Counters
               counts={counts}
+              labels={theme.statusLabels}
               onStatusPress={(status) => navigation.navigate('PodiumListPage', { status })}
             />
           </View>

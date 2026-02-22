@@ -180,6 +180,19 @@ const UpcomingPage = ({ navigation }) => {
       >
         <Image source={{ uri: item.coverImage }} style={styles.cardImage} />
 
+        {/* Always-visible title label at bottom of card */}
+        {!isExpanded && (
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.82)', 'rgba(0,0,0,0.97)']}
+            style={styles.collapsedOverlay}
+          >
+            <Text style={styles.collapsedTitle} numberOfLines={2}>
+              {item.title}
+            </Text>
+            <Text style={styles.collapsedDate}>{formatDate(item)}</Text>
+          </LinearGradient>
+        )}
+
         {isExpanded && (
           <LinearGradient
             colors={theme.gradientOverlay}
@@ -238,7 +251,12 @@ const UpcomingPage = ({ navigation }) => {
 
                 <Pressable
                   style={styles.viewDetailsButton}
-                  onPress={() => navigation.navigate(theme.detailsRoute, { animeId: item.id })}
+                  onPress={() => navigation.navigate(
+                    theme.detailsRoute,
+                    isGames
+                      ? { gameId: item.id, gameName: item.title, coverImage: item.coverImage }
+                      : { animeId: item.id }
+                  )}
                 >
                   <Text style={styles.viewDetailsText}>View Details</Text>
                   <Ionicons name="arrow-forward" size={14} color={theme.accent} />

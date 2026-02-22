@@ -34,19 +34,23 @@ const NewsPage = ({ navigation }) => {
     fetchNews(1);
   }, [mediaType]);
 
+  const PAGE_SIZE = 15;
+
   const fetchNews = async (pageNum = 1) => {
     try {
       if (pageNum === 1) setLoading(true);
 
+      // Fetch enough articles to satisfy this page by asking for progressively more
+      const totalNeeded = pageNum * PAGE_SIZE;
       let allArticles;
       if (mediaType === 'games') {
-        allArticles = await getGamingNews(30);
+        allArticles = await getGamingNews(totalNeeded + PAGE_SIZE); // always fetch 1 extra page
       } else {
-        allArticles = await getAnimeNews(30);
+        allArticles = await getAnimeNews(totalNeeded + PAGE_SIZE);
       }
 
-      const startIndex = (pageNum - 1) * 10;
-      const endIndex = startIndex + 10;
+      const startIndex = (pageNum - 1) * PAGE_SIZE;
+      const endIndex = startIndex + PAGE_SIZE;
       const pageArticles = allArticles.slice(startIndex, endIndex);
 
       if (pageNum === 1) {
@@ -55,7 +59,8 @@ const NewsPage = ({ navigation }) => {
         setNews(prev => [...prev, ...pageArticles]);
       }
 
-      setHasMore(endIndex < allArticles.length);
+      // has more if we got a full page AND there are articles beyond this page
+      setHasMore(pageArticles.length >= PAGE_SIZE && allArticles.length > endIndex);
     } catch (error) {
       console.error('Error fetching news:', error);
     } finally {
