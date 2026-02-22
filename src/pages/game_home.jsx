@@ -156,7 +156,20 @@ const GameHome = ({ navigation }) => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
         >
+          {/* Show full inline results when Enter is pressed */}
+          {isSearchSubmitted ? (
+            <InlineSearchResults
+              results={searchResults}
+              isLoading={isSearching}
+              searchQuery={searchQuery}
+              onResultPress={handleSearchResultPress}
+              onClearSearch={handleSearchCancel}
+              theme={{ accent: '#A78BFA' }}
+            />
+          ) : (
+            <>
           {/* Retro Header */}
           <View style={styles.header}>
             <Pressable
@@ -408,8 +421,8 @@ const GameHome = ({ navigation }) => {
               </View>
             )}
           </View>
-
-
+            </>
+          )}
         </ScrollView>
       </SafeAreaView>
 
