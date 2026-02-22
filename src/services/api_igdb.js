@@ -161,12 +161,11 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
  * @returns {Promise<Array>} - Array of matching games (id, name, cover)
  */
 export const searchGameIGDB = async (name) => {
-  const cacheKey = `IGDB_SEARCH_MG:${name.toLowerCase().replace(/\s+/g, '_')}`;
+  const cacheKey = `IGDB_RESOLVE:${name.toLowerCase().replace(/\s+/g, '_')}`;
   return igdbRequest(
     'games',
     `search "${name}";
-     fields id, name, cover.url, first_release_date, category;
-     where category = 0;
+     fields id, name, cover.url, first_release_date;
      limit 6;`,
     cacheKey,
     CACHE_DURATION.IGDB_SEARCH
