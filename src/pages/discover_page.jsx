@@ -259,15 +259,21 @@ const DiscoverPage = ({ navigation }) => {
                   />
                 </Pressable>
 
-                {!isGames && (
-                  <Pressable
+                <Pressable
                     style={styles.viewDetailsButton}
-                    onPress={() => navigation.navigate("DetailsAnime", { animeId: item.id })}
+                    onPress={() =>
+                      isGames
+                        ? navigation.navigate('DetailsGames', {
+                            gameId: item.id,
+                            gameName: item.name,
+                            coverImage: item.coverImage,
+                          })
+                        : navigation.navigate('DetailsAnime', { animeId: item.id })
+                    }
                   >
                     <Text style={styles.viewDetailsText}>View Details</Text>
                     <Ionicons name="arrow-forward" size={14} color={theme.accent} />
                   </Pressable>
-                )}
               </View>
             </View>
           </LinearGradient>
