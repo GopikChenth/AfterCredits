@@ -161,12 +161,13 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
  * @returns {Promise<Array>} - Array of matching games (id, name, cover)
  */
 export const searchGameIGDB = async (name) => {
-  const cacheKey = `IGDB_SEARCH:${name.toLowerCase().replace(/\s+/g, '_')}`;
+  const cacheKey = `IGDB_SEARCH_MG:${name.toLowerCase().replace(/\s+/g, '_')}`;
   return igdbRequest(
     'games',
     `search "${name}";
-     fields id, name, cover.url, first_release_date;
-     limit 3;`,
+     fields id, name, cover.url, first_release_date, category;
+     where category = 0;
+     limit 6;`,
     cacheKey,
     CACHE_DURATION.IGDB_SEARCH
   );
@@ -181,12 +182,13 @@ export const searchGameIGDB = async (name) => {
  * @returns {Promise<Array>} - Array of { id, title, coverImage, year, genres, popularity }
  */
 export const searchGamesIGDB = async (query, limit = 20) => {
-  const cacheKey = `IGDB_GAME_SEARCH:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
+  const cacheKey = `IGDB_GAME_SEARCH_MG:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
   const raw = await igdbRequest(
     'games',
     `search "${query}";
      fields id, name, cover.url, cover.image_id, first_release_date,
-            genres.name, total_rating, total_rating_count;
+            genres.name, total_rating, total_rating_count, category;
+     where category = 0;
      limit ${limit};`,
     cacheKey,
     CACHE_DURATION.IGDB_SEARCH
