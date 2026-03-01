@@ -31,6 +31,7 @@ export const searchMedia = async (query, mediaType = 'anime', limit = 20) => {
         break;
       
       case 'movie':
+      case 'movies':
         response = await searchMovies(query, 1, limit);
         // Movies API returns { media: [...] } structure
         results = response.media ? response.media.map(formatMovieData) : [];

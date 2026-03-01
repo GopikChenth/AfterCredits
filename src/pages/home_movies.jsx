@@ -1,315 +1,553 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  ScrollView, 
-  Pressable, 
-  StyleSheet, 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
   Dimensions,
   StatusBar,
-  ActivityIndicator,
+  Image,
+  Keyboard,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MediaCard from '../components/home_page/Card';
-
-import CategoryPill from '../components/home_page/CategoryPill';
-import SideBar from '../components/home_page/SideBar';
-import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
-import { getCardDimensions } from '../utils/responsiveCard';
-import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_movies';
-import { getMediaTheme } from '../utils/mediaThemes';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useMediaType } from '../context/MediaTypeContext';
+import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_movies';
+import { searchMedia, debounce } from '../services/search';
+import SideBar from '../components/home_page/SideBar';
+import SkeletonLoader from '../components/skeletons/SkeletonHome';
+import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
+import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
+import InlineSearchResults from '../components/home_page/InlineSearchResults';
+import { getUserProfile } from '../services/profile';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
+const CARD_HEIGHT = CARD_WIDTH * 1.45;
+
+const ACCENT = '#FF6B35';
 
 const HomeMovies = ({ navigation }) => {
-  const theme = getMediaTheme('movie'); // 'movie' theme
   const { setMediaType } = useMediaType();
-  
+  const tabBarHeight = useBottomTabBarHeight();
 
-  // State for responsive dimensions
-  const dimensions = getCardDimensions();
-  const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
-  const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
-  
-  // State for selected category
-  const [selectedCategory, setSelectedCategory] = useState('Trending');
-  
-  // State for sidebar
+  const [selectedCategory, setSelectedCategory] = useState('trending');
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('movie');
+  const [userProfile, setUserProfile] = useState(null);
 
-  // State for movie data
-  const [movieList, setMovieList] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // ── Search state ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
-  // Listen for screen size changes
+  // ── Profile ──
   useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', () => {
-      const { cardWidth: newWidth, cardHeight: newHeight } = getCardDimensions();
-      setCardWidth(newWidth);
-      setCardHeight(newHeight);
-    });
+    const loadProfile = async () => {
+      const result = await getUserProfile();
+      setUserProfile(result.success && result.profile ? result.profile : null);
+    };
+    loadProfile();
+    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    return unsubscribe;
+  }, [navigation]);
 
-    return () => subscription?.remove();
-  }, []);
-
-  // Fetch movie data based on category
-  const fetchMovieData = async (category) => {
-    setIsLoading(true);
-    setError(null);
-    
+  // ── Data fetching ──
+  const loadMovies = useCallback(async (category = selectedCategory, page = 1) => {
+    if (page === 1) setLoading(true);
+    else setIsLoadingMore(true);
     try {
-      let response;
+      let data;
       switch (category) {
-        case 'Popular':
-          response = await getPopularMovies(1, 20);
+        case 'popular':
+          data = await getPopularMovies(page);
           break;
-        case 'New':
-          response = await getNewMovies(1, 20);
+        case 'new':
+          data = await getNewMovies(page);
           break;
-        case 'Trending':
+        case 'trending':
         default:
-          response = await getTrendingMovies(1, 20);
-          break;
+          data = await getTrendingMovies(page);
       }
-      
-      // Format the movie data for display
-      const formattedMovies = response.media.map(movie => formatMovieData(movie));
-      setMovieList(formattedMovies);
-    } catch (err) {
-      console.error('Error fetching movies:', err);
-      setError('Failed to load movies. Please try again.');
+      const formatted = (data.results || []).map(formatMovieData);
+      setMovies(formatted);
+      setCurrentPage(page);
+      setHasMore(page < (data.total_pages || 1));
+    } catch (error) {
+      console.error('Error loading movies:', error);
+      setMovies([]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [selectedCategory]);
 
-  // Fetch trending movies on mount
   useEffect(() => {
-    fetchMovieData(selectedCategory);
-  }, []);
-  
-  // Handle category change
-  const handleCategoryChange = (category) => {
+    loadMovies(selectedCategory, 1);
+  }, [selectedCategory]);
+
+  const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
-    fetchMovieData(category);
+    setCurrentPage(1);
+    setHasMore(true);
+    loadMovies(category, 1);
+  }, [loadMovies]);
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      loadMovies(selectedCategory, currentPage + 1);
+    }
+  }, [isLoadingMore, hasMore, currentPage, selectedCategory, loadMovies]);
+
+  const handlePrevPage = useCallback(() => {
+    if (!isLoadingMore && currentPage > 1) {
+      loadMovies(selectedCategory, currentPage - 1);
+    }
+  }, [isLoadingMore, currentPage, selectedCategory, loadMovies]);
+
+  // ── Search ──
+  const performSuggestionSearch = useCallback(
+    debounce(async (query) => {
+      if (!query || query.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const results = await searchMedia(query, 'movie', 3);
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Movie suggestion search error:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+    setIsSearchSubmitted(false);
+    if (text.trim().length >= 2) {
+      performSuggestionSearch(text);
+    } else {
+      setSearchResults([]);
+      setIsSearching(false);
+    }
+  }, [performSuggestionSearch]);
+
+  const handleSearchSubmit = useCallback(async () => {
+    if (!searchQuery || searchQuery.trim().length < 2) return;
+    setIsSearchSubmitted(true);
+    Keyboard.dismiss();
+    setIsSearching(true);
+    try {
+      const results = await searchMedia(searchQuery, 'movie', 50);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Movie search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
+
+  const handleSearchCancel = useCallback(() => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+    setIsSearchSubmitted(false);
+  }, []);
+
+  const handleSearchResultPress = (item) => {
+    // TODO: navigate to DetailsMovies when that page exists
+    // navigation.navigate('DetailsMovies', { movieId: item.id });
+    handleSearchCancel();
   };
 
-  // Split into two columns for masonry layout
-  const leftColumn = movieList.filter((_, index) => index % 2 === 0);
-  const rightColumn = movieList.filter((_, index) => index % 2 !== 0);
-
+  // ── Render ──
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable 
-          style={styles.menuButton}
-          onPress={() => setIsSidebarVisible(!isSidebarVisible)}
-        >
-          <Text style={styles.menuIcon}>☰</Text>
-        </Pressable>
-        
-        <Text style={styles.headerTitle}>Movies</Text>
-        
-        <Pressable 
-          style={styles.profileButton}
-          onPress={() => navigation.navigate('ProfilePage')}
-        >
-          <View style={styles.profileIcon} />
-        </Pressable>
-      </View>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0E0A07" />
 
-      {/* Masonry Grid with Badge integrated */}
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.accent} />
-            <Text style={styles.loadingText}>Loading movies...</Text>
+      {/* Warm ambient glow */}
+      <View style={styles.ambientGlow} pointerEvents="none" />
+
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)}>
+            <LinearGradient colors={['#FF6B35', '#FF9F1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerBtn}>
+              <Ionicons name="menu" size={22} color="#fff" />
+            </LinearGradient>
+          </Pressable>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>MOVIES</Text>
+            <View style={styles.titleUnderline} />
           </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Pressable 
-              style={[styles.retryButton, { backgroundColor: theme.accent }]}
-              onPress={() => fetchMovieData(selectedCategory)}
+          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')}>
+            {userProfile ? (
+              <Image
+                source={{ uri: userProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}` }}
+                style={styles.profileIcon}
+              />
+            ) : (
+              <LinearGradient colors={['#FF6B35', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerBtn}>
+                <Ionicons name="person" size={22} color="#fff" />
+              </LinearGradient>
+            )}
+          </Pressable>
+        </View>
+
+        {/* Category pills */}
+        <View style={styles.categoryContainer}>
+          {['trending', 'popular', 'new'].map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => handleCategoryChange(cat)}
+              style={({ pressed }) => [
+                styles.categoryPill,
+                selectedCategory === cat && styles.categoryPillActive,
+                pressed && styles.categoryPillPressed,
+              ]}
             >
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
+                {cat === 'new' ? 'NOW PLAYING' : cat.toUpperCase()}
+              </Text>
             </Pressable>
-          </View>
-        ) : (
-          <View style={styles.grid}>
-            {/* Left Column */}
-            <View style={styles.column}>
-              {/* Category Pill as first item in left column */}
-              <View style={styles.badgeWrapper}>
-                <CategoryPill
-                  categories={['Trending', 'Popular', 'New']}
-                  onCategoryChange={handleCategoryChange}
-                  width={cardWidth}
-                  activeColor={theme.accent} // Use theme color
-                />
-              </View>
-              
-              {leftColumn.map((movie) => (
-                <Pressable 
-                  key={movie.id} 
-                  style={styles.cardWrapper}
-                  // onPress={() => navigation?.navigate('DetailsMovie', { movieId: movie.id })} // Not created yet
-                >
-                  <MediaCard
-                    theme="movie"
-                    title={movie.title}
-                    year={movie.year}
-                    imageUrl={movie.coverImage}
-                    width={cardWidth}
-                    height={cardHeight}
-                  />
-                </Pressable>
-              ))}
-            </View>
+          ))}
+        </View>
 
-            {/* Right Column */}
-            <View style={styles.column}>
-              {rightColumn.map((movie) => (
-                <Pressable 
-                  key={movie.id} 
-                  style={styles.cardWrapper}
-                  // onPress={() => navigation?.navigate('DetailsMovie', { movieId: movie.id })}
+        {/* Search submitted → inline results */}
+        {isSearchSubmitted ? (
+          <InlineSearchResults
+            results={searchResults}
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            onResultPress={handleSearchResultPress}
+            onClearSearch={handleSearchCancel}
+            theme={{ accent: ACCENT }}
+          />
+        ) : loading || isLoadingMore ? (
+          <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
+        ) : (
+          <View style={styles.listWrapper}>
+            <FlashList
+              data={movies}
+              keyExtractor={(item) => item.id.toString()}
+              estimatedItemSize={CARD_HEIGHT + 12}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.flashListContent}
+              renderItem={({ item: movie }) => (
+                <Pressable
+                  style={({ pressed }) => [styles.movieCard, pressed && styles.movieCardPressed]}
+                  onPress={() => {
+                    // TODO: navigate to DetailsMovies when page exists
+                    // navigation.navigate('DetailsMovies', { movieId: movie.id });
+                  }}
                 >
-                  <MediaCard
-                    theme="movie"
-                    title={movie.title}
-                    year={movie.year}
-                    imageUrl={movie.coverImage}
-                    width={cardWidth}
-                    height={cardHeight}
+                  {/* Poster */}
+                  {movie.coverImage ? (
+                    <Image source={{ uri: movie.coverImage }} style={styles.cardImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.cardImage, styles.cardPlaceholder]}>
+                      <Ionicons name="film-outline" size={32} color="rgba(255,107,53,0.3)" />
+                    </View>
+                  )}
+
+                  {/* Gradient overlay */}
+                  <LinearGradient
+                    colors={['transparent', 'rgba(14,10,7,0.82)', 'rgba(14,10,7,0.97)']}
+                    style={styles.cardOverlay}
                   />
+
+                  {/* Score badge */}
+                  {movie.score && (
+                    <View style={[
+                      styles.scoreBadge,
+                      { backgroundColor: movie.score >= 70 ? '#10B981' : movie.score >= 50 ? '#FFBE0B' : '#EF4444' },
+                    ]}>
+                      <Text style={styles.scoreText}>{movie.score}</Text>
+                    </View>
+                  )}
+
+                  {/* Info */}
+                  <View style={styles.cardContent}>
+                    <Text style={styles.cardTitle} numberOfLines={2}>{movie.title}</Text>
+                    {movie.year && <Text style={styles.cardYear}>{movie.year}</Text>}
+                  </View>
                 </Pressable>
-              ))}
-            </View>
+              )}
+              ListFooterComponent={
+                (currentPage > 1 || hasMore) ? (
+                  <View style={styles.paginationContainer}>
+                    {currentPage > 1 ? (
+                      <Pressable style={styles.pageButton} onPress={handlePrevPage}>
+                        <Ionicons name="chevron-back" size={16} color={ACCENT} />
+                        <Text style={styles.pageButtonText}>Prev</Text>
+                      </Pressable>
+                    ) : <View style={styles.pageButtonPlaceholder} />}
+
+                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+                    {hasMore ? (
+                      <Pressable style={styles.pageButton} onPress={handleLoadMore}>
+                        <Text style={styles.pageButtonText}>Next</Text>
+                        <Ionicons name="chevron-forward" size={16} color={ACCENT} />
+                      </Pressable>
+                    ) : <View style={styles.pageButtonPlaceholder} />}
+                  </View>
+                ) : null
+              }
+            />
           </View>
         )}
-      </ScrollView>
-
+      </SafeAreaView>
 
       {/* Search Bar */}
-      <KeyboardAwareSearchBar 
+      <KeyboardAwareSearchBar
         theme="movie"
         placeholder="Search movies..."
-        onChangeText={(text) => console.log('Search:', text)}
-        onCancel={() => console.log('Search cancelled')}
+        value={searchQuery}
+        onChangeText={handleSearchChange}
+        onCancel={handleSearchCancel}
+        onSubmit={handleSearchSubmit}
         defaultBottom={8}
-        keyboardOffset={24}
-        accentColor={theme.accent}
+        keyboardOffset={8}
+        tabBarHeight={tabBarHeight}
       />
-      
+
+      {/* Search Suggestions Overlay */}
+      {!isSearchSubmitted && (searchQuery.length >= 2 || isSearching) && (
+        <SearchSuggestionsOverlay
+          results={searchResults}
+          isLoading={isSearching}
+          searchQuery={searchQuery}
+          onResultPress={handleSearchResultPress}
+          onClose={handleSearchCancel}
+          theme={{ accent: ACCENT }}
+        />
+      )}
+
       {/* Sidebar */}
-      <SideBar 
+      <SideBar
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0E0A07',
   },
+  ambientGlow: {
+    position: 'absolute',
+    top: -100,
+    right: -100,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: '#FF6B35',
+    opacity: 0.06,
+  },
+  safeArea: {
+    flex: 1,
+  },
+
+  // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 4, 
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: 12,
   },
-  menuButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
+  menuButton: { width: 44, height: 44 },
+  profileButton: { width: 44, height: 44 },
+  headerBtn: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
     alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: 24,
-    color: '#000',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   profileIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E5E5',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
   },
-  scrollView: {
-    flex: 1,
+  titleContainer: { alignItems: 'center' },
+  title: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#F5F0EB',
+    letterSpacing: 4,
   },
-  grid: {
+  titleUnderline: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: ACCENT,
+    marginTop: 4,
+  },
+
+  // ── Category pills ──
+  categoryContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 8,
-    paddingTop: 12,
-    paddingBottom: 80, 
+    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: 12,
   },
-  column: {
+  categoryPill: {
     flex: 1,
-    paddingHorizontal: 8,
-  },
-  badgeWrapper: {
-    marginBottom: 16,
-  },
-  cardWrapper: {
-    marginBottom: 16,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,53,0.25)',
+    backgroundColor: 'rgba(255,107,53,0.06)',
     alignItems: 'center',
-    paddingTop: 100,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+  categoryPillActive: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 100,
+  categoryPillPressed: {
+    opacity: 0.7,
   },
-  errorText: {
-    fontSize: 16,
-    color: '#ff6b6b',
-    marginBottom: 16,
-    textAlign: 'center',
+  categoryText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#A0876E',
+    letterSpacing: 1.5,
   },
-  retryButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryText: {
+  categoryTextActive: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  },
+
+  // ── FlashList ──
+  listWrapper: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  flashListContent: {
+    paddingBottom: 100,
+    paddingTop: 4,
+  },
+
+  // ── Movie Card ──
+  movieCard: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    borderRadius: 14,
+    overflow: 'hidden',
+    margin: 6,
+    backgroundColor: '#1A1209',
+  },
+  movieCardPressed: {
+    transform: [{ scale: 0.96 }],
+  },
+  cardImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 14,
+  },
+  cardPlaceholder: {
+    backgroundColor: '#1A1209',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  scoreBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  scoreText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#fff',
+  },
+  cardContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 10,
+  },
+  cardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F5F0EB',
+    lineHeight: 17,
+  },
+  cardYear: {
+    fontSize: 11,
+    color: '#A0876E',
+    marginTop: 2,
+  },
+
+  // ── Pagination ──
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 20,
+    paddingHorizontal: 8,
+  },
+  pageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,107,53,0.12)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,53,0.3)',
+    minWidth: 90,
+    justifyContent: 'center',
+  },
+  pageButtonPlaceholder: { minWidth: 90 },
+  pageButtonText: {
+    color: ACCENT,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  pageIndicator: {
+    color: '#888',
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
 });
 

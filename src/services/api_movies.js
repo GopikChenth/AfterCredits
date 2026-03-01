@@ -1,109 +1,269 @@
 /**
- * Movie API Service (Mock)
- * Placeholder service for Movie data until TMDB integration
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║                                                                  ║
+ * ║    ████████╗███╗   ███╗██████╗ ██████╗                           ║
+ * ║    ╚══██╔══╝████╗ ████║██╔══██╗██╔══██╗                          ║
+ * ║       ██║   ██╔████╔██║██║  ██║██████╔╝                          ║
+ * ║       ██║   ██║╚██╔╝██║██║  ██║██╔══██╗                          ║
+ * ║       ██║   ██║ ╚═╝ ██║██████╔╝██████╔╝                          ║
+ * ║       ╚═╝   ╚═╝     ╚═╝╚═════╝ ╚═════╝                          ║
+ * ║                                                                  ║
+ * ║    Powered by TMDB · api.themoviedb.org/3                        ║
+ * ║                                                                  ║
+ * ║    Purpose : Movie lists, search, details, and card data.        ║
+ * ║              Used for Home, Discover, Upcoming, Podium, Search.  ║
+ * ║                                                                  ║
+ * ╠══════════════════════════════════════════════════════════════════╣
+ * ║                                                                  ║
+ * ║  SETUP                                                           ║
+ * ║  ─────────────────────────────────────────────────────────────   ║
+ * ║  1. Register at https://www.themoviedb.org/settings/api          ║
+ * ║  2. Add to .env:  EXPO_PUBLIC_TMDB_API_KEY=your_key_here         ║
+ * ║                                                                  ║
+ * ╚══════════════════════════════════════════════════════════════════╝
  */
 
-// Mock Data
-const MOCK_MOVIES = [
-  {
-    id: 1,
-    title: "Dune: Part Two",
-    year: 2024,
-    coverImage: "https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg",
-    description: "Follow the mythic journey of Paul Atreides as he unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.",
-    score: 85,
-    popularity: 95000,
-  },
-  {
-    id: 2,
-    title: "Oppenheimer",
-    year: 2023,
-    coverImage: "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-    description: "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
-    score: 81,
-    popularity: 88000,
-  },
-  {
-    id: 3,
-    title: "The Batman",
-    year: 2022,
-    coverImage: "https://image.tmdb.org/t/p/w500/74xTEgt7R36Fpooo50x9T2Ov8lW.jpg",
-    description: "In his second year of fighting crime, Batman uncovers corruption in Gotham City that connects to his own family while facing a serial killer known as the Riddler.",
-    score: 77,
-    popularity: 72000,
-  },
-  {
-    id: 4,
-    title: "Spider-Man: Across the Spider-Verse",
-    year: 2023,
-    coverImage: "https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg",
-    description: "After reuniting with Gwen Stacy, Brooklyn's full-time, friendly neighborhood Spider-Man is catapulted across the Multiverse.",
-    score: 84,
-    popularity: 90000,
-  },
-  {
-    id: 5,
-    title: "Interstellar",
-    year: 2014,
-    coverImage: "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-    description: "The adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel.",
-    score: 86,
-    popularity: 92000,
-  },
-  {
-    id: 6,
-    title: "Inception",
-    year: 2010,
-    coverImage: "https://image.tmdb.org/t/p/w500/9gk7admal4zl248sKidtwi9x3Oq.jpg",
-    description: "Cobb, a skilled thief who commits corporate espionage by infiltrating the subconscious of his targets is offered a chance to regain his old life.",
-    score: 83,
-    popularity: 98000,
-  },
-];
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+// ===========================================
+// BASE CONFIGURATION
+// ===========================================
 
-export const getTrendingMovies = async (page = 1, perPage = 20) => {
-  await delay(800); // Simulate network latency
-  return { media: MOCK_MOVIES };
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
+const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || '';
+
+// Image size presets
+const IMAGE_SIZES = {
+  poster: '/w500',
+  backdrop: '/w1280',
+  profile: '/w185',
+  posterSmall: '/w342',
 };
 
-export const getPopularMovies = async (page = 1, perPage = 20) => {
-  await delay(800);
-  return { media: [...MOCK_MOVIES].reverse() };
+// Cache durations (milliseconds)
+const CACHE_DURATION = {
+  TMDB_TRENDING:  6 * 60 * 60 * 1000,      // 6 hours
+  TMDB_POPULAR:   6 * 60 * 60 * 1000,       // 6 hours
+  TMDB_NOW:       6 * 60 * 60 * 1000,       // 6 hours
+  TMDB_UPCOMING:  6 * 60 * 60 * 1000,       // 6 hours
+  TMDB_DETAILS:   24 * 60 * 60 * 1000,      // 24 hours
+  TMDB_SEARCH:    1 * 60 * 60 * 1000,       // 1 hour
 };
 
-export const getNewMovies = async (page = 1, perPage = 20) => {
-  await delay(800);
-  return { media: MOCK_MOVIES.slice(0, 3) };
+// ===========================================
+// CACHE HELPERS
+// ===========================================
+
+const getCachedData = async (key) => {
+  try {
+    const cached = await AsyncStorage.getItem(key);
+    if (!cached) return null;
+    const { data, timestamp } = JSON.parse(cached);
+    const prefix = key.split(':')[0];
+    const maxAge = CACHE_DURATION[prefix] || CACHE_DURATION.TMDB_DETAILS;
+    if (Date.now() - timestamp < maxAge) {
+      return data;
+    }
+    await AsyncStorage.removeItem(key);
+    return null;
+  } catch (e) {
+    console.error('TMDB cache read error:', e);
+    return null;
+  }
 };
 
-export const formatMovieData = (movie) => {
-  return {
-    id: movie.id,
-    title: movie.title,
-    year: movie.year,
-    coverImage: movie.coverImage,
-    description: movie.description,
-    score: movie.score,
-    popularity: movie.popularity || 0,
-    type: 'MOVIE'
-  };
+const setCachedData = async (key, data) => {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {
+    console.error('TMDB cache write error:', e);
+  }
 };
 
-export const searchMovies = async (searchTerm, page = 1, perPage = 20) => {
-  await delay(600);
-  // Filter mock movies by search term
-  const filtered = MOCK_MOVIES.filter(movie => 
-    movie.title.toLowerCase().includes(searchTerm.toLowerCase())
+// ===========================================
+// API REQUEST HELPER
+// ===========================================
+
+const tmdbRequest = async (endpoint, params = {}, cacheKey = null) => {
+  if (cacheKey) {
+    const cached = await getCachedData(cacheKey);
+    if (cached) return cached;
+  }
+
+  try {
+    const response = await axios.get(`${TMDB_BASE_URL}${endpoint}`, {
+      params: {
+        api_key: TMDB_API_KEY,
+        language: 'en-US',
+        ...params,
+      },
+    });
+
+    if (cacheKey) {
+      await setCachedData(cacheKey, response.data);
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('TMDB API Error:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// ===========================================
+// IMAGE URL BUILDER
+// ===========================================
+
+const getPosterUrl = (path) =>
+  path ? `${TMDB_IMAGE_BASE}${IMAGE_SIZES.poster}${path}` : null;
+
+const getBackdropUrl = (path) =>
+  path ? `${TMDB_IMAGE_BASE}${IMAGE_SIZES.backdrop}${path}` : null;
+
+// ===========================================
+// DATA FORMATTER
+// ===========================================
+
+/**
+ * Format raw TMDB movie object into our standard card shape.
+ * This is used everywhere — Home, Discover, Podium, Search.
+ */
+export const formatMovieData = (movie) => ({
+  id: movie.id,
+  title: movie.title || movie.original_title || 'Untitled',
+  name: movie.title || movie.original_title || 'Untitled',
+  year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
+  releaseDate: movie.release_date || null,
+  released: movie.release_date || null,
+  coverImage: getPosterUrl(movie.poster_path),
+  backdropImage: getBackdropUrl(movie.backdrop_path),
+  background_image: getPosterUrl(movie.poster_path),
+  description: movie.overview || '',
+  score: movie.vote_average ? Math.round(movie.vote_average * 10) : null,
+  rating: movie.vote_average || 0,
+  voteCount: movie.vote_count || 0,
+  popularity: movie.popularity || 0,
+  genres: movie.genre_ids
+    ? movie.genre_ids.map((gid) => GENRE_MAP[gid] || 'Unknown')
+    : movie.genres
+    ? movie.genres.map((g) => g.name)
+    : [],
+  genreIds: movie.genre_ids || [],
+  adult: movie.adult || false,
+  type: 'MOVIE',
+});
+
+// ===========================================
+// GENRE ID → NAME MAP  (TMDB genre IDs)
+// ===========================================
+
+const GENRE_MAP = {
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Science Fiction',
+  10770: 'TV Movie',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western',
+};
+
+// ===========================================
+// LIST ENDPOINTS
+// ===========================================
+
+/**
+ * Get trending movies (daily/weekly)
+ * @param {number} page  – Page number (1-indexed)
+ * @param {number} _     – Ignored, kept for API parity with games/anime
+ * @returns {{ results: Array, page, total_pages, total_results }}
+ */
+export const getTrendingMovies = async (page = 1, _ = 20) => {
+  const cacheKey = `TMDB_TRENDING:page${page}`;
+  return tmdbRequest('/trending/movie/week', { page }, cacheKey);
+};
+
+/**
+ * Get popular movies
+ */
+export const getPopularMovies = async (page = 1, _ = 20) => {
+  const cacheKey = `TMDB_POPULAR:page${page}`;
+  return tmdbRequest('/movie/popular', { page }, cacheKey);
+};
+
+/**
+ * Get now-playing movies (replaces "New")
+ */
+export const getNewMovies = async (page = 1, _ = 20) => {
+  const cacheKey = `TMDB_NOW:page${page}`;
+  return tmdbRequest('/movie/now_playing', { page }, cacheKey);
+};
+
+/**
+ * Get upcoming movies
+ */
+export const getUpcomingMovies = async (page = 1, _ = 20) => {
+  const cacheKey = `TMDB_UPCOMING:page${page}`;
+  return tmdbRequest('/movie/upcoming', { page }, cacheKey);
+};
+
+// ===========================================
+// DETAILS
+// ===========================================
+
+/**
+ * Get full movie details by TMDB ID
+ * Includes credits, videos, recommendations
+ */
+export const getMovieDetails = async (movieId) => {
+  const cacheKey = `TMDB_DETAILS:${movieId}`;
+  return tmdbRequest(
+    `/movie/${movieId}`,
+    { append_to_response: 'credits,videos,recommendations,images' },
+    cacheKey
   );
-  return { media: filtered };
+};
+
+// ===========================================
+// SEARCH
+// ===========================================
+
+/**
+ * Search movies by query string
+ * @returns {{ results: Array, page, total_pages, total_results }}
+ */
+export const searchMovies = async (query, page = 1, _perPage = 20) => {
+  const cacheKey = `TMDB_SEARCH:${query.toLowerCase().trim()}_p${page}`;
+  const data = await tmdbRequest('/search/movie', { query, page, include_adult: false }, cacheKey);
+  // Transform to match { media: [...] } shape used by search.js
+  return {
+    media: data.results || [],
+    totalPages: data.total_pages || 1,
+    totalResults: data.total_results || 0,
+  };
 };
 
 export default {
   getTrendingMovies,
   getPopularMovies,
   getNewMovies,
+  getUpcomingMovies,
+  getMovieDetails,
   searchMovies,
-  formatMovieData
+  formatMovieData,
+  getPosterUrl,
+  getBackdropUrl,
 };
