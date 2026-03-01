@@ -1,27 +1,27 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║                                                                  ║
- * ║    ██████╗  █████╗ ██╗    ██╗ ██████╗                           ║
- * ║    ██╔══██╗██╔══██╗██║    ██║██╔════╝                           ║
- * ║    ██████╔╝███████║██║ █╗ ██║██║  ███╗                          ║
- * ║    ██╔══██╗██╔══██║██║███╗██║██║   ██║                          ║
- * ║    ██║  ██║██║  ██║╚███╔███╔╝╚██████╔╝                          ║
- * ║    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝  ╚═════╝                          ║
+ * ║    ██████╗  █████╗ ██╗    ██╗ ██████╗                            ║
+ * ║    ██╔══██╗██╔══██╗██║    ██║██╔════╝                            ║
+ * ║    ██████╔╝███████║██║ █╗ ██║██║  ███╗                           ║
+ * ║    ██╔══██╗██╔══██║██║███╗██║██║   ██║                           ║
+ * ║    ██║  ██║██║  ██║╚███╔███╔╝╚██████╔╝                           ║
+ * ║    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚══╝╚══╝  ╚═════╝                            ║
  * ║                                                                  ║
- * ║    Powered by RAWG · api.rawg.io/api                            ║
+ * ║    Powered by RAWG · api.rawg.io/api                             ║
  * ║                                                                  ║
  * ║    Purpose : Game lists, search, and lightweight card data.      ║
- * ║              Used for Home, Discover, Upcoming, and Podium.     ║
+ * ║              Used for Home, Discover, Upcoming, and Podium.      ║
  * ║                                                                  ║
  * ║    For rich game details (story, modes, trailers, companies)     ║
- * ║    see → src/services/api_igdb.js  (Twitch / IGDB)             ║
+ * ║    see → src/services/api_igdb.js  (Twitch / IGDB)               ║
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
  * ║  SETUP                                                           ║
- * ║  ─────────────────────────────────────────────────────────────  ║
- * ║  1. Register at https://rawg.io/apidocs                         ║
- * ║  2. Add to .env:  EXPO_PUBLIC_RAWG_API_KEY=your_key_here        ║
+ * ║  ─────────────────────────────────────────────────────────────   ║
+ * ║  1. Register at https://rawg.io/apidocs                          ║
+ * ║  2. Add to .env:  EXPO_PUBLIC_RAWG_API_KEY=your_key_here         ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
