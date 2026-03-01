@@ -11,7 +11,7 @@ import SkeletonPodiumList from '../components/skeletons/SkeletonPodiumList';
 // ─── Services ──────────────────────────────────────────────
 import { getAnimeDetails, formatAnimeData } from '../services/api_anilist';
 import { getGameDetails, formatGameData } from '../services/api_rawg';
-import { getMovieDetails, formatMovieData } from '../services/api_movies';
+import { getMovieDetails, formatMovieData } from '../services/api_tmdb';
 
 /**
  * ╔═══════════════════════════════════════════════════════════════╗

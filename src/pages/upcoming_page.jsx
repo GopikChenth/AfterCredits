@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getUpcomingAnime, formatAnimeData } from '../services/api_anilist';
 import { getUpcomingGames } from '../services/api_rawg';
-import { getUpcomingMovies, formatMovieData } from '../services/api_movies';
+import { getUpcomingMovies, formatMovieData } from '../services/api_tmdb';
 import { setWishlist as setWishlistService, getWishlist } from '../services/mediaStatusService';
 import SkeletonUpcoming from '../components/skeletons/SkeletonUpcoming';
 import {

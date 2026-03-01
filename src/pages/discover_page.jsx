@@ -21,7 +21,7 @@ import { getUpcomingGames, formatGameData } from "../services/api_rawg";
 import { getGamingNews } from "../services/news_games";
 // Movies services
 import { getMovieNews } from "../services/news_movies";
-import { getUpcomingMovies, formatMovieData } from "../services/api_movies";
+import { getUpcomingMovies, formatMovieData } from "../services/api_tmdb";
 // Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
 import { getUserProfile } from "../services/profile";

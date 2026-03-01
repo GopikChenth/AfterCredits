@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMediaType } from '../context/MediaTypeContext';
-import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_movies';
+import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_tmdb';
 import { searchMedia, debounce } from '../services/search';
 import SideBar from '../components/home_page/SideBar';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
@@ -279,16 +279,6 @@ const HomeMovies = ({ navigation }) => {
                     style={styles.cardOverlay}
                   />
 
-                  {/* Score badge */}
-                  {movie.score && (
-                    <View style={[
-                      styles.scoreBadge,
-                      { backgroundColor: movie.score >= 70 ? '#10B981' : movie.score >= 50 ? '#FFBE0B' : '#EF4444' },
-                    ]}>
-                      <Text style={styles.scoreText}>{movie.score}</Text>
-                    </View>
-                  )}
-
                   {/* Info */}
                   <View style={styles.cardContent}>
                     <Text style={styles.cardTitle} numberOfLines={2}>{movie.title}</Text>
@@ -487,19 +477,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  scoreBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  scoreText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: '#fff',
   },
   cardContent: {
     position: 'absolute',

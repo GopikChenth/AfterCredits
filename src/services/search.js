@@ -4,7 +4,7 @@
  */
 
 import { searchAnime, formatAnimeData } from './api_anilist';
-import { searchMovies, formatMovieData } from './api_movies';
+import { searchMovies, formatMovieData } from './api_tmdb';
 import { searchGamesIGDB } from './api_igdb';
 
 /**

@@ -34,7 +34,7 @@ import GenrePill from '../components/details_page/GenrePill';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
-import { getMovieDetails } from '../services/api_movies';
+import { getMovieDetails } from '../services/api_tmdb';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
 import { getMediaStatus, setMediaStatus, setWishlist } from '../services/mediaStatusService';
 
