@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getUpcomingAnime, formatAnimeData } from '../services/api_anilist';
 import { getUpcomingGames } from '../services/api_rawg';
+import { getUpcomingMovies, formatMovieData } from '../services/api_movies';
 import { setWishlist as setWishlistService, getWishlist } from '../services/mediaStatusService';
 import SkeletonUpcoming from '../components/skeletons/SkeletonUpcoming';
 import {
@@ -30,6 +31,7 @@ const UpcomingPage = ({ navigation }) => {
   const styles = getUpcomingPageStyles(mediaType);
   const theme = getUpcomingPageTheme(mediaType);
   const isGames = mediaType === 'games';
+  const isMovies = mediaType === 'movies';
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,32 @@ const UpcomingPage = ({ navigation }) => {
     try {
       if (pageNum === 1) setLoading(true);
 
-      if (isGames) {
+      if (isMovies) {
+        // TMDB upcoming movies
+        const result = await getUpcomingMovies(pageNum);
+        if (result?.results) {
+          const formatted = result.results.map(movie => {
+            const m = formatMovieData(movie);
+            return {
+              id: m.id,
+              title: m.title,
+              coverImage: m.coverImage,
+              genres: m.genres || [],
+              studio: null,
+              season: null,
+              year: m.year,
+              releaseDate: m.releaseDate || 'TBA',
+            };
+          });
+
+          if (pageNum === 1) {
+            setItems(formatted);
+          } else {
+            setItems(prev => [...prev, ...formatted]);
+          }
+          setHasMore(pageNum < (result.total_pages || 1));
+        }
+      } else if (isGames) {
         const result = await getUpcomingGames(pageNum, 20);
         if (result?.results) {
           const formatted = result.results.map(game => ({

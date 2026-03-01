@@ -97,11 +97,12 @@ const DiscoverPage = ({ navigation }) => {
         // TMDB API — upcoming movies
         const result = await getUpcomingMovies(1, 20);
         if (result?.results) {
+          const formatted = result.results.map(formatMovieData);
           // Sort by release date (nearest first)
-          const sorted = result.results.sort((a, b) => {
-            const dateA = a.year || 9999;
-            const dateB = b.year || 9999;
-            return dateA - dateB;
+          const sorted = formatted.sort((a, b) => {
+            if (!a.releaseDate) return 1;
+            if (!b.releaseDate) return -1;
+            return new Date(a.releaseDate) - new Date(b.releaseDate);
           });
           setUpcomingItems(sorted);
         }
