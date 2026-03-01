@@ -172,8 +172,11 @@ const HomeMovies = ({ navigation }) => {
   }, []);
 
   const handleSearchResultPress = (item) => {
-    // TODO: navigate to DetailsMovies when that page exists
-    // navigation.navigate('DetailsMovies', { movieId: item.id });
+    navigation.navigate('DetailsMovies', {
+      movieId: item.id,
+      movieTitle: item.title,
+      coverImage: item.coverImage,
+    });
     handleSearchCancel();
   };
 
@@ -255,10 +258,11 @@ const HomeMovies = ({ navigation }) => {
               renderItem={({ item: movie }) => (
                 <Pressable
                   style={({ pressed }) => [styles.movieCard, pressed && styles.movieCardPressed]}
-                  onPress={() => {
-                    // TODO: navigate to DetailsMovies when page exists
-                    // navigation.navigate('DetailsMovies', { movieId: movie.id });
-                  }}
+                  onPress={() => navigation.navigate('DetailsMovies', {
+                    movieId: movie.id,
+                    movieTitle: movie.title,
+                    coverImage: movie.coverImage,
+                  })}
                 >
                   {/* Poster */}
                   {movie.coverImage ? (

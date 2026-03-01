@@ -256,7 +256,9 @@ const UpcomingPage = ({ navigation }) => {
                     theme.detailsRoute,
                     isGames
                       ? { gameId: item.id, gameName: item.title, coverImage: item.coverImage }
-                      : { animeId: item.id }
+                      : mediaType === 'movies'
+                        ? { movieId: item.id, movieTitle: item.title, coverImage: item.coverImage }
+                        : { animeId: item.id }
                   )}
                 >
                   <Text style={styles.viewDetailsText}>View Details</Text>
