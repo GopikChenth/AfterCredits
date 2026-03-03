@@ -3979,3 +3979,232 @@ const gamesTheme = {
 ---
 
 _"Every voice actor has a story. Every story deserves a page."_
+
+---
+
+## Session 16: Mar 01, 2026
+
+### ✅ Movies — Full TMDB API Integration
+
+#### **api_tmdb.js** (`/src/services/api_tmdb.js`) — NEW (renamed from api_movies.js)
+
+**Purpose**: Complete TMDB v3 API service replacing all mock data
+
+**Endpoints**:
+
+| Function                  | TMDB Route             | Description                                       |
+| ------------------------- | ---------------------- | ------------------------------------------------- |
+| `getTrendingMovies(page)` | `/trending/movie/week` | Weekly trending movies                            |
+| `getPopularMovies(page)`  | `/movie/popular`       | Popular movies by vote                            |
+| `getNewMovies(page)`      | `/movie/now_playing`   | Currently in theaters                             |
+| `getUpcomingMovies(page)` | `/movie/upcoming`      | Unreleased movies                                 |
+| `getMovieDetails(id)`     | `/movie/{id}`          | Full details + credits + videos + recommendations |
+| `searchMovies(query)`     | `/search/movie`        | Text search                                       |
+
+**Features**:
+
+- **AsyncStorage Caching**: 6hr lists, 24hr details, 1hr search
+- **formatMovieData()**: Normalizes TMDB data → `{ id, title, coverImage, year, score, genres, releaseDate }`
+- **Poster/Backdrop URL builders**: `https://image.tmdb.org/t/p/w500/...`
+- **Genre ID map**: Converts numeric genre_ids → human-readable names
+
+---
+
+#### **home_movies.jsx** — REWRITTEN
+
+**Purpose**: Movie home page matching anime/games pattern
+
+**Features**:
+
+- **FlashList** 2-column grid (20 movies per page)
+- **Category pills**: Trending · Popular · Now Playing
+- **Prev / Page N / Next** pagination
+- **Search** with suggestion overlay + inline results
+- **Profile icon** in header
+- **Skeleton loader** during loading
+- **Warm sunset theme** (`#FF6B35` accent, `#0E0A07` background)
+- **Cards navigate** → `DetailsMovies`
+
+---
+
+#### **details_movies.jsx** — VERIFIED COMPLETE
+
+**Features**:
+
+- Hero backdrop + blur card description
+- Stats pills (Rating / Votes / Runtime)
+- StatusTag (Watching/Completed/Dropped/Wishlist)
+- Genre pills, Cast carousel, Trailers, Reviews, Recommendations
+- Sunset amber theme consistent throughout
+
+---
+
+### ✅ Navigation — Movies Fully Wired
+
+| Screen                 | Route                  | Params                          | Status |
+| ---------------------- | ---------------------- | ------------------------------- | ------ |
+| Home card press        | `DetailsMovies`        | movieId, movieTitle, coverImage | ✅     |
+| Search result press    | `DetailsMovies`        | movieId, movieTitle, coverImage | ✅     |
+| Discover expanded card | `DetailsMovies`        | movieId, movieTitle, coverImage | ✅     |
+| Upcoming View Details  | `DetailsMovies`        | movieId, movieTitle, coverImage | ✅     |
+| Recommendations tap    | `DetailsMovies` (push) | movieId                         | ✅     |
+
+---
+
+### ✅ Upcoming/Discover — Movies Image Fix
+
+**Problem**: Movie cards on Upcoming and Discover pages showed no poster images.
+
+**Root Cause**: Raw TMDB results were stored without calling `formatMovieData()`. The cards expected `item.coverImage` but TMDB returns `poster_path` (a relative path, not a full URL).
+
+**Fix**: Both `upcoming_page.jsx` and `discover_page.jsx` now run movie results through `formatMovieData()` which builds the full `https://image.tmdb.org/t/p/w500/...` poster URL.
+
+---
+
+### ✅ File Rename & Cleanup
+
+- **Renamed**: `api_movies.js` → `api_tmdb.js` — all 6 import references updated
+- **Removed**: Score badge from movie home page cards (cleaner design)
+- **Added**: `'movies'` alias in `search.js` switch statement
+
+---
+
+### 📊 Session 16 Statistics
+
+**Files Created**: 0 (api_tmdb.js was rewritten from api_movies.js)
+
+**Files Modified**: 8
+
+- `src/services/api_tmdb.js` — Complete TMDB API service
+- `src/pages/home_movies.jsx` — Full rewrite with FlashList, pagination, navigation
+- `src/pages/upcoming_page.jsx` — Added movies branch + formatMovieData
+- `src/pages/discover_page.jsx` — Fixed movie image formatting
+- `src/pages/details_movies.jsx` — Updated import path
+- `src/services/search.js` — Updated import + added 'movies' alias
+- `src/stylehandler/podiumPageStyles.js` — Updated import path
+- `src/stylehandler/upcomingPageStyles.js` — Already had moviesTheme
+
+**Git Commits**: 4
+
+- `feat(movies): TMDB API integration — replace all mock data`
+- `feat(movies): enable navigation to DetailsMovies`
+- `fix(movies): upcoming/discover format movie data for poster images`
+- `refactor: rename api_movies.js to api_tmdb.js, remove score badge`
+
+---
+
+### 🎯 Key Session 16 Learnings
+
+1. **API Normalization**: Always run raw API results through a formatter before storing — raw `poster_path` vs formatted `coverImage` URL caused invisible bugs
+2. **Uniform Patterns**: Anime/Games/Movies home pages all follow the same FlashList + pagination + search pattern now
+3. **Navigation Params**: Always pass `coverImage` so detail pages can show a placeholder while loading
+4. **File Naming**: API service files named after the API provider (`api_tmdb.js`, `api_rawg.js`, `api_anilist.js`) is cleaner than naming after content type
+
+---
+
+## Session 17: Mar 02-03, 2026
+
+### ✅ Local Android Build System
+
+#### **Standalone APK Build**
+
+**Purpose**: Build a self-contained APK that runs independently without Metro/localhost
+
+**Setup Completed**:
+
+- **Java 21**: Already installed at `C:\Program Files\Java\jdk-21`
+- **Android SDK**: Found at `S:\Software\Android` (SDK 34, Build-Tools 36, NDK 27)
+- **Environment Variables**: `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `JAVA_HOME` set
+- **SDK Licenses**: Accepted via `sdkmanager --licenses`
+
+**Build Process**:
+
+1. `npx expo prebuild --platform android --no-install` — generates `android/` folder
+2. `.\android\gradlew.bat assembleRelease --project-dir android` — builds APK
+3. APK output: `android/app/build/outputs/apk/release/app-release.apk`
+
+**Key Discovery — expo-dev-client Issue**:
+
+| Build Type                          | Behavior                                 | Size      |
+| ----------------------------------- | ---------------------------------------- | --------- |
+| Debug + expo-dev-client             | Shows dev launcher, needs localhost      | 176 MB    |
+| Release + expo-dev-client           | Shows dev launcher, needs localhost      | 105 MB    |
+| **Release WITHOUT expo-dev-client** | **Opens app directly, fully standalone** | **78 MB** |
+
+**Solution**: Removed `expo-dev-client` from the project and regenerated `android/` for a true standalone build.
+
+---
+
+### ✅ Build Workflow Created
+
+**File**: `.agent/workflows/build_apk.md`
+
+**Steps**:
+
+```powershell
+# 1. Set env vars (every new terminal)
+$env:ANDROID_HOME = 'S:\Software\Android'
+$env:ANDROID_SDK_ROOT = 'S:\Software\Android'
+$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
+
+# 2. Build
+.\android\gradlew.bat assembleRelease --project-dir android
+
+# 3. APK at:
+# android\app\build\outputs\apk\release\app-release.apk
+```
+
+---
+
+### ✅ Dependency Fixes
+
+- **react-native-gesture-handler**: Downgraded from `2.30.0` → `2.28.0` (Expo SDK 54 compatibility)
+- **@react-native-community/cli**: Added as devDependency for bundle commands
+- **eas.json**: Created with development/preview/production profiles
+
+---
+
+### 📊 Session 17 Statistics
+
+**Files Created**: 2
+
+- `eas.json` — EAS build configuration
+- `.agent/workflows/build_apk.md` — Build workflow
+
+**Files Modified**: 1
+
+- `package.json` — Removed expo-dev-client, downgraded gesture-handler, added CLI deps
+
+**Build Achievements**:
+
+- ✅ First successful standalone APK (78.2 MB)
+- ✅ No Metro server required
+- ✅ Repeatable build process documented
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Production Ready Features**:
+
+| Feature                            | Anime | Games | Movies        |
+| ---------------------------------- | ----- | ----- | ------------- |
+| Home page (FlashList + pagination) | ✅    | ✅    | ✅            |
+| Details page                       | ✅    | ✅    | ✅            |
+| Discover/Upcoming                  | ✅    | ✅    | ✅            |
+| Search                             | ✅    | ✅    | ✅            |
+| Podium                             | ✅    | ✅    | Needs testing |
+| Post/Social                        | ✅    | ❌    | ❌            |
+| Standalone APK                     | ✅    | ✅    | ✅            |
+
+**Next Priorities**:
+
+1. Add TMDB API key to `.env` (currently placeholder)
+2. UI polish — focus on visual consistency across all pages
+3. Podium page for movies — verify it works with TMDB data
+4. Post/Social features for Games and Movies
+5. Push notifications for new releases
+
+---
+
+_"From code to APK. The credits roll, but AfterCredits keeps going."_
