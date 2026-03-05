@@ -405,6 +405,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#252525',
     borderRadius: 12,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: '#333',
     paddingHorizontal: 16,
@@ -435,6 +436,7 @@ const styles = StyleSheet.create({
   submitButton: {
     paddingVertical: 16,
     borderRadius: 12,
+    borderCurve: 'continuous',
     alignItems: 'center',
     marginBottom: 24,
   },
@@ -468,6 +470,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
+    borderCurve: 'continuous',
     backgroundColor: '#F9F9F9',
     borderWidth: 1,
     borderColor: '#E0E0E0',

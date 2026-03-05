@@ -9,7 +9,7 @@ import {
   Keyboard,
   Animated,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 
 /**
  * SearchBar - Floating search bar with frosted glass effect
@@ -115,9 +115,15 @@ const SearchBar = ({
 
   return (
     <View style={[styles.container, style]}>
-      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
+      <View style={styles.blurContainerNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={20}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+        />
         {renderInputContent()}
-      </BlurView>
+      </View>
     </View>
   );
 };
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 56,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -146,6 +153,7 @@ const styles = StyleSheet.create({
   blurContainerWeb: {
     flex: 1,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     backdropFilter: 'blur(20px) saturate(180%)',
@@ -154,6 +162,7 @@ const styles = StyleSheet.create({
   blurContainerNative: {
     flex: 1,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   searchWrapper: {
@@ -196,6 +205,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',

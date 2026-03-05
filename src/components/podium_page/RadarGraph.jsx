@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 20,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
     padding: 8,

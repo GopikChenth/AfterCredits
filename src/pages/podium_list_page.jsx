@@ -6,8 +6,9 @@ import {
   Pressable,
   StatusBar,
   ActivityIndicator,
-  Image,
+  Image as RNImage,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';

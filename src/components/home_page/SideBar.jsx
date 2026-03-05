@@ -7,7 +7,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 import { useNavigation } from '@react-navigation/native';
 import { getSettings } from '../../services/settings';
 import { useMediaType } from '../../context/MediaTypeContext';
@@ -21,18 +21,18 @@ import { useMediaType } from '../../context/MediaTypeContext';
 // Sidebar section ID → context mediaType value
 const SECTION_MEDIA_MAP = {
   anime: 'anime',
-  game:  'games',
-  movie: 'movies',
-  comic: 'comics',
+  games: 'games',
+  movies: 'movies',
+  comics: 'comics',
   manga: 'manga',
 };
 
 // Reverse map: context mediaType → sidebar section ID
 const MEDIA_TO_SECTION = {
   anime: 'anime',
-  games: 'game',
-  movies: 'movie',
-  comics: 'comic',
+  games: 'games',
+  movies: 'movies',
+  comics: 'comics',
   manga: 'manga',
 };
 
@@ -52,9 +52,9 @@ const SideBar = ({
 
   const allSections = [
     { id: 'anime', label: 'Anime', icon: '🎌', settingKey: 'showAnime' },
-    { id: 'movie', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
-    { id: 'game', label: 'Games', icon: '🎮', settingKey: 'showGames' },
-    { id: 'comic', label: 'Comics', icon: '📚', settingKey: 'showComics' },
+    { id: 'movies', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
+    { id: 'games', label: 'Games', icon: '🎮', settingKey: 'showGames' },
+    { id: 'comics', label: 'Comics', icon: '📚', settingKey: 'showComics' },
     { id: 'manga', label: 'Manga', icon: '📖', settingKey: 'showManga' },
   ];
 
@@ -115,13 +115,15 @@ const SideBar = ({
       );
     }
     return (
-      <BlurView
-        intensity={isActive ? 60 : 80}
-        tint="dark"
-        style={styles.pillNative}
-      >
+      <View style={styles.pillNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={isActive ? 15 : 20}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+        />
         {children}
-      </BlurView>
+      </View>
     );
   };
 
@@ -131,7 +133,14 @@ const SideBar = ({
       return <View style={styles.backgroundBlurWeb} />;
     }
     return (
-      <BlurView intensity={20} tint="dark" style={styles.backgroundBlurNative} />
+      <View style={styles.backgroundBlurNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={5}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.5)"
+        />
+      </View>
     );
   };
 
@@ -230,6 +239,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     borderRadius: 20,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     borderWidth: 0, // Remove any borders
     ...Platform.select({

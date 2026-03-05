@@ -123,6 +123,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    borderCurve: 'continuous',
   },
   clearButtonText: {
     color: '#FFB3C6',
@@ -138,6 +139,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginBottom: 16,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: '#252525',
     padding: 8,
     shadowColor: '#000',
@@ -183,6 +185,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
+    borderCurve: 'continuous',
   },
   backButtonText: {
     color: '#FFB3C6',

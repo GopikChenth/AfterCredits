@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 /**
  * Single skeleton card matching NewsCard layout
@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#1A1A1A',
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     marginBottom: 16,
     borderWidth: 1,
@@ -77,4 +78,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SkeletonNews;
+const WrappedSkeletonNews = () => (<ShimmerProvider><SkeletonNews /></ShimmerProvider>);
+export default WrappedSkeletonNews;

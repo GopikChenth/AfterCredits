@@ -8,9 +8,10 @@ import {
   Dimensions,
   StatusBar,
   ActivityIndicator,
-  Image,
+  Image as RNImage,
   Keyboard,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -155,14 +156,64 @@ const GameHome = ({ navigation }) => {
     setIsSearchSubmitted(false);
   }, []);
 
-  const handleSearchResultPress = (item) => {
+  const handleSearchResultPress = useCallback((item) => {
     navigation.navigate('DetailsGames', {
       gameId: item.id,
       gameName: item.title,
       coverImage: item.coverImage,
     });
     handleSearchCancel();
-  };
+  }, [navigation, handleSearchCancel]);
+
+  // Memoized FlashList callbacks
+  const renderGameCard = useCallback(({ item: game }) => (
+    <Pressable
+      style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
+      onPress={() => navigation.navigate('DetailsGames', {
+        gameId: game.id,
+        gameName: game.name,
+        coverImage: game.background_image,
+        rating: game.rating,
+        metacritic: game.metacritic,
+        genres: game.genres?.map(g => g.name) || [],
+        playtime: game.playtime,
+        esrbRating: game.esrb_rating?.name || 'Not Rated',
+      })}
+      accessibilityRole="button"
+      accessibilityLabel={`View game: ${game.name}`}
+    >
+      {game.background_image ? (
+        <Image source={{ uri: game.background_image }} style={styles.cardImage} contentFit="cover" recyclingKey={`game-${game.id}`} />
+      ) : (
+        <View style={[styles.cardImage, styles.cardPlaceholder]}>
+          <Ionicons name="game-controller-outline" size={32} color="rgba(167,139,250,0.3)" />
+        </View>
+      )}
+      <LinearGradient
+        colors={['transparent', 'rgba(15,15,35,0.82)', 'rgba(15,15,35,0.97)']}
+        style={styles.cardOverlay}
+      />
+      {game.metacritic ? (
+        <View style={[
+          styles.metacriticBadge,
+          { backgroundColor: game.metacritic >= 75 ? '#10B981' : game.metacritic >= 50 ? '#FFBE0B' : '#EF4444' },
+        ]}>
+          <Text style={styles.metacriticText}>{game.metacritic}</Text>
+        </View>
+      ) : null}
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>{game.name}</Text>
+        <View style={styles.ratingRow}>
+          {[...Array(5)].map((_, i) => (
+            <Ionicons key={i} name={i < Math.round(game.rating) ? 'star' : 'star-outline'} size={11} color="#FFBE0B" />
+          ))}
+        </View>
+      </View>
+      <View style={styles.cardAccent} />
+    </Pressable>
+  ), [navigation]);
+
+  const gameKeyExtractor = useCallback((item) => item.id.toString(), []);
 
   return (
     <View style={styles.container}>
@@ -182,7 +233,7 @@ const GameHome = ({ navigation }) => {
 
         {/* ── Header ── */}
         <View style={styles.header}>
-          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)}>
+          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)} accessibilityRole="button" accessibilityLabel="Open sidebar menu" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <LinearGradient colors={['#7C3AED', '#A78BFA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
               <Ionicons name="menu" size={24} color="#E2E8F0" />
             </LinearGradient>
@@ -191,7 +242,7 @@ const GameHome = ({ navigation }) => {
             <Text style={styles.title}>GAMES</Text>
             <View style={styles.titleGlow} />
           </View>
-          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')}>
+          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')} accessibilityRole="button" accessibilityLabel="Go to profile">
             <LinearGradient colors={['#F43F5E', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
               <Ionicons name="person" size={24} color="#E2E8F0" />
             </LinearGradient>
@@ -209,6 +260,8 @@ const GameHome = ({ navigation }) => {
                 selectedCategory === category && styles.categoryButtonActive,
                 pressed && styles.categoryButtonPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${category}`}
             >
               <LinearGradient
                 colors={selectedCategory === category ? ['#7C3AED', '#A78BFA'] : ['#1E1E3F', '#2A2A5A']}
@@ -243,69 +296,17 @@ const GameHome = ({ navigation }) => {
           <View style={styles.listWrapper}>
             <FlashList
               data={games}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={gameKeyExtractor}
               estimatedItemSize={CARD_HEIGHT + 12}
               numColumns={2}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.flashListContent}
-              renderItem={({ item: game }) => (
-                <Pressable
-                  style={({ pressed }) => [styles.gameCard, pressed && styles.gameCardPressed]}
-                  onPress={() => navigation.navigate('DetailsGames', {
-                    gameId: game.id,
-                    gameName: game.name,
-                    coverImage: game.background_image,
-                    rating: game.rating,
-                    metacritic: game.metacritic,
-                    genres: game.genres?.map(g => g.name) || [],
-                    playtime: game.playtime,
-                    esrbRating: game.esrb_rating?.name || 'Not Rated',
-                  })}
-                >
-                  {/* Cover */}
-                  {game.background_image ? (
-                    <Image source={{ uri: game.background_image }} style={styles.cardImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.cardImage, styles.cardPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={32} color="rgba(167,139,250,0.3)" />
-                    </View>
-                  )}
-
-                  {/* Gradient overlay */}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(15,15,35,0.82)', 'rgba(15,15,35,0.97)']}
-                    style={styles.cardOverlay}
-                  />
-
-                  {/* Metacritic badge */}
-                  {game.metacritic && (
-                    <View style={[
-                      styles.metacriticBadge,
-                      { backgroundColor: game.metacritic >= 75 ? '#10B981' : game.metacritic >= 50 ? '#FFBE0B' : '#EF4444' },
-                    ]}>
-                      <Text style={styles.metacriticText}>{game.metacritic}</Text>
-                    </View>
-                  )}
-
-                  {/* Info */}
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle} numberOfLines={2}>{game.name}</Text>
-                    <View style={styles.ratingRow}>
-                      {[...Array(5)].map((_, i) => (
-                        <Ionicons key={i} name={i < Math.round(game.rating) ? 'star' : 'star-outline'} size={11} color="#FFBE0B" />
-                      ))}
-                    </View>
-                  </View>
-
-                  {/* Neon bottom accent */}
-                  <View style={styles.cardAccent} />
-                </Pressable>
-              )}
+              renderItem={renderGameCard}
               ListFooterComponent={
                 (currentPage > 1 || hasMore) ? (
                   <View style={styles.paginationContainer}>
                     {currentPage > 1 ? (
-                      <Pressable style={styles.pageButton} onPress={handlePrevPage}>
+                      <Pressable style={styles.pageButton} onPress={handlePrevPage} accessibilityRole="button" accessibilityLabel="Previous page">
                         <Ionicons name="chevron-back" size={16} color="#A78BFA" />
                         <Text style={styles.pageButtonText}>Prev</Text>
                       </Pressable>
@@ -314,7 +315,7 @@ const GameHome = ({ navigation }) => {
                     <Text style={styles.pageIndicator}>Page {currentPage}</Text>
 
                     {hasMore ? (
-                      <Pressable style={styles.pageButton} onPress={handleLoadMore}>
+                      <Pressable style={styles.pageButton} onPress={handleLoadMore} accessibilityRole="button" accessibilityLabel="Next page">
                         <Text style={styles.pageButtonText}>Next</Text>
                         <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
                       </Pressable>
@@ -417,6 +418,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 12,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#7C3AED',
@@ -447,6 +449,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#7C3AED',
     opacity: 0.3,
     borderRadius: 8,
+    borderCurve: 'continuous',
     transform: [{ scaleX: 1.1 }, { scaleY: 1.5 }],
   },
 
@@ -461,6 +464,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     borderRadius: 8,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   categoryButtonActive: {
@@ -472,6 +476,7 @@ const styles = StyleSheet.create({
   categoryGradient: {
     flex: 1,
     borderRadius: 8,
+    borderCurve: 'continuous',
     borderWidth: 2,
     borderColor: '#7C3AED40',
   },
@@ -535,6 +540,7 @@ const styles = StyleSheet.create({
   featuredCard: {
     height: 200,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   featuredGradient: {
@@ -548,6 +554,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 16,
+    borderCurve: 'continuous',
     borderWidth: 2,
     borderColor: '#7C3AED',
     shadowColor: '#7C3AED',
@@ -562,6 +569,7 @@ const styles = StyleSheet.create({
     right: 3,
     bottom: 3,
     borderRadius: 13,
+    borderCurve: 'continuous',
   },
   featuredImageOverlay: {
     position: 'absolute',
@@ -570,10 +578,12 @@ const styles = StyleSheet.create({
     right: 3,
     bottom: 3,
     borderRadius: 13,
+    borderCurve: 'continuous',
   },
   featuredContent: {
     flex: 1,
     borderRadius: 13,
+    borderCurve: 'continuous',
     padding: 20,
     justifyContent: 'space-between',
   },
@@ -591,6 +601,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   scoreGradient: {
@@ -615,6 +626,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: '#7C3AED',
   },
@@ -652,6 +664,7 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     margin: 6,
   },
@@ -666,6 +679,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
     borderRadius: 8,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   cardImage: {
@@ -675,6 +689,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 8,
+    borderCurve: 'continuous',
   },
   cardImageOverlay: {
     position: 'absolute',
@@ -717,6 +732,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    borderCurve: 'continuous',
   },
   miniScoreText: {
     fontFamily: 'System',
@@ -773,6 +789,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     backgroundColor: 'rgba(124, 58, 237, 0.15)',
     borderRadius: 8,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(124, 58, 237, 0.3)',
   },
@@ -787,6 +804,7 @@ const styles = StyleSheet.create({
     width: 150,
     height: 200,
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     marginRight: 12,
     backgroundColor: '#1E1E3F',
@@ -861,6 +879,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
+    borderCurve: 'continuous',
   },
   metacriticText: {
     fontSize: 11,
@@ -884,6 +903,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(124,58,237,0.35)',
     minWidth: 90,

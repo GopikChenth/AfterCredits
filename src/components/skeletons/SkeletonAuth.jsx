@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 /**
  * Skeleton for Auth page - shows placeholder for login/signup form
  */
 const SkeletonAuth = () => (
+  <ShimmerProvider>
   <View style={styles.container}>
     {/* Logo/Title area */}
     <View style={styles.logoSection}>
@@ -42,6 +43,7 @@ const SkeletonAuth = () => (
       <ShimmerBlock style={{ width: 200, height: 14 }} />
     </View>
   </View>
+  </ShimmerProvider>
 );
 
 const styles = StyleSheet.create({
@@ -62,11 +64,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 52,
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
   button: {
     width: '100%',
     height: 52,
     borderRadius: 12,
+    borderCurve: 'continuous',
     marginBottom: 24,
   },
   dividerRow: {
@@ -82,6 +86,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 48,
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
   footer: {
     alignItems: 'center',

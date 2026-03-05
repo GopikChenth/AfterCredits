@@ -5,10 +5,10 @@ import {
   FlatList,
   ScrollView,
   StatusBar,
-  Image,
   Pressable,
   ActivityIndicator,
 } from "react-native";
+import { Image } from 'expo-image';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,13 +24,13 @@ import { getMovieNews } from "../services/news_movies";
 import { getUpcomingMovies, formatMovieData } from "../services/api_tmdb";
 // Shared services
 import { setWishlist as setWishlistService, getWishlist } from "../services/mediaStatusService";
-import { getUserProfile } from "../services/profile";
 // Components
 import NewsCard from "../components/discover_page/NewsCard";
 import DiscoverSkeleton from "../components/skeletons/SkeletonDiscover";
 // Style handler & context
 import { useMediaType } from "../context/MediaTypeContext";
 import { getDiscoverStyles, getDiscoverTheme, CARD_WIDTH, CARD_HEIGHT, EXPANDED_CARD_WIDTH } from "../stylehandler/discoverStyles";
+import { useProfileStore } from '../stores/useProfileStore';
 
 const DiscoverPage = ({ navigation }) => {
   const { mediaType } = useMediaType();
@@ -42,7 +42,8 @@ const DiscoverPage = ({ navigation }) => {
 
   const [upcomingItems, setUpcomingItems] = useState([]);
   const [news, setNews] = useState([]);
-  const [userProfile, setUserProfile] = useState(null);
+  const userProfile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
   const [loading, setLoading] = useState(true);
   const [newsLoading, setNewsLoading] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
@@ -60,14 +61,10 @@ const DiscoverPage = ({ navigation }) => {
     fetchNews();
     fetchWishlist();
 
-    const loadProfile = async () => {
-      const result = await getUserProfile();
-      setUserProfile(result.success && result.profile ? result.profile : null);
-    };
-    loadProfile();
-    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    fetchProfile();
+    const unsubscribe = navigation.addListener('focus', () => fetchProfile());
     return unsubscribe;
-  }, [navigation, mediaType]);
+  }, [navigation, mediaType, fetchProfile]);
 
   // ─── Data Fetching ─────────────────────────────────────────────
   const fetchNews = async () => {
@@ -147,7 +144,7 @@ const DiscoverPage = ({ navigation }) => {
       const type = isGames ? 'games' : isMovies ? 'movies' : 'anime';
       const result = await getWishlist(type);
       if (result.success && result.data) {
-        setWishlistedIds(result.data.map(item => item.media_id));
+        setWishlistedIds(result.data.map(item => String(item.media_id)));
       }
     } catch (error) {
       console.error('Error fetching wishlist:', error);
@@ -155,26 +152,27 @@ const DiscoverPage = ({ navigation }) => {
   };
 
   const toggleWishlist = async (itemId) => {
-    const currentlyWishlisted = wishlistedIds.includes(itemId);
+    const itemIdStr = String(itemId);
+    const currentlyWishlisted = wishlistedIds.includes(itemIdStr);
     // Optimistic update
     if (currentlyWishlisted) {
-      setWishlistedIds(prev => prev.filter(id => id !== itemId));
+      setWishlistedIds(prev => prev.filter(id => id !== itemIdStr));
     } else {
-      setWishlistedIds(prev => [...prev, itemId]);
+      setWishlistedIds(prev => [...prev, itemIdStr]);
     }
     const type = isGames ? 'games' : isMovies ? 'movies' : 'anime';
-    const result = await setWishlistService(type, String(itemId), !currentlyWishlisted);
+    const result = await setWishlistService(type, itemIdStr, !currentlyWishlisted);
     if (!result.success) {
       // Revert on failure
       if (currentlyWishlisted) {
-        setWishlistedIds(prev => [...prev, itemId]);
+        setWishlistedIds(prev => [...prev, itemIdStr]);
       } else {
-        setWishlistedIds(prev => prev.filter(id => id !== itemId));
+        setWishlistedIds(prev => prev.filter(id => id !== itemIdStr));
       }
     }
   };
 
-  const isWishlisted = (itemId) => wishlistedIds.includes(itemId);
+  const isWishlisted = (itemId) => wishlistedIds.includes(String(itemId));
 
   // ─── Formatters ────────────────────────────────────────────────
   const formatDate = (item) => {
@@ -396,11 +394,13 @@ const DiscoverPage = ({ navigation }) => {
           {newsLoading ? (
             <DiscoverSkeleton />
           ) : (
-            <View style={styles.newsContainer}>
-              {news.map((article) => (
-                <NewsCard key={article.id} article={article} />
-              ))}
-            </View>
+            <FlatList
+              data={news}
+              renderItem={({ item }) => <NewsCard article={item} />}
+              keyExtractor={(item) => String(item.id)}
+              scrollEnabled={false}
+              contentContainerStyle={styles.newsContainer}
+            />
           )}
         </ScrollView>
       </View>

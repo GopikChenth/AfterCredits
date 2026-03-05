@@ -9,12 +9,12 @@
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  Image,
+  Image as RNImage,
   StyleSheet,
   Dimensions,
   Pressable,
@@ -26,13 +26,15 @@ import {
   FlatList,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import GlassCard from '../components/GlassCard';
 import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
+import { BackButton } from '../components/details_page/SharedListItems';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMovieDetails } from '../services/api_tmdb';
 import { getMediaReviews, getMediaReviewStats } from '../services/reviewService';
@@ -71,13 +73,14 @@ const formatRuntime = (minutes) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Cast member card (horizontal scroll) */
-const CastCard = ({ person }) => (
-  <View style={styles.castCard}>
+const CastCard = memo(({ person }) => (
+  <View style={styles.castCard} accessibilityLabel={`${person.name}, ${person.character}`}>
     {person.profile_path ? (
       <Image
         source={{ uri: `${IMG_BASE}/w185${person.profile_path}` }}
         style={styles.castImage}
-        resizeMode="cover"
+        contentFit="cover"
+        recyclingKey={`cast-${person.credit_id || person.name}`}
       />
     ) : (
       <View style={[styles.castImage, styles.castPlaceholder]}>
@@ -87,17 +90,21 @@ const CastCard = ({ person }) => (
     <Text style={styles.castName} numberOfLines={2}>{person.name}</Text>
     <Text style={styles.castRole} numberOfLines={1}>{person.character}</Text>
   </View>
-);
+));
+CastCard.displayName = 'CastCard';
 
 /** Trailer thumbnail */
-const TrailerCard = ({ video }) => {
+const TrailerCard = memo(({ video }) => {
   const thumbnail = `https://img.youtube.com/vi/${video.key}/hqdefault.jpg`;
+  const handlePress = useCallback(() => Linking.openURL(`https://www.youtube.com/watch?v=${video.key}`), [video.key]);
   return (
     <Pressable
       style={styles.trailerCard}
-      onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${video.key}`)}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Play trailer: ${video.name}`}
     >
-      <Image source={{ uri: thumbnail }} style={styles.trailerThumb} resizeMode="cover" />
+      <Image source={{ uri: thumbnail }} style={styles.trailerThumb} contentFit="cover" recyclingKey={`trail-${video.key}`} />
       <View style={styles.trailerOverlay}>
         <View style={styles.playButton}>
           <Ionicons name="play" size={20} color="#fff" />
@@ -106,7 +113,8 @@ const TrailerCard = ({ video }) => {
       <Text style={styles.trailerName} numberOfLines={1}>{video.name}</Text>
     </Pressable>
   );
-};
+});
+TrailerCard.displayName = 'TrailerCard';
 
 /** Production company row */
 const CompanyRow = ({ name, role }) => (
@@ -146,7 +154,7 @@ const MovieDetail = ({ route, navigation }) => {
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
-  const [titleY, setTitleY] = useState(0);
+  const titleYRef = useRef(0);
 
   const headerOpacity = useRef(new Animated.Value(0)).current;
 
@@ -218,11 +226,44 @@ const MovieDetail = ({ route, navigation }) => {
     await setWishlist('movies', movieId, wishlisted);
   };
 
-  const handleScroll = (event) => {
+  const handleGoBack = useCallback(() => navigation?.goBack(), [navigation]);
+
+  const handleScroll = useCallback((event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    const trigger = titleY > 0 ? titleY : 120;
+    const trigger = titleYRef.current > 0 ? titleYRef.current : 120;
     headerOpacity.setValue(offsetY > trigger ? 1 : 0);
-  };
+  }, [headerOpacity]);
+
+  const renderCast = useCallback(({ item }) => (
+    <CastCard person={item} />
+  ), []);
+
+  const renderTrailer = useCallback(({ item }) => (
+    <TrailerCard video={item} />
+  ), []);
+
+  const renderRecommendation = useCallback(({ item }) => (
+    <Pressable
+      style={styles.relatedCard}
+      onPress={() => navigation?.push('DetailsMovies', {
+        movieId: item.id,
+        movieTitle: item.title,
+        coverImage: item.poster_path ? `${IMG_BASE}/w500${item.poster_path}` : null,
+      })}
+      accessibilityRole="button"
+      accessibilityLabel={`View recommended movie: ${item.title}`}
+    >
+      <Image
+        source={{ uri: item.poster_path ? `${IMG_BASE}/w500${item.poster_path}` : null }}
+        style={styles.relatedCardImage}
+        contentFit="cover"
+        recyclingKey={`rec-${item.id}`}
+      />
+      <View style={styles.relatedCardOverlay}>
+        <Text style={styles.relatedCardTitle} numberOfLines={2}>{item.title}</Text>
+      </View>
+    </Pressable>
+  ), [navigation]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
 
@@ -337,9 +378,7 @@ const MovieDetail = ({ route, navigation }) => {
           ]}
         >
           <View style={styles.headerBlur}>
-            <Pressable style={styles.headerBackButton} onPress={() => navigation?.goBack()}>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </Pressable>
+            <BackButton style={styles.headerBackButton} onPress={handleGoBack} size={24} />
             <Text style={styles.headerTitle} numberOfLines={1}>{title}</Text>
           </View>
         </Animated.View>
@@ -355,26 +394,26 @@ const MovieDetail = ({ route, navigation }) => {
         scrollEventThrottle={16}
       >
         {/* Back button over hero */}
-        <Pressable style={styles.backButton} onPress={() => navigation?.goBack()}>
-          <Ionicons name="arrow-back" size={20} color="#fff" />
-        </Pressable>
+        <BackButton style={styles.backButton} onPress={handleGoBack} />
 
         {/* ── Hero / Backdrop ── */}
         <View style={styles.heroSection}>
           <Image
             source={{ uri: backdrop }}
             style={styles.backdropImage}
-            resizeMode="cover"
+            contentFit="cover"
+            recyclingKey={`movie-hero-${movieId}`}
+            transition={200}
           />
           <View style={styles.heroGradient} />
         </View>
 
         {/* ── Description card ── */}
-        <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+        <GlassCard style={styles.blurCard}>
           <View
             style={styles.titleRow}
             onLayout={(e) => {
-              e.target.measure((x, y, w, h, px, py) => setTitleY(py + h));
+              e.target.measure((x, y, w, h, px, py) => titleYRef.current = py + h);
             }}
           >
             <Text style={styles.mainTitle}>{title}</Text>
@@ -385,12 +424,12 @@ const MovieDetail = ({ route, navigation }) => {
 
           {/* Meta row */}
           <View style={styles.metaRow}>
-            {runtime && (
+            {runtime ? (
               <View style={styles.metaChip}>
                 <Ionicons name="time-outline" size={12} color={ACCENT2} />
                 <Text style={styles.metaChipText}>{runtime}</Text>
               </View>
-            )}
+            ) : null}
             <View style={styles.metaChip}>
               <Ionicons name="calendar-outline" size={12} color={ACCENT2} />
               <Text style={styles.metaChipText}>{releaseDate}</Text>
@@ -415,7 +454,7 @@ const MovieDetail = ({ route, navigation }) => {
               </Text>
             </Pressable>
           )}
-        </BlurView>
+        </GlassCard>
 
         {/* ── Stats pills ── */}
         <View style={styles.statsSection}>
@@ -440,24 +479,24 @@ const MovieDetail = ({ route, navigation }) => {
 
         {/* ── Genres ── */}
         {genres.length > 0 && (
-          <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+          <GlassCard style={styles.blurCard}>
             <Text style={styles.sectionLabel}>GENRES</Text>
             <View style={styles.pillRow}>
               {genres.map((g, i) => <GenrePill key={i} genre={g} />)}
             </View>
-          </BlurView>
+          </GlassCard>
         )}
 
         {/* ── Director & Production ── */}
         {(director || producers.length > 0) && (
-          <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+          <GlassCard style={styles.blurCard}>
             <Text style={styles.sectionLabel}>PRODUCTION</Text>
             <View style={styles.companyList}>
-              {director && <CompanyRow name={director.name} role="Director" />}
+              {director ? <CompanyRow name={director.name} role="Director" /> : null}
               {writers.map((w, i) => <CompanyRow key={`w-${i}`} name={w.name} role={w.job} />)}
               {producers.map((p, i) => <CompanyRow key={`p-${i}`} name={p.name} role="Production Company" />)}
             </View>
-          </BlurView>
+          </GlassCard>
         )}
 
         {/* ── Cast ── */}
@@ -470,7 +509,7 @@ const MovieDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.credit_id || item.id?.toString()}
-              renderItem={({ item }) => <CastCard person={item} />}
+              renderItem={renderCast}
             />
           </View>
         )}
@@ -485,13 +524,13 @@ const MovieDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <TrailerCard video={item} />}
+              renderItem={renderTrailer}
             />
           </View>
         )}
 
         {/* ── Reviews ── */}
-        <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+        <GlassCard style={styles.blurCard}>
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionLabel}>REVIEWS</Text>
             <Pressable
@@ -503,6 +542,9 @@ const MovieDetail = ({ route, navigation }) => {
                 coverImage: poster,
                 mediaType: 'movies',
               })}
+              accessibilityRole="button"
+              accessibilityLabel="Write a review"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="add" size={20} color="#fff" />
             </Pressable>
@@ -528,6 +570,8 @@ const MovieDetail = ({ route, navigation }) => {
                     style={[styles.paginationButton, currentReviewPage === 1 && styles.paginationButtonDisabled]}
                     onPress={() => setCurrentReviewPage(p => Math.max(1, p - 1))}
                     disabled={currentReviewPage === 1}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous reviews page"
                   >
                     <Ionicons name="chevron-back" size={20} color={currentReviewPage === 1 ? '#666' : '#fff'} />
                     <Text style={[styles.paginationButtonText, currentReviewPage === 1 && styles.paginationButtonTextDisabled]}>
@@ -541,6 +585,8 @@ const MovieDetail = ({ route, navigation }) => {
                     style={[styles.paginationButton, currentReviewPage === totalReviewPages && styles.paginationButtonDisabled]}
                     onPress={() => setCurrentReviewPage(p => Math.min(totalReviewPages, p + 1))}
                     disabled={currentReviewPage === totalReviewPages}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next reviews page"
                   >
                     <Text style={[styles.paginationButtonText, currentReviewPage === totalReviewPages && styles.paginationButtonTextDisabled]}>
                       Next
@@ -553,7 +599,7 @@ const MovieDetail = ({ route, navigation }) => {
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
           )}
-        </BlurView>
+        </GlassCard>
 
         {/* ── Recommendations ── */}
         {recommendations.length > 0 && (
@@ -565,25 +611,7 @@ const MovieDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={styles.relatedCard}
-                  onPress={() => navigation?.push('DetailsMovies', {
-                    movieId: item.id,
-                    movieTitle: item.title,
-                    coverImage: item.poster_path ? `${IMG_BASE}/w500${item.poster_path}` : null,
-                  })}
-                >
-                  <Image
-                    source={{ uri: item.poster_path ? `${IMG_BASE}/w500${item.poster_path}` : null }}
-                    style={styles.relatedCardImage}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.relatedCardOverlay}>
-                    <Text style={styles.relatedCardTitle} numberOfLines={2}>{item.title}</Text>
-                  </View>
-                </Pressable>
-              )}
+              renderItem={renderRecommendation}
             />
           </View>
         )}
@@ -635,18 +663,21 @@ const styles = StyleSheet.create({
   blobShape1: {
     position: 'absolute', top: -60, right: -80,
     width: 320, height: 320, borderRadius: 160,
+    borderCurve: 'continuous',
     backgroundColor: BLOB1, opacity: 0.12,
     transform: [{ scaleX: 1.4 }, { rotate: '20deg' }],
   },
   blobShape2: {
     position: 'absolute', top: 120, left: -100,
     width: 260, height: 260, borderRadius: 130,
+    borderCurve: 'continuous',
     backgroundColor: BLOB2, opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-10deg' }],
   },
   blobShape3: {
     position: 'absolute', top: 260, right: 40,
     width: 200, height: 200, borderRadius: 100,
+    borderCurve: 'continuous',
     backgroundColor: BLOB3, opacity: 0.08,
   },
 
@@ -657,6 +688,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute', top: 50, left: 20, zIndex: 10,
     width: 36, height: 36, borderRadius: 18,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -676,6 +708,7 @@ const styles = StyleSheet.create({
   blurCard: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 20,
     overflow: 'hidden',
@@ -745,6 +778,7 @@ const styles = StyleSheet.create({
   companyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   companyAvatar: {
     width: 36, height: 36, borderRadius: 18,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255,107,53,0.15)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -772,6 +806,7 @@ const styles = StyleSheet.create({
   },
   playButton: {
     width: 44, height: 44, borderRadius: 22,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255,107,53,0.85)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -790,6 +825,7 @@ const styles = StyleSheet.create({
   reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   addReviewButton: {
     width: 28, height: 28, borderRadius: 14,
+    borderCurve: 'continuous',
     backgroundColor: ACCENT, justifyContent: 'center', alignItems: 'center',
   },
   noDataText: { fontSize: 14, color: '#999', textAlign: 'center', paddingVertical: 20 },

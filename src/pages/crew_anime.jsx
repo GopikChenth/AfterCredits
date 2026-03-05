@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  Image,
+  Image as RNImage,
   ScrollView,
+  FlatList,
   StyleSheet,
   StatusBar,
   Dimensions,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import GlassCard from '../components/GlassCard';
 import { getStaffDetails } from '../services/api_anilist';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -126,30 +128,30 @@ const CrewDetailPage = ({ route, navigation }) => {
             
             {/* Quick Stats */}
             <View style={styles.quickStats}>
-              {birthday && (
+              {birthday ? (
                 <View style={styles.statItem}>
                   <Ionicons name="calendar-outline" size={14} color="#FFB3C6" />
                   <Text style={styles.statText}>{birthday}</Text>
                 </View>
-              )}
-              {staffData.age && (
+              ) : null}
+              {staffData.age ? (
                 <View style={styles.statItem}>
                   <Ionicons name="person-outline" size={14} color="#FFB3C6" />
                   <Text style={styles.statText}>Age {staffData.age}</Text>
                 </View>
-              )}
-              {staffData.homeTown && (
+              ) : null}
+              {staffData.homeTown ? (
                 <View style={styles.statItem}>
                   <Ionicons name="location-outline" size={14} color="#FFB3C6" />
                   <Text style={styles.statText}>{staffData.homeTown}</Text>
                 </View>
-              )}
-              {staffData.bloodType && (
+              ) : null}
+              {staffData.bloodType ? (
                 <View style={styles.statItem}>
                   <Ionicons name="water-outline" size={14} color="#FFB3C6" />
                   <Text style={styles.statText}>Blood: {staffData.bloodType}</Text>
                 </View>
-              )}
+              ) : null}
             </View>
 
             {/* Favourites */}
@@ -165,12 +167,12 @@ const CrewDetailPage = ({ route, navigation }) => {
         </View>
 
         {/* Bio */}
-        {description && (
-          <BlurView intensity={80} tint="dark" style={styles.bioSection}>
+        {description ? (
+          <GlassCard style={styles.bioSection}>
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.bioText} numberOfLines={8}>{description}</Text>
-          </BlurView>
-        )}
+          </GlassCard>
+        ) : null}
 
         {/* Character Roles */}
         {characterRoles.length > 0 && (
@@ -178,49 +180,50 @@ const CrewDetailPage = ({ route, navigation }) => {
             <Text style={styles.sectionTitle}>
               Voice Acting Roles ({characterRoles.length})
             </Text>
-            
-            {characterRoles.map((edge, index) => {
-              const anime = edge.node;
-              const character = edge.characters?.[0];
-              const animeTitle = anime?.title?.english || anime?.title?.romaji || 'Unknown';
-              const charName = character?.name?.full || 'Unknown Character';
 
-              return (
-                <Pressable
-                  key={index}
-                  style={styles.roleCard}
-                  onPress={() => anime?.id && navigation.push('DetailsAnime', { animeId: anime.id })}
-                >
-                  {/* Anime Cover */}
-                  <Image
-                    source={{ uri: anime?.coverImage?.large || anime?.coverImage?.medium }}
-                    style={styles.animeCover}
-                  />
-                  
-                  {/* Role Info */}
-                  <View style={styles.roleInfo}>
-                    <Text style={styles.animeTitle} numberOfLines={2}>{animeTitle}</Text>
-                    <Text style={styles.characterName} numberOfLines={1}>as {charName}</Text>
-                    <View style={styles.roleMetaRow}>
-                      {anime?.format && (
-                        <Text style={styles.formatTag}>{anime.format}</Text>
-                      )}
-                      {anime?.seasonYear && (
-                        <Text style={styles.yearText}>{anime.seasonYear}</Text>
-                      )}
-                    </View>
-                  </View>
+            <FlatList
+              data={characterRoles}
+              scrollEnabled={false}
+              keyExtractor={(_, index) => `role-${index}`}
+              renderItem={({ item: edge }) => {
+                const anime = edge.node;
+                const character = edge.characters?.[0];
+                const animeTitle = anime?.title?.english || anime?.title?.romaji || 'Unknown';
+                const charName = character?.name?.full || 'Unknown Character';
 
-                  {/* Character Image */}
-                  {character?.image?.medium && (
+                return (
+                  <Pressable
+                    style={styles.roleCard}
+                    onPress={() => anime?.id && navigation.push('DetailsAnime', { animeId: anime.id })}
+                  >
                     <Image
-                      source={{ uri: character.image.medium }}
-                      style={styles.characterImage}
+                      source={{ uri: anime?.coverImage?.large || anime?.coverImage?.medium }}
+                      style={styles.animeCover}
                     />
-                  )}
-                </Pressable>
-              );
-            })}
+
+                    <View style={styles.roleInfo}>
+                      <Text style={styles.animeTitle} numberOfLines={2}>{animeTitle}</Text>
+                      <Text style={styles.characterName} numberOfLines={1}>as {charName}</Text>
+                      <View style={styles.roleMetaRow}>
+                        {anime?.format && (
+                          <Text style={styles.formatTag}>{anime.format}</Text>
+                        )}
+                        {anime?.seasonYear && (
+                          <Text style={styles.yearText}>{anime.seasonYear}</Text>
+                        )}
+                      </View>
+                    </View>
+
+                    {character?.image?.medium && (
+                      <Image
+                        source={{ uri: character.image.medium }}
+                        style={styles.characterImage}
+                      />
+                    )}
+                  </Pressable>
+                );
+              }}
+            />
           </View>
         )}
 
@@ -271,6 +274,7 @@ const styles = StyleSheet.create({
     width: 110,
     height: 150,
     borderRadius: 10,
+    borderCurve: 'continuous',
     backgroundColor: '#2A2A2A',
   },
   headerInfo: {
@@ -320,6 +324,7 @@ const styles = StyleSheet.create({
   // --- Bio ---
   bioSection: {
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 16,
     marginBottom: 20,
     overflow: 'hidden',
@@ -350,6 +355,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 10,
+    borderCurve: 'continuous',
     padding: 10,
     marginBottom: 8,
     borderWidth: 1,
@@ -359,6 +365,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 68,
     borderRadius: 6,
+    borderCurve: 'continuous',
     backgroundColor: '#2A2A2A',
   },
   roleInfo: {
@@ -392,6 +399,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   yearText: {
@@ -403,6 +411,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
+    borderCurve: 'continuous',
     backgroundColor: '#2A2A2A',
   },
 });

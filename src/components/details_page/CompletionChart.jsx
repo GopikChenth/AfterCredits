@@ -20,7 +20,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import GlassCard from '../GlassCard';
 
 const { width } = Dimensions.get('window');
 
@@ -53,7 +53,7 @@ const CompletionChart = ({ data }) => {
   const maxVal  = Math.max(...values, 1);
 
   return (
-    <BlurView intensity={80} tint="dark" style={styles.card}>
+    <GlassCard style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>HOW LONG TO BEAT</Text>
@@ -87,7 +87,7 @@ const CompletionChart = ({ data }) => {
           </View>
         );
       })}
-    </BlurView>
+    </GlassCard>
   );
 };
 
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 20,
     overflow: 'hidden',
@@ -141,12 +142,14 @@ const styles = StyleSheet.create({
     height: 10,
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 5,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     marginHorizontal: 10,
   },
   fill: {
     height: '100%',
     borderRadius: 5,
+    borderCurve: 'continuous',
   },
   value: {
     width: 40,

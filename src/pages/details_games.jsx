@@ -9,12 +9,12 @@
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   View,
   Text,
   ScrollView,
-  Image,
+  Image as RNImage,
   StyleSheet,
   Dimensions,
   Pressable,
@@ -26,13 +26,15 @@ import {
   FlatList,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import GlassCard from '../components/GlassCard';
 import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
+import { BackButton, ScreenshotCard } from '../components/details_page/SharedListItems';
 import CompletionChart from '../components/details_page/CompletionChart';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMetacriticColor } from '../services/api_rawg';
@@ -85,20 +87,26 @@ const CompanyRow = ({ name, role }) => (
 );
 
 /** Trailer thumbnail card */
-const TrailerCard = ({ trailer }) => (
-  <Pressable
-    style={styles.trailerCard}
-    onPress={() => Linking.openURL(trailer.url)}
-  >
-    <Image source={{ uri: trailer.thumbnail }} style={styles.trailerThumb} resizeMode="cover" />
-    <View style={styles.trailerOverlay}>
-      <View style={styles.playButton}>
-        <Ionicons name="play" size={20} color="#fff" />
+const TrailerCard = memo(({ trailer }) => {
+  const handlePress = useCallback(() => Linking.openURL(trailer.url), [trailer.url]);
+  return (
+    <Pressable
+      style={styles.trailerCard}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Play trailer: ${trailer.name}`}
+    >
+      <Image source={{ uri: trailer.thumbnail }} style={styles.trailerThumb} contentFit="cover" recyclingKey={trailer.url} />
+      <View style={styles.trailerOverlay}>
+        <View style={styles.playButton}>
+          <Ionicons name="play" size={20} color="#fff" />
+        </View>
       </View>
-    </View>
-    <Text style={styles.trailerName} numberOfLines={1}>{trailer.name}</Text>
-  </Pressable>
-);
+      <Text style={styles.trailerName} numberOfLines={1}>{trailer.name}</Text>
+    </Pressable>
+  );
+});
+TrailerCard.displayName = 'TrailerCard';
 
 /** Age rating badge */
 const AgeRatingBadge = ({ system, rating }) => (
@@ -138,7 +146,7 @@ const GameDetail = ({ route, navigation }) => {
 
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
-  const [titleY, setTitleY] = useState(0);
+  const titleYRef = useRef(0);
 
   // Scroll-reveal header
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -212,11 +220,39 @@ const GameDetail = ({ route, navigation }) => {
     await setWishlist('games', gameId, wishlisted);
   };
 
-  const handleScroll = (event) => {
+  const handleGoBack = useCallback(() => navigation?.goBack(), [navigation]);
+
+  const handleScroll = useCallback((event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    const trigger = titleY > 0 ? titleY : 120;
+    const trigger = titleYRef.current > 0 ? titleYRef.current : 120;
     headerOpacity.setValue(offsetY > trigger ? 1 : 0);
-  };
+  }, [headerOpacity]);
+
+  const renderScreenshot = useCallback(({ item }) => (
+    <ScreenshotCard uri={item} style={styles.screenshot} />
+  ), []);
+
+  const renderSimilarGame = useCallback(({ item }) => (
+    <Pressable
+      style={styles.relatedCard}
+      onPress={() => navigation?.push('DetailsGames', {
+        gameId: item.id,
+        gameName: item.name,
+        coverImage: item.coverImage,
+      })}
+      accessibilityRole="button"
+      accessibilityLabel={`View similar game: ${item.name}`}
+    >
+      <Image source={{ uri: item.coverImage }} style={styles.relatedCardImage} contentFit="cover" recyclingKey={`sim-${item.id}`} />
+      <View style={styles.relatedCardOverlay}>
+        <Text style={styles.relatedCardTitle} numberOfLines={2}>{item.name}</Text>
+      </View>
+    </Pressable>
+  ), [navigation]);
+
+  const renderTrailer = useCallback(({ item }) => (
+    <TrailerCard trailer={item} />
+  ), []);
 
   // ── Derived data (from IGDB + route param fallbacks while loading) ──────────
 
@@ -294,9 +330,7 @@ const GameDetail = ({ route, navigation }) => {
           ]}
         >
           <View style={styles.headerBlur}>
-            <Pressable style={styles.headerBackButton} onPress={() => navigation?.goBack()}>
-              <Ionicons name="arrow-back" size={24} color="#fff" />
-            </Pressable>
+            <BackButton style={styles.headerBackButton} onPress={handleGoBack} size={24} />
             <Text style={styles.headerTitle} numberOfLines={1}>{name}</Text>
           </View>
         </Animated.View>
@@ -312,36 +346,36 @@ const GameDetail = ({ route, navigation }) => {
         scrollEventThrottle={16}
       >
         {/* Back button over hero */}
-        <Pressable style={styles.backButton} onPress={() => navigation?.goBack()}>
-          <Ionicons name="arrow-back" size={20} color="#fff" />
-        </Pressable>
+        <BackButton style={styles.backButton} onPress={handleGoBack} />
 
         {/* ── Hero / Cover ── */}
         <View style={styles.heroSection}>
           <Image
             source={{ uri: cover }}
             style={styles.backdropImage}
-            resizeMode="cover"
+            contentFit="cover"
+            recyclingKey={`game-hero-${gameId}`}
+            transition={200}
           />
           {/* Gradient overlay */}
           <View style={styles.heroGradient} />
         </View>
 
         {/* ── Description card ── */}
-        <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+        <GlassCard style={styles.blurCard}>
           <View
             style={styles.titleRow}
             onLayout={(e) => {
-              e.target.measure((x, y, w, h, px, py) => setTitleY(py + h));
+              e.target.measure((x, y, w, h, px, py) => titleYRef.current = py + h);
             }}
           >
             <Text style={styles.mainTitle}>{name}</Text>
             <Text style={styles.releaseYear}>{releaseDate}</Text>
           </View>
 
-          {franchise && (
+          {franchise ? (
             <Text style={styles.franchiseText}>📦 {franchise}</Text>
-          )}
+          ) : null}
 
 
           {/* Summary */}
@@ -366,7 +400,7 @@ const GameDetail = ({ route, navigation }) => {
               <Text style={styles.storylineText}>{storyline}</Text>
             </View>
           ) : null}
-        </BlurView>
+        </GlassCard>
 
         {/* ── Completion Time chart (IGDB time-to-beat) ── */}
         {igdbData?.timeToBeat && <CompletionChart data={igdbData.timeToBeat} />}
@@ -392,18 +426,18 @@ const GameDetail = ({ route, navigation }) => {
 
         {/* ── Platforms ── */}
         {platforms.length > 0 && (
-          <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+          <GlassCard style={styles.blurCard}>
             <Text style={styles.sectionLabel}>PLATFORMS</Text>
             <View style={styles.pillRow}>
               {platforms.map((p, i) => (
                 <PlatformPill key={i} name={p.name} abbreviation={p.abbreviation} />
               ))}
             </View>
-          </BlurView>
+          </GlassCard>
         )}
 
         {/* ── Genre, Themes & Modes ── */}
-        <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+        <GlassCard style={styles.blurCard}>
           {genres.length > 0 && (
             <>
               <Text style={styles.sectionLabel}>GENRES</Text>
@@ -430,17 +464,17 @@ const GameDetail = ({ route, navigation }) => {
               </View>
             </>
           )}
-        </BlurView>
+        </GlassCard>
 
         {/* ── Developers & Publishers ── */}
         {(developers.length > 0 || publishers.length > 0) && (
-          <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+          <GlassCard style={styles.blurCard}>
             <Text style={styles.sectionLabel}>DEVELOPERS & PUBLISHERS</Text>
             <View style={styles.companyList}>
               {developers.map((d, i) => <CompanyRow key={`dev-${i}`} name={d} role="Developer" />)}
               {publishers.map((p, i) => <CompanyRow key={`pub-${i}`} name={p} role="Publisher" />)}
             </View>
-          </BlurView>
+          </GlassCard>
         )}
 
 
@@ -454,7 +488,7 @@ const GameDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => <TrailerCard trailer={item} />}
+              renderItem={renderTrailer}
             />
           </View>
         )}
@@ -469,15 +503,13 @@ const GameDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item, i) => `ss-${i}`}
-              renderItem={({ item }) => (
-                <Image source={{ uri: item }} style={styles.screenshot} resizeMode="cover" />
-              )}
+              renderItem={renderScreenshot}
             />
           </View>
         )}
 
         {/* ── Reviews ── */}
-        <BlurView intensity={80} tint="dark" style={styles.blurCard}>
+        <GlassCard style={styles.blurCard}>
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionLabel}>REVIEWS</Text>
             <Pressable
@@ -489,6 +521,9 @@ const GameDetail = ({ route, navigation }) => {
                 coverImage: cover,
                 mediaType: 'games',
               })}
+              accessibilityRole="button"
+              accessibilityLabel="Write a review"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="add" size={20} color="#fff" />
             </Pressable>
@@ -518,6 +553,8 @@ const GameDetail = ({ route, navigation }) => {
                     style={[styles.paginationButton, currentReviewPage === 1 && styles.paginationButtonDisabled]}
                     onPress={() => setCurrentReviewPage(p => Math.max(1, p - 1))}
                     disabled={currentReviewPage === 1}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous reviews page"
                   >
                     <Ionicons name="chevron-back" size={20} color={currentReviewPage === 1 ? '#666' : '#fff'} />
                     <Text style={[styles.paginationButtonText, currentReviewPage === 1 && styles.paginationButtonTextDisabled]}>
@@ -531,6 +568,8 @@ const GameDetail = ({ route, navigation }) => {
                     style={[styles.paginationButton, currentReviewPage === totalReviewPages && styles.paginationButtonDisabled]}
                     onPress={() => setCurrentReviewPage(p => Math.min(totalReviewPages, p + 1))}
                     disabled={currentReviewPage === totalReviewPages}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next reviews page"
                   >
                     <Text style={[styles.paginationButtonText, currentReviewPage === totalReviewPages && styles.paginationButtonTextDisabled]}>
                       Next
@@ -543,7 +582,7 @@ const GameDetail = ({ route, navigation }) => {
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
           )}
-        </BlurView>
+        </GlassCard>
 
         {/* ── Similar Games (IGDB) ── */}
         {similarGames.length > 0 && (
@@ -555,21 +594,7 @@ const GameDetail = ({ route, navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={styles.relatedCard}
-                  onPress={() => navigation?.push('DetailsGames', {
-                    gameId: item.id,
-                    gameName: item.name,
-                    coverImage: item.coverImage,
-                  })}
-                >
-                  <Image source={{ uri: item.coverImage }} style={styles.relatedCardImage} resizeMode="cover" />
-                  <View style={styles.relatedCardOverlay}>
-                    <Text style={styles.relatedCardTitle} numberOfLines={2}>{item.name}</Text>
-                  </View>
-                </Pressable>
-              )}
+              renderItem={renderSimilarGame}
             />
           </View>
         )}
@@ -621,18 +646,21 @@ const styles = StyleSheet.create({
   blobShape1: {
     position: 'absolute', top: -60, right: -80,
     width: 320, height: 320, borderRadius: 160,
+    borderCurve: 'continuous',
     backgroundColor: BLOB1, opacity: 0.12,
     transform: [{ scaleX: 1.4 }, { rotate: '20deg' }],
   },
   blobShape2: {
     position: 'absolute', top: 120, left: -100,
     width: 260, height: 260, borderRadius: 130,
+    borderCurve: 'continuous',
     backgroundColor: BLOB2, opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-10deg' }],
   },
   blobShape3: {
     position: 'absolute', top: 260, right: 40,
     width: 200, height: 200, borderRadius: 100,
+    borderCurve: 'continuous',
     backgroundColor: BLOB3, opacity: 0.08,
   },
 
@@ -643,6 +671,7 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute', top: 50, left: 20, zIndex: 10,
     width: 36, height: 36, borderRadius: 18,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -663,6 +692,7 @@ const styles = StyleSheet.create({
   blurCard: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 20,
     overflow: 'hidden',
@@ -753,6 +783,7 @@ const styles = StyleSheet.create({
   companyRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   companyAvatar: {
     width: 36, height: 36, borderRadius: 18,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(167,139,250,0.15)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -782,6 +813,7 @@ const styles = StyleSheet.create({
   },
   playButton: {
     width: 44, height: 44, borderRadius: 22,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(167,139,250,0.85)',
     justifyContent: 'center', alignItems: 'center',
   },
@@ -803,6 +835,7 @@ const styles = StyleSheet.create({
   reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
   addReviewButton: {
     width: 28, height: 28, borderRadius: 14,
+    borderCurve: 'continuous',
     backgroundColor: ACCENT, justifyContent: 'center', alignItems: 'center',
   },
   noDataText: { fontSize: 14, color: '#999', textAlign: 'center', paddingVertical: 20 },
@@ -827,6 +860,7 @@ const styles = StyleSheet.create({
   errorText: { fontSize: 16, color: '#ff6b6b', textAlign: 'center', marginBottom: 20 },
   retryButton: {
     backgroundColor: ACCENT, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8,
+    borderCurve: 'continuous',
   },
   retryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });

@@ -8,25 +8,34 @@ import {
   Pressable,
   StatusBar,
   Switch,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMediaTheme } from '../utils/mediaThemes';
-import { getUserProfile, updateAnonymousMode, updateProfile } from '../services/profile';
+import { updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
 import { getPublicName, getFirstName } from '../utils/userUtils';
 import { getSettings, updateSettings } from '../services/settings';
+import { checkIGDBHealth } from '../services/api_igdb';
 import EditProfileModal from '../components/profile_page/EditProfileModal';
 import SkeletonProfile from '../components/skeletons/SkeletonProfile';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
   const [useDisplayName, setUseDisplayName] = useState(false);
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const profile = useProfileStore((state) => state.profile);
+  const loading = useProfileStore((state) => state.loading);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
+  const upsertProfile = useProfileStore((state) => state.upsertProfile);
+  const clearProfile = useProfileStore((state) => state.clearProfile);
   const [showEditModal, setShowEditModal] = useState(false);
+  
+  // IGDB health check
+  const [igdbStatus, setIgdbStatus] = useState(null); // null | 'checking' | { ok, message }
   
   // Settings state
   const [settings, setSettings] = useState({
@@ -38,26 +47,25 @@ const ProfilePage = ({ navigation }) => {
   });
 
   // Reload profile every time screen gains focus (handles login/logout)
+  const loadSettings = useCallback(async () => {
+    const userSettings = await getSettings();
+    setSettings(userSettings);
+  }, []);
+
+  const loadProfile = useCallback(async () => {
+    await fetchProfile();
+  }, [fetchProfile]);
+
   useFocusEffect(
     useCallback(() => {
       loadProfile();
       loadSettings();
-    }, [])
+    }, [loadProfile, loadSettings])
   );
-  
-  const loadSettings = async () => {
-    const userSettings = await getSettings();
-    setSettings(userSettings);
-  };
 
-  const loadProfile = async () => {
-    const result = await getUserProfile();
-    if (result.success && result.profile) {
-      setProfile(result.profile);
-      setUseDisplayName(result.profile.use_display_name || false);
-    }
-    setLoading(false);
-  };
+  useEffect(() => {
+    setUseDisplayName(profile?.use_display_name || false);
+  }, [profile]);
 
   // Handle toggle change
   const handleToggleChange = async (value) => {
@@ -69,7 +77,9 @@ const ProfilePage = ({ navigation }) => {
       // Revert on error
       setUseDisplayName(!value);
       Alert.alert('Error', 'Failed to update privacy settings');
+      return;
     }
+    upsertProfile({ use_display_name: value });
   };
 
   // Handle Logout
@@ -88,7 +98,7 @@ const ProfilePage = ({ navigation }) => {
           onPress: async () => {
             const result = await signOut();
             if (result.success) {
-              setProfile(null);
+              clearProfile();
               setUseDisplayName(false);
               navigation.navigate('AuthPage');
             } else {
@@ -104,9 +114,9 @@ const ProfilePage = ({ navigation }) => {
   const handleSaveProfile = async (updates) => {
     const result = await updateProfile(updates);
     
-    if (result.success) {
-      // Reload profile to get updated data
-      await loadProfile();
+    if (result.success && result.profile) {
+      upsertProfile(result.profile);
+      setUseDisplayName(result.profile.use_display_name || false);
     }
     
     return result;
@@ -120,6 +130,13 @@ const ProfilePage = ({ navigation }) => {
     
     await updateSettings(newSettings);
   };
+
+  // IGDB health check handler
+  const handleCheckIGDB = useCallback(async () => {
+    setIgdbStatus('checking');
+    const result = await checkIGDBHealth();
+    setIgdbStatus(result);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -306,6 +323,37 @@ const ProfilePage = ({ navigation }) => {
 
               <View style={styles.menuDivider} />
 
+              {/* Check IGDB */}
+              <Pressable
+                style={styles.menuItem}
+                onPress={handleCheckIGDB}
+                accessibilityRole="button"
+                accessibilityLabel="Check IGDB API connection"
+              >
+                <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
+                  <Ionicons name="game-controller-outline" size={20} color="#A78BFA" />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>Check IGDB</Text>
+                  <Text style={styles.menuSubtitle}>
+                    {igdbStatus === null
+                      ? 'Tap to test game details API'
+                      : igdbStatus === 'checking'
+                      ? 'Checking...'
+                      : igdbStatus.message}
+                  </Text>
+                </View>
+                {igdbStatus === 'checking' ? (
+                  <ActivityIndicator size="small" color={theme.accent} />
+                ) : igdbStatus && igdbStatus.ok !== undefined ? (
+                  <View style={[styles.statusDot, { backgroundColor: igdbStatus.ok ? '#10B981' : '#EF4444' }]} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color="#999" />
+                )}
+              </Pressable>
+
+              <View style={styles.menuDivider} />
+
               {/* About */}
               <Pressable style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
@@ -344,16 +392,16 @@ const ProfilePage = ({ navigation }) => {
           </View>
           
           {/* User Name */}
-          {profile && (
+          {profile ? (
             <View style={styles.nameContainer}>
               <Text style={styles.displayName}>{getPublicName(profile)}</Text>
-              {profile.display_name && (
+              {profile.display_name ? (
                 <Text style={styles.subtitle}>
                   {useDisplayName ? `Real name: ${profile.username}` : `Callsign: ${profile.display_name}`}
                 </Text>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* Privacy Section */}
@@ -439,6 +487,37 @@ const ProfilePage = ({ navigation }) => {
 
           <View style={styles.menuDivider} />
 
+          {/* Check IGDB */}
+          <Pressable
+            style={styles.menuItem}
+            onPress={handleCheckIGDB}
+            accessibilityRole="button"
+            accessibilityLabel="Check IGDB API connection"
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
+              <Ionicons name="game-controller-outline" size={20} color="#A78BFA" />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuTitle}>Check IGDB</Text>
+              <Text style={styles.menuSubtitle}>
+                {igdbStatus === null
+                  ? 'Tap to test game details API'
+                  : igdbStatus === 'checking'
+                  ? 'Checking...'
+                  : igdbStatus.message}
+              </Text>
+            </View>
+            {igdbStatus === 'checking' ? (
+              <ActivityIndicator size="small" color={theme.accent} />
+            ) : igdbStatus && igdbStatus.ok !== undefined ? (
+              <View style={[styles.statusDot, { backgroundColor: igdbStatus.ok ? '#10B981' : '#EF4444' }]} />
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color="#ccc" />
+            )}
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
           {/* Logout */}
           <Pressable 
             style={styles.menuItem}
@@ -508,6 +587,7 @@ const styles = StyleSheet.create({
   loginPromptCard: {
     backgroundColor: '#252525',
     borderRadius: 16,
+    borderCurve: 'continuous',
     padding: 24,
     marginHorizontal: 16,
     marginVertical: 16,
@@ -532,6 +612,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -577,6 +658,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 30,
+    borderCurve: 'continuous',
     marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -617,6 +699,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+    borderCurve: 'continuous',
     borderWidth: 3,
   },
   avatarActionLeft: {
@@ -626,6 +709,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+    borderCurve: 'continuous',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -662,6 +746,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
+    borderCurve: 'continuous',
     gap: 6,
   },
   statText: {
@@ -679,6 +764,7 @@ const styles = StyleSheet.create({
   menuCard: {
     backgroundColor: '#252525',
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginBottom: 20,
     overflow: 'hidden',
   },
@@ -691,6 +777,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
+    borderCurve: 'continuous',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -725,11 +812,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
+    borderCurve: 'continuous',
   },
   newBadgeText: {
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderCurve: 'continuous',
   },
 });
 

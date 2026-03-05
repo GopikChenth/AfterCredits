@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
   ScrollView,
-  Image,
+  Image as RNImage,
   StyleSheet,
   Dimensions,
   Pressable,
@@ -14,15 +14,17 @@ import {
   StatusBar,
   FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import GlassCard from '../components/GlassCard';
 import StatsPill from '../components/details_page/StatsPill';
 import GenrePill from '../components/details_page/GenrePill';
 import CrewMember from '../components/details_page/CrewMember';
 import ReviewCard from '../components/details_page/ReviewCard';
 import StatusTag from '../components/details_page/StatusTag';
+import { BackButton } from '../components/details_page/SharedListItems';
 import DetailsSkeleton from '../components/skeletons/SkeletonDetails';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { getAnimeDetails, getStatusText } from '../services/api_anilist';
@@ -46,9 +48,9 @@ const AnimeDetail = ({ route, navigation }) => {
   const [reviewStats, setReviewStats] = useState({ count: 0, averageRating: 0 });
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   
-  // Scroll position tracking for header reveal
-  const [scrollY, setScrollY] = useState(0);
-  const [titleY, setTitleY] = useState(0); // Track title position
+  // Scroll position tracking for header reveal (useRef — no re-renders)
+  const scrollYRef = useRef(0);
+  const titleYRef = useRef(0);
   const headerOpacity = useRef(new Animated.Value(0)).current;
   
   // Gesture and animation refs
@@ -219,18 +221,18 @@ const AnimeDetail = ({ route, navigation }) => {
   };
 
   // Handle scroll to show/hide header
-  const handleScroll = (event) => {
+  const handleScroll = useCallback((event) => {
     const offsetY = event.nativeEvent.contentOffset.y;
-    setScrollY(offsetY);
+    scrollYRef.current = offsetY;
     
     // Show header when title scrolls out of view
     // Use titleY if measured, otherwise fallback to 100px
-    const triggerPoint = titleY > 0 ? titleY : 100;
+    const triggerPoint = titleYRef.current > 0 ? titleYRef.current : 100;
     const newOpacity = offsetY > triggerPoint ? 1 : 0;
     
     // Set opacity instantly without animation
     headerOpacity.setValue(newOpacity);
-  };
+  }, [headerOpacity]);
 
   // Render action buttons (Watch/Wishlist)
   const renderActionButtons = () => (
@@ -306,12 +308,14 @@ const AnimeDetail = ({ route, navigation }) => {
         
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails}>
+          <Pressable style={[styles.retryButton, { backgroundColor: theme.accent }]} onPress={fetchAnimeDetails} accessibilityRole="button" accessibilityLabel="Retry loading">
             <Text style={styles.retryText}>Retry</Text>
           </Pressable>
-          <Pressable 
-            style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]} 
+          <Pressable
+            style={[styles.retryButton, { marginTop: 10, backgroundColor: '#A0A0A0' }]}
             onPress={() => navigation?.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <Text style={styles.retryText}>Go Back</Text>
           </Pressable>
@@ -391,30 +395,30 @@ const AnimeDetail = ({ route, navigation }) => {
         scrollEventThrottle={16}
       >
         {/* Back Button - positioned over hero */}
-        <Pressable 
-          style={styles.backButton} 
+        <BackButton
+          style={styles.backButton}
           onPress={() => navigation?.goBack()}
-        >
-          <Ionicons name="arrow-back" size={20} color="#fff"/>
-        </Pressable>
+        />
 
       {/* Hero/Banner Section */}
       <View style={styles.heroSection}>
         <Image 
           source={{ uri: animeData.bannerImage || animeData.coverImage }} 
           style={styles.backdropImage} 
-          resizeMode="cover"
+          contentFit="cover"
+          recyclingKey={`anime-hero-${animeId}`}
+          transition={200}
         />
       </View>
 
       {/* Description Section */}
-      <BlurView intensity={80} tint="dark" style={styles.descriptionSectionNative}>
+      <GlassCard style={styles.descriptionSectionNative}>
         <View 
           style={styles.titleYearRow}
           onLayout={(event) => {
             // Measure title position relative to scroll view
             event.target.measure((x, y, width, height, pageX, pageY) => {
-              setTitleY(pageY + height); // Set trigger point to bottom of title
+              titleYRef.current = pageY + height; // Set trigger point to bottom of title
             });
           }}
         >
@@ -430,7 +434,7 @@ const AnimeDetail = ({ route, navigation }) => {
           {animeData.description}
         </Text>
         {animeData.description && animeData.description.length > 150 && (
-          <Pressable onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+          <Pressable onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)} accessibilityRole="button" accessibilityLabel={isDescriptionExpanded ? 'Show less description' : 'Show more description'}>
             <Text style={styles.expandDescriptionText}>
               {isDescriptionExpanded ? 'Show Less' : 'Read More'}
             </Text>
@@ -440,7 +444,7 @@ const AnimeDetail = ({ route, navigation }) => {
           <Text style={styles.episodeCount}>{animeData.episodeCount}</Text>
           <Text style={styles.status}>Status: {animeData.status}</Text>
         </View>
-      </BlurView>    
+      </GlassCard>    
 
       {/* Stats Section */}
       <View style={styles.statsSection}>
@@ -461,7 +465,7 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
 
       {/* Genre and Cast & Crew Section */}
-      <BlurView intensity={80} tint="dark" style={styles.genreCrewSectionNative}>
+      <GlassCard style={styles.genreCrewSectionNative}>
         <View style={styles.genreRow}>
           <Text style={styles.sectionLabel}>GENRE</Text>
           <View style={styles.genreList}>
@@ -493,9 +497,11 @@ const AnimeDetail = ({ route, navigation }) => {
                   />
                 ))}
                 {animeData.voiceActors.length > 5 && (
-                  <Pressable 
-                    style={styles.expandButton} 
-                    onPress={() => setIsCrewExpanded(!isCrewExpanded)}
+                  <Pressable
+            style={styles.expandButton}
+            onPress={() => setIsCrewExpanded(!isCrewExpanded)}
+            accessibilityRole="button"
+            accessibilityLabel={isCrewExpanded ? 'Show fewer crew members' : 'Show all crew members'}
                   >
                     <Text style={styles.expandButtonText}>
                       {isCrewExpanded ? 'Show Less' : `Show All (${animeData.voiceActors.length})`}
@@ -508,22 +514,25 @@ const AnimeDetail = ({ route, navigation }) => {
             )}
           </View>
         </View>
-      </BlurView>
+      </GlassCard>
 
       {/* Reviews Section */}
-      <BlurView intensity={80} tint="dark" style={styles.reviewsSectionNative}>
+      <GlassCard style={styles.reviewsSectionNative}>
           <View style={styles.reviewsHeader}>
             <Text style={styles.sectionLabel}>REVIEWS</Text>
-            <Pressable 
-              style={styles.addReviewButton}
-              onPress={() => navigation?.navigate('ReviewAnime', { 
-                animeId: animeData.id,
-                id: animeData.id,
-                title: animeData.title,
-                coverImage: animeData.coverImage 
-              })}
-            >
-              <Ionicons name="add" size={20} color="#fff" />
+            <Pressable
+            style={styles.addReviewButton}
+            onPress={() => navigation?.navigate('ReviewAnime', {
+              animeId: animeData.id,
+              id: animeData.id,
+              title: animeData.title?.english || animeData.title?.romaji,
+              coverImage: animeData.coverImage?.large,
+              mediaType: 'anime',
+            })}
+            accessibilityRole="button"
+            accessibilityLabel="Write a review"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >    <Ionicons name="add" size={20} color="#fff" />
             </Pressable>
           </View>
           
@@ -557,6 +566,8 @@ const AnimeDetail = ({ route, navigation }) => {
                           ]}
                           onPress={() => setCurrentReviewPage(prev => Math.max(1, prev - 1))}
                           disabled={currentReviewPage === 1}
+                          accessibilityRole="button"
+                          accessibilityLabel="Previous reviews page"
                         >
                           <Ionicons 
                             name="chevron-back" 
@@ -580,6 +591,8 @@ const AnimeDetail = ({ route, navigation }) => {
                           ]}
                           onPress={() => setCurrentReviewPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentReviewPage === totalPages}
+                          accessibilityRole="button"
+                          accessibilityLabel="Next reviews page"
                         >
                           <Text style={[
                             styles.paginationButtonText,
@@ -602,7 +615,7 @@ const AnimeDetail = ({ route, navigation }) => {
           ) : (
             <Text style={styles.noDataText}>No reviews yet. Be the first to review!</Text>
           )}
-        </BlurView>
+        </GlassCard>
 
       {/* Related Shows Section */}
       <View style={styles.relatedSection}>
@@ -623,11 +636,14 @@ const AnimeDetail = ({ route, navigation }) => {
                   styles.relatedCard,
                   pressed && styles.relatedCardPressed
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={`View related anime: ${item.title}`}
               >
                 <Image 
                   source={{ uri: item.image }} 
                   style={styles.relatedCardImage}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  recyclingKey={`rel-${item.id}`}
                 />
                 <View style={styles.relatedCardOverlay}>
                   <Text style={styles.relatedCardTitle} numberOfLines={2}>
@@ -719,6 +735,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
+    borderCurve: 'continuous',
   },
   retryText: {
     color: '#fff',
@@ -749,6 +766,7 @@ const styles = StyleSheet.create({
     height: 304,
     backgroundColor: '#7C3AED',
     borderRadius: 152,
+    borderCurve: 'continuous',
     opacity: 0.15,
     transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
   },
@@ -760,6 +778,7 @@ const styles = StyleSheet.create({
     height: 248,
     backgroundColor: '#A78BFA',
     borderRadius: 124,
+    borderCurve: 'continuous',
     opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
   },
@@ -771,6 +790,7 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#C4B5FD',
     borderRadius: 100,
+    borderCurve: 'continuous',
     opacity: 0.08,
   },
   backButton: {
@@ -781,6 +801,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -800,6 +821,7 @@ const styles = StyleSheet.create({
   descriptionSectionNative: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 20,
     zIndex: 5,
@@ -921,6 +943,7 @@ const styles = StyleSheet.create({
   genreCrewSectionNative: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 24,
     overflow: 'hidden',
@@ -967,6 +990,7 @@ const styles = StyleSheet.create({
   reviewsSectionNative: {
     marginHorizontal: 20,
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 24,
     overflow: 'hidden',
@@ -1000,6 +1024,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
+    borderCurve: 'continuous',
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1033,6 +1058,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 170,
     borderRadius: 8,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: '#252525',
   },
@@ -1068,6 +1094,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(167, 139, 250, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1081,12 +1108,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   dotActive: {
     width: 24,
     height: 8,
     borderRadius: 4,
+    borderCurve: 'continuous',
     backgroundColor: '#A78BFA',
   },
   expandButton: {
@@ -1116,6 +1145,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(167, 139, 250, 0.2)',
     gap: 5,
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 /**
  * Single post card skeleton matching ListPost layout
@@ -48,6 +48,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 16,
     marginBottom: 14,
     marginHorizontal: 16,
@@ -61,6 +62,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
+    borderCurve: 'continuous',
     marginRight: 10,
   },
   coverStrip: {
@@ -71,7 +73,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 120,
     borderRadius: 6,
+    borderCurve: 'continuous',
   },
 });
 
-export default PostSkeleton;
+const WrappedPostSkeleton = () => (<ShimmerProvider><PostSkeleton /></ShimmerProvider>);
+export default WrappedPostSkeleton;

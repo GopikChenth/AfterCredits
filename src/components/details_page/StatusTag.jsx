@@ -128,6 +128,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
+    borderCurve: 'continuous',
     borderWidth: 1.5,
   },
   chipInactive: {

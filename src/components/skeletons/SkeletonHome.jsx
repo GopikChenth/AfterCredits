@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width } = Dimensions.get('window');
 
@@ -24,11 +24,13 @@ const SkeletonLoader = ({ cardHeight = 220, count = 6 }) => {
   const cards = Array.from({ length: count });
 
   return (
+    <ShimmerProvider>
     <View style={styles.grid}>
       {cards.map((_, index) => (
         <SkeletonCard key={index} cardHeight={cardHeight} />
       ))}
     </View>
+    </ShimmerProvider>
   );
 };
 
@@ -42,6 +44,7 @@ const styles = StyleSheet.create({
     width: (width - 48) / 2,
     margin: 8,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: '#252525',
     padding: 8,
     shadowColor: '#000',
@@ -52,6 +55,7 @@ const styles = StyleSheet.create({
   },
   cardInner: {
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
 });

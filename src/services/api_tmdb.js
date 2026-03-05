@@ -25,6 +25,7 @@
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { runRequestWithPolicy } from './requestPolicy';
 
 // ===========================================
 // BASE CONFIGURATION
@@ -92,20 +93,28 @@ const tmdbRequest = async (endpoint, params = {}, cacheKey = null) => {
     if (cached) return cached;
   }
 
+  const requestKey = `tmdb:${endpoint}:${JSON.stringify(params)}`;
+
   try {
-    const response = await axios.get(`${TMDB_BASE_URL}${endpoint}`, {
-      params: {
-        api_key: TMDB_API_KEY,
-        language: 'en-US',
-        ...params,
+    const data = await runRequestWithPolicy({
+      dedupeKey: requestKey,
+      requestFn: async () => {
+        const response = await axios.get(`${TMDB_BASE_URL}${endpoint}`, {
+          params: {
+            api_key: TMDB_API_KEY,
+            language: 'en-US',
+            ...params,
+          },
+        });
+        return response.data;
       },
     });
 
     if (cacheKey) {
-      await setCachedData(cacheKey, response.data);
+      await setCachedData(cacheKey, data);
     }
 
-    return response.data;
+    return data;
   } catch (error) {
     console.error('TMDB API Error:', error.response?.data || error.message);
     throw error;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 /**
  * Profile/Settings page skeleton — mirrors the actual profile page layout:
@@ -85,6 +85,7 @@ const styles = StyleSheet.create({
   menuCard: {
     backgroundColor: '#252525',
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginBottom: 20,
     marginTop: 12,
     overflow: 'hidden',
@@ -101,4 +102,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SkeletonProfile;
+const WrappedSkeletonProfile = () => (<ShimmerProvider><SkeletonProfile /></ShimmerProvider>);
+export default WrappedSkeletonProfile;

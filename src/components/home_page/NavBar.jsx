@@ -94,6 +94,7 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: '#FFB3C6',
     borderRadius: 2,
+    borderCurve: 'continuous',
   },
 });
 

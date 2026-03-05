@@ -3,19 +3,20 @@ import {
   View,
   Text,
   ScrollView,
-  Image,
+  Image as RNImage,
   Pressable,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
-import { getUserProfile } from '../services/profile';
 
 import { useMediaType } from '../context/MediaTypeContext';
 import { getPodiumPageStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const mediaDetailCache = {};
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -33,57 +34,17 @@ const PodiumPage = ({ navigation }) => {
   const [genreStats, setGenreStats] = useState({});
   const [secondaryStats, setSecondaryStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState(null);
+  const userProfile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   const hasFetched = useRef(false);
   const lastMediaType = useRef(mediaType);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const result = await getUserProfile();
-      setUserProfile(result.success && result.profile ? result.profile : null);
-    };
-    loadProfile();
-    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    fetchProfile();
+    const unsubscribe = navigation.addListener('focus', () => fetchProfile());
     return unsubscribe;
-  }, [navigation]);
-
-  // ─── Fetch status counts ─────────────────────────────────
-  const fetchCounts = useCallback(async () => {
-    const mt = theme.statusMediaType;
-    try {
-      const [watchingRes, watchedRes, droppedRes, wishlistRes] = await Promise.all([
-        getByStatus('watching', mt),
-        getByStatus('watched', mt),
-        getByStatus('dropped', mt),
-        getWishlist(mt),
-      ]);
-
-      setCounts({
-        watching: watchingRes.success ? (watchingRes.data?.length || 0) : 0,
-        watched: watchedRes.success ? (watchedRes.data?.length || 0) : 0,
-        dropped: droppedRes.success ? (droppedRes.data?.length || 0) : 0,
-        wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
-      });
-
-      const combinedItems = [
-        ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
-        ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
-      ];
-
-      if (combinedItems.length > 0) {
-        fetchGenresAndSecondary(combinedItems);
-      } else {
-        setGenreStats({});
-        setSecondaryStats({});
-      }
-    } catch (error) {
-      console.error('Error fetching counts:', error);
-    } finally {
-      setLoading(false);
-      hasFetched.current = true;
-    }
-  }, [theme.statusMediaType, fetchGenresAndSecondary]);
+  }, [navigation, fetchProfile]);
 
   // ─── Aggregate genres + secondary from detail objects ────
   const fetchGenresAndSecondary = useCallback(async (items) => {
@@ -138,6 +99,43 @@ const PodiumPage = ({ navigation }) => {
     setGenreStats(genreCount);
     setSecondaryStats(secondaryCount);
   }, [theme, fetchDetails, formatData]);
+
+  // ─── Fetch status counts ─────────────────────────────────
+  const fetchCounts = useCallback(async () => {
+    const mt = theme.statusMediaType;
+    try {
+      const [watchingRes, watchedRes, droppedRes, wishlistRes] = await Promise.all([
+        getByStatus('watching', mt),
+        getByStatus('watched', mt),
+        getByStatus('dropped', mt),
+        getWishlist(mt),
+      ]);
+
+      setCounts({
+        watching: watchingRes.success ? (watchingRes.data?.length || 0) : 0,
+        watched: watchedRes.success ? (watchedRes.data?.length || 0) : 0,
+        dropped: droppedRes.success ? (droppedRes.data?.length || 0) : 0,
+        wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
+      });
+
+      const combinedItems = [
+        ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
+        ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
+      ];
+
+      if (combinedItems.length > 0) {
+        fetchGenresAndSecondary(combinedItems);
+      } else {
+        setGenreStats({});
+        setSecondaryStats({});
+      }
+    } catch (error) {
+      console.error('Error fetching counts:', error);
+    } finally {
+      setLoading(false);
+      hasFetched.current = true;
+    }
+  }, [theme.statusMediaType, fetchGenresAndSecondary]);
 
   // ─── Refetch on focus & mediaType change ─────────────────
   useFocusEffect(

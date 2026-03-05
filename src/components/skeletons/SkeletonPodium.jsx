@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width } = Dimensions.get('window');
 
@@ -119,4 +119,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SkeletonPodium;
+const WrappedSkeletonPodium = () => (<ShimmerProvider><SkeletonPodium /></ShimmerProvider>);
+export default WrappedSkeletonPodium;

@@ -75,9 +75,9 @@ export const getVisibleMediaTypes = async () => {
   const visibleTypes = [];
   
   if (settings.showAnime) visibleTypes.push('anime');
-  if (settings.showMovies) visibleTypes.push('movie');
-  if (settings.showGames) visibleTypes.push('game');
-  if (settings.showComics) visibleTypes.push('comic');
+  if (settings.showMovies) visibleTypes.push('movies');
+  if (settings.showGames) visibleTypes.push('games');
+  if (settings.showComics) visibleTypes.push('comics');
   if (settings.showManga) visibleTypes.push('manga');
   
   return visibleTypes;

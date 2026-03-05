@@ -3,7 +3,7 @@ import {
   View,
   Text,
   Image,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Pressable,
 } from 'react-native';
@@ -35,24 +35,23 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       <Text style={styles.title}>{title}</Text>
 
       {/* Anime Cover Strip */}
-      <ScrollView
+      <FlatList
+        data={animeCovers || []}
         horizontal
-        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         style={styles.coverStrip}
         contentContainerStyle={styles.coverStripContent}
-      >
-        {(animeCovers || []).map((cover, index) => (
-          !imageErrors[index] && (
+        keyExtractor={(item, index) => item?.imageUrl || `${index}`}
+        renderItem={({ item, index }) =>
+          imageErrors[index] ? null : (
             <Image
-              key={index}
-              source={{ uri: cover.imageUrl }}
+              source={{ uri: item.imageUrl }}
               style={styles.coverImage}
               onError={() => handleImageError(index)}
             />
           )
-        ))}
-      </ScrollView>
+        }
+      />
 
       {/* Description */}
       {description && (
@@ -80,6 +79,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 16,
     marginBottom: 14,
     marginHorizontal: 16,
@@ -93,6 +93,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
+    borderCurve: 'continuous',
     marginRight: 10,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -133,6 +134,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 120,
     borderRadius: 6,
+    borderCurve: 'continuous',
     backgroundColor: '#2A2A2A',
   },
   description: {
@@ -150,6 +152,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 10,
     borderRadius: 10,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255,179,198,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,179,198,0.15)',

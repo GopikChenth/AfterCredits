@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   pill: {
     backgroundColor: '#FFB3C6',
     borderRadius: 20,
+    borderCurve: 'continuous',
     paddingVertical: 18,
     paddingHorizontal: 20,
     alignItems: 'center',

@@ -4,14 +4,14 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   Image,
   Platform,
   Keyboard,
   Animated,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 
 /**
  * SearchSuggestionsOverlay - Compact suggestions dropdown
@@ -150,24 +150,23 @@ const SearchSuggestionsOverlay = ({
     const visibleResults = results.slice(0, 3);
 
     return (
-      <ScrollView 
+      <FlatList
+        data={visibleResults}
         style={styles.scrollView}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
         keyboardShouldPersistTaps="handled"
-      >
-        {visibleResults.map((item, index) => (
+        renderItem={({ item }) => (
           <Pressable
-            key={`${item.id}-${index}`}
             style={styles.resultItem}
             onPress={() => handleResultPress(item)}
           >
-            <Image 
+            <Image
               source={{ uri: item.coverImage }}
               style={styles.thumbnail}
               resizeMode="cover"
             />
-            
+
             <View style={styles.resultInfo}>
               <Text style={styles.resultTitle} numberOfLines={1}>
                 {item.title}
@@ -190,17 +189,18 @@ const SearchSuggestionsOverlay = ({
 
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-        ))}
-        
-        {results.length > 3 && (
-          <View style={styles.moreResults}>
-            <Text style={styles.moreResultsText}>
-              +{results.length - 3} more results
-            </Text>
-            <Text style={styles.pressEnterText}>Press Enter to see all</Text>
-          </View>
         )}
-      </ScrollView>
+        ListFooterComponent={
+          results.length > 3 ? (
+            <View style={styles.moreResults}>
+              <Text style={styles.moreResultsText}>
+                +{results.length - 3} more results
+              </Text>
+              <Text style={styles.pressEnterText}>Press Enter to see all</Text>
+            </View>
+          ) : null
+        }
+      />
     );
   };
 
@@ -215,9 +215,15 @@ const SearchSuggestionsOverlay = ({
     }
 
     return (
-      <BlurView intensity={80} tint="dark" style={styles.overlayContainerNative}>
+      <View style={styles.overlayContainerNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={20}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+        />
         {children}
-      </BlurView>
+      </View>
     );
   };
 
@@ -257,6 +263,7 @@ const styles = StyleSheet.create({
     maxHeight: 310, // Fits 3 full suggestions (each ~94px + padding)
     zIndex: 60, // Below search bar (100) but above backdrop (50)
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -316,6 +323,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 70,
     borderRadius: 8,
+    borderCurve: 'continuous',
     backgroundColor: '#333',
   },
   resultInfo: {

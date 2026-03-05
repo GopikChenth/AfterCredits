@@ -9,10 +9,11 @@ import {
   StatusBar,
   ActivityIndicator,
   Keyboard,
-  Image,
+  Image as RNImage,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MediaCard from '../components/home_page/Card';
@@ -29,9 +30,9 @@ import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from 
 import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';
-import { getUserProfile } from '../services/profile';
 import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const HomeAnime = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -65,7 +66,8 @@ const HomeAnime = ({ navigation }) => {
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
   // State for user profile
-  const [userProfile, setUserProfile] = useState(null);
+  const userProfile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   // Listen for screen size changes
   useEffect(() => {
@@ -78,27 +80,15 @@ const HomeAnime = ({ navigation }) => {
     return () => subscription?.remove();
   }, []);
 
-  // Fetch user profile on mount and when page regains focus (e.g., after logout)
+  // Fetch user profile on mount and when page regains focus.
   useEffect(() => {
-    const loadProfile = async () => {
-      const result = await getUserProfile();
-      if (result.success && result.profile) {
-        setUserProfile(result.profile);
-      } else {
-        // Clear profile if not logged in
-        setUserProfile(null);
-      }
-    };
-    
-    loadProfile();
-    
-    // Add focus listener to reload profile when returning to this page
+    fetchProfile();
     const unsubscribe = navigation.addListener('focus', () => {
-      loadProfile();
+      fetchProfile();
     });
     
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, fetchProfile]);
 
   // Fetch anime data based on category
   const fetchAnimeData = useCallback(async (category, page = 1) => {
@@ -248,6 +238,17 @@ const HomeAnime = ({ navigation }) => {
     return (Dimensions.get('window').width - 56) / 2;
   }, []);
 
+  // Memoized FlashList callbacks
+  const renderAnimeCard = useCallback(({ item }) => (
+    <AnimeCardItem
+      anime={item}
+      onPress={() => handleAnimePress(item.id)}
+      cardHeight={cardHeight}
+    />
+  ), [handleAnimePress, cardHeight]);
+
+  const animeKeyExtractor = useCallback((item) => item.id.toString(), []);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -264,6 +265,9 @@ const HomeAnime = ({ navigation }) => {
         <Pressable 
           style={styles.menuButton}
           onPress={() => setIsSidebarVisible(!isSidebarVisible)}
+          accessibilityRole="button"
+          accessibilityLabel="Open sidebar menu"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.menuIcon}>☰</Text>
         </Pressable>
@@ -273,6 +277,8 @@ const HomeAnime = ({ navigation }) => {
         <Pressable 
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}
+          accessibilityRole="button"
+          accessibilityLabel="Go to profile"
         >
           {userProfile ? (
             <Image
@@ -335,6 +341,8 @@ const HomeAnime = ({ navigation }) => {
                 <Pressable 
                   style={styles.retryButton}
                   onPress={() => fetchAnimeData(selectedCategory)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading anime"
                 >
                   <Text style={styles.retryText}>Retry</Text>
                 </Pressable>
@@ -344,14 +352,8 @@ const HomeAnime = ({ navigation }) => {
                 {/* Virtualized Grid with FlashList */}
                 <FlashList
                   data={animeList}
-                  renderItem={({ item }) => (
-                    <AnimeCardItem
-                      anime={item}
-                      onPress={() => handleAnimePress(item.id)}
-                      cardHeight={cardHeight}
-                    />
-                  )}
-                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={renderAnimeCard}
+                  keyExtractor={animeKeyExtractor}
                   estimatedItemSize={cardHeight + 16}
                   numColumns={2}
                   showsVerticalScrollIndicator={false}
@@ -363,6 +365,8 @@ const HomeAnime = ({ navigation }) => {
                           <Pressable
                             style={styles.loadMoreButton}
                             onPress={handlePrevPage}
+                            accessibilityRole="button"
+                            accessibilityLabel="Previous page"
                           >
                             <Ionicons name="chevron-back" size={16} color="#A78BFA" />
                             <Text style={styles.loadMoreText}>Prev</Text>
@@ -377,6 +381,8 @@ const HomeAnime = ({ navigation }) => {
                           <Pressable
                             style={styles.loadMoreButton}
                             onPress={handleLoadMore}
+                            accessibilityRole="button"
+                            accessibilityLabel="Next page"
                           >
                             <Text style={styles.loadMoreText}>Next</Text>
                             <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
@@ -452,6 +458,7 @@ const styles = StyleSheet.create({
     height: 304,
     backgroundColor: '#7C3AED',
     borderRadius: 152,
+    borderCurve: 'continuous',
     opacity: 0.15,
     transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
   },
@@ -463,6 +470,7 @@ const styles = StyleSheet.create({
     height: 248,
     backgroundColor: '#A78BFA',
     borderRadius: 124,
+    borderCurve: 'continuous',
     opacity: 0.1,
     transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
   },
@@ -474,6 +482,7 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#C4B5FD',
     borderRadius: 100,
+    borderCurve: 'continuous',
     opacity: 0.08,
   },
   header: {
@@ -488,6 +497,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+    borderCurve: 'continuous',
     backgroundColor: '#252525',
     justifyContent: 'center',
     alignItems: 'center',
@@ -511,6 +521,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 4, height: 4 },
@@ -522,6 +533,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+    borderCurve: 'continuous',
     backgroundColor: '#A78BFA',
   },
   scrollView: {
@@ -535,6 +547,7 @@ const styles = StyleSheet.create({
   heroCard: {
     backgroundColor: '#252525',
     borderRadius: 16,
+    borderCurve: 'continuous',
     paddingVertical: 16,
     paddingHorizontal: 16,
     shadowColor: '#000',
@@ -590,6 +603,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 8,
+    borderCurve: 'continuous',
   },
   retryText: {
     color: '#fff',
@@ -618,6 +632,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(167, 139, 250, 0.3)',
     minWidth: 90,

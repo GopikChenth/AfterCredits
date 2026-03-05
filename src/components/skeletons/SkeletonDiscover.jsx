@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = width * 0.32;
@@ -63,6 +63,7 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 14,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: '#1A1A1A',
     borderWidth: 1,
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#1A1A1A',
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     marginBottom: 12,
     borderWidth: 1,
@@ -85,6 +87,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 80,
     borderRadius: 0,
+    borderCurve: 'continuous',
   },
   newsContent: {
     flex: 1,
@@ -93,4 +96,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default DiscoverSkeleton;
+const WrappedDiscoverSkeleton = () => (<ShimmerProvider><DiscoverSkeleton /></ShimmerProvider>);
+export default WrappedDiscoverSkeleton;
