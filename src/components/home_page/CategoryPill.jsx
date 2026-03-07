@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -18,6 +18,30 @@ const CategoryPill = ({
   const currentIndexRef = useRef(0); // Track actual current index
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const hintAnim = useRef(new Animated.Value(0)).current;
+  const hasInteracted = useRef(false); // Stop hinting once user swipes
+
+  const runHintAnimation = () => {
+    Animated.sequence([
+      Animated.timing(hintAnim, { toValue: -8, duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 8,  duration: 200, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: -5, duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 5,  duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 0,  duration: 120, useNativeDriver: true }),
+    ]).start();
+  };
+
+  // Fire once on mount after 600ms, then repeat every 5s until user swipes
+  useEffect(() => {
+    const initial = setTimeout(runHintAnimation, 600);
+    const interval = setInterval(() => {
+      if (!hasInteracted.current) runHintAnimation();
+    }, 5000);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
+  }, []);
 
   const changeCategory = (direction) => {
     const newIndex = currentIndexRef.current + direction;
@@ -27,6 +51,9 @@ const CategoryPill = ({
       console.log('Boundary reached:', newIndex, 'current:', currentIndexRef.current);
       return;
     }
+
+    // Stop hint animation loop after first interaction
+    hasInteracted.current = true;
 
     console.log('Changing from', currentIndexRef.current, 'to', newIndex, 'direction:', direction);
 
@@ -119,7 +146,7 @@ const CategoryPill = ({
         <Animated.View
           style={{
             opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
+            transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
           }}
         >
           <Text style={styles.categoryText}>
