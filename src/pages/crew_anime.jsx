@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,17 +10,18 @@ import {
   Dimensions,
   Pressable,
   ActivityIndicator,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import GlassCard from '../components/GlassCard';
-import { getStaffDetails } from '../services/api_anilist';
+} from "react-native";
+import { Image } from "expo-image";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import GlassCard from "../components/shared/GlassCard";
+import { getStaffDetails } from "../services/api_anilist";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GRID_GAP = 10;
 const NUM_COLUMNS = 3;
-const CARD_WIDTH = (SCREEN_WIDTH - 32 - (GRID_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS;
+const CARD_WIDTH =
+  (SCREEN_WIDTH - 32 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 const CARD_HEIGHT = CARD_WIDTH * 1.5;
 
 const CrewDetailPage = ({ route, navigation }) => {
@@ -36,8 +37,8 @@ const CrewDetailPage = ({ route, navigation }) => {
         const data = await getStaffDetails(staffId);
         setStaffData(data);
       } catch (err) {
-        console.error('Failed to fetch staff:', err);
-        setError('Failed to load staff details');
+        console.error("Failed to fetch staff:", err);
+        setError("Failed to load staff details");
       } finally {
         setIsLoading(false);
       }
@@ -47,21 +48,34 @@ const CrewDetailPage = ({ route, navigation }) => {
 
   const formatDate = (dateObj) => {
     if (!dateObj) return null;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const parts = [];
     if (dateObj.month) parts.push(months[dateObj.month - 1]);
     if (dateObj.day) parts.push(dateObj.day);
     if (dateObj.year) parts.push(dateObj.year);
-    return parts.join(' ');
+    return parts.join(" ");
   };
 
   const cleanDescription = (desc) => {
     if (!desc) return null;
     // Remove markdown-style links and clean up
     return desc
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/~!.*?!~/gs, '')
+      .replace(/__([^_]+)__/g, "$1")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      .replace(/~!.*?!~/gs, "")
       .trim();
   };
 
@@ -69,12 +83,17 @@ const CrewDetailPage = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFB3C6" />
-          <Text style={styles.loadingText}>Loading {staffName || 'staff'}...</Text>
+          <Text style={styles.loadingText}>
+            Loading {staffName || "staff"}...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -84,11 +103,14 @@ const CrewDetailPage = ({ route, navigation }) => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" backgroundColor="#0D0D0D" />
-        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Pressable
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>{error || 'Staff not found'}</Text>
+          <Text style={styles.errorText}>{error || "Staff not found"}</Text>
         </View>
       </SafeAreaView>
     );
@@ -119,13 +141,11 @@ const CrewDetailPage = ({ route, navigation }) => {
             style={styles.staffImage}
           />
           <View style={styles.headerInfo}>
-            <Text style={styles.staffName}>
-              {staffData.name?.full}
-            </Text>
+            <Text style={styles.staffName}>{staffData.name?.full}</Text>
             {staffData.name?.native && (
               <Text style={styles.nativeName}>{staffData.name.native}</Text>
             )}
-            
+
             {/* Quick Stats */}
             <View style={styles.quickStats}>
               {birthday ? (
@@ -149,7 +169,9 @@ const CrewDetailPage = ({ route, navigation }) => {
               {staffData.bloodType ? (
                 <View style={styles.statItem}>
                   <Ionicons name="water-outline" size={14} color="#FFB3C6" />
-                  <Text style={styles.statText}>Blood: {staffData.bloodType}</Text>
+                  <Text style={styles.statText}>
+                    Blood: {staffData.bloodType}
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -170,7 +192,9 @@ const CrewDetailPage = ({ route, navigation }) => {
         {description ? (
           <GlassCard style={styles.bioSection}>
             <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.bioText} numberOfLines={8}>{description}</Text>
+            <Text style={styles.bioText} numberOfLines={8}>
+              {description}
+            </Text>
           </GlassCard>
         ) : null}
 
@@ -188,28 +212,41 @@ const CrewDetailPage = ({ route, navigation }) => {
               renderItem={({ item: edge }) => {
                 const anime = edge.node;
                 const character = edge.characters?.[0];
-                const animeTitle = anime?.title?.english || anime?.title?.romaji || 'Unknown';
-                const charName = character?.name?.full || 'Unknown Character';
+                const animeTitle =
+                  anime?.title?.english || anime?.title?.romaji || "Unknown";
+                const charName = character?.name?.full || "Unknown Character";
 
                 return (
                   <Pressable
                     style={styles.roleCard}
-                    onPress={() => anime?.id && navigation.push('DetailsAnime', { animeId: anime.id })}
+                    onPress={() =>
+                      anime?.id &&
+                      navigation.push("DetailsAnime", { animeId: anime.id })
+                    }
                   >
                     <Image
-                      source={{ uri: anime?.coverImage?.large || anime?.coverImage?.medium }}
+                      source={{
+                        uri:
+                          anime?.coverImage?.large || anime?.coverImage?.medium,
+                      }}
                       style={styles.animeCover}
                     />
 
                     <View style={styles.roleInfo}>
-                      <Text style={styles.animeTitle} numberOfLines={2}>{animeTitle}</Text>
-                      <Text style={styles.characterName} numberOfLines={1}>as {charName}</Text>
+                      <Text style={styles.animeTitle} numberOfLines={2}>
+                        {animeTitle}
+                      </Text>
+                      <Text style={styles.characterName} numberOfLines={1}>
+                        as {charName}
+                      </Text>
                       <View style={styles.roleMetaRow}>
                         {anime?.format && (
                           <Text style={styles.formatTag}>{anime.format}</Text>
                         )}
                         {anime?.seasonYear && (
-                          <Text style={styles.yearText}>{anime.seasonYear}</Text>
+                          <Text style={styles.yearText}>
+                            {anime.seasonYear}
+                          </Text>
                         )}
                       </View>
                     </View>
@@ -236,7 +273,7 @@ const CrewDetailPage = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
+    backgroundColor: "#0D0D0D",
   },
   backButton: {
     paddingHorizontal: 16,
@@ -244,19 +281,19 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
   },
   loadingText: {
-    color: '#888',
+    color: "#888",
     fontSize: 15,
-    fontFamily: 'Agdasima',
+    fontFamily: "Agdasima",
   },
   errorText: {
-    color: '#888',
+    color: "#888",
     fontSize: 15,
-    fontFamily: 'Agdasima',
+    fontFamily: "Agdasima",
   },
   scrollView: {
     flex: 1,
@@ -267,32 +304,32 @@ const styles = StyleSheet.create({
 
   // --- Header ---
   headerSection: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 20,
   },
   staffImage: {
     width: 110,
     height: 150,
     borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: '#2A2A2A',
+    borderCurve: "continuous",
+    backgroundColor: "#2A2A2A",
   },
   headerInfo: {
     flex: 1,
     marginLeft: 16,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   staffName: {
     fontSize: 26,
-    fontWeight: '800',
-    fontFamily: 'Agdasima-Bold',
-    color: '#fff',
+    fontWeight: "800",
+    fontFamily: "Agdasima-Bold",
+    color: "#fff",
     lineHeight: 30,
   },
   nativeName: {
     fontSize: 15,
-    fontFamily: 'Agdasima',
-    color: '#888',
+    fontFamily: "Agdasima",
+    color: "#888",
     marginTop: 2,
   },
   quickStats: {
@@ -300,41 +337,41 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   statText: {
-    color: '#CCCCCC',
+    color: "#CCCCCC",
     fontSize: 13,
-    fontFamily: 'Agdasima',
+    fontFamily: "Agdasima",
   },
   favourites: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
     marginTop: 8,
   },
   favouritesText: {
-    color: '#FF6B6B',
+    color: "#FF6B6B",
     fontSize: 13,
-    fontFamily: 'Agdasima',
+    fontFamily: "Agdasima",
   },
 
   // --- Bio ---
   bioSection: {
     borderRadius: 12,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
     padding: 16,
     marginBottom: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: "rgba(255,255,255,0.08)",
   },
   bioText: {
-    color: '#BBBBBB',
+    color: "#BBBBBB",
     fontSize: 14,
-    fontFamily: 'Agdasima',
+    fontFamily: "Agdasima",
     lineHeight: 20,
   },
 
@@ -344,29 +381,29 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    fontFamily: 'Agdasima-Bold',
-    color: '#fff',
+    fontWeight: "700",
+    fontFamily: "Agdasima-Bold",
+    color: "#fff",
     marginBottom: 12,
     letterSpacing: 0.5,
   },
   roleCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
-    borderCurve: 'continuous',
+    borderCurve: "continuous",
     padding: 10,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: "rgba(255,255,255,0.06)",
   },
   animeCover: {
     width: 48,
     height: 68,
     borderRadius: 6,
-    borderCurve: 'continuous',
-    backgroundColor: '#2A2A2A',
+    borderCurve: "continuous",
+    backgroundColor: "#2A2A2A",
   },
   roleInfo: {
     flex: 1,
@@ -374,45 +411,45 @@ const styles = StyleSheet.create({
   },
   animeTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    fontFamily: 'Agdasima-Bold',
-    color: '#fff',
+    fontWeight: "700",
+    fontFamily: "Agdasima-Bold",
+    color: "#fff",
     lineHeight: 19,
   },
   characterName: {
     fontSize: 13,
-    fontFamily: 'Agdasima',
-    color: '#FFB3C6',
+    fontFamily: "Agdasima",
+    color: "#FFB3C6",
     marginTop: 2,
   },
   roleMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 4,
   },
   formatTag: {
     fontSize: 11,
-    fontFamily: 'Agdasima',
-    color: '#888',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    fontFamily: "Agdasima",
+    color: "#888",
+    backgroundColor: "rgba(255,255,255,0.06)",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
+    borderCurve: "continuous",
+    overflow: "hidden",
   },
   yearText: {
     fontSize: 11,
-    fontFamily: 'Agdasima',
-    color: '#888',
+    fontFamily: "Agdasima",
+    color: "#888",
   },
   characterImage: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    borderCurve: 'continuous',
-    backgroundColor: '#2A2A2A',
+    borderCurve: "continuous",
+    backgroundColor: "#2A2A2A",
   },
 });
 
