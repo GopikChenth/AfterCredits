@@ -4208,3 +4208,335 @@ $env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
 ---
 
 _"From code to APK. The credits roll, but AfterCredits keeps going."_
+
+---
+
+## Session 18: March 08, 2026
+
+### ✅ CategoryPill — Swipe Hint Animation
+
+Added a subtle nudge animation to `CategoryPill.jsx` that fires on mount and repeats every 5 seconds to educate users about the swipe gesture. Stops automatically after the user's first swipe.
+
+**Implementation**:
+- `hintAnim` Animated.Value nudges ±8px in a sequence (5 keyframes)
+- Runs after 600ms delay on mount, then on a 5s `setInterval`
+- `hasInteracted` ref stops the loop permanently on first swipe
+- Combined with existing `slideAnim` via `Animated.add(slideAnim, hintAnim)`
+
+**Committed**: `feat: add swipe hint animation to CategoryPill` → `mainbuild`
+
+---
+
+### ✅ Shared Components Folder
+
+Organized shared blur components into `src/components/shared/`:
+
+| File | Purpose |
+|---|---|
+| `SkiaBlurBox.jsx` | GPU-accelerated Skia `BackdropBlur` wrapper with `onLayout` clip sizing |
+| `GlassCard.jsx` | Frosted glass card using `@react-native-community/blur` |
+
+Updated all 5 `GlassCard` consumers to import from the new shared path:
+- `details_anime.jsx`, `details_movies.jsx`, `details_games.jsx`, `crew_anime.jsx` → `'../components/shared/GlassCard'`
+- `CompletionChart.jsx` → `'../shared/GlassCard'`
+
+**Committed**: `refactor: migrate blur to shared components, revert to community/blur` → `mainbuild`
+
+---
+
+### 🔬 Skia Blur Experiment (Reverted)
+
+Explored replacing `@react-native-community/blur` with `@shopify/react-native-skia`'s `BackdropBlur` across `SearchBar`, `SideBar`, `SearchSuggestionsOverlay`, and `GlassCard`. Reverted by user request — `@react-native-community/blur` remains the standard. `SkiaBlurBox.jsx` kept in `shared/` for selective future use.
+
+---
+
+### 🎮 Games Home Page — Bento Layout Redesign (Reverted)
+
+Designed and implemented a full bento-box visual overhaul of `game_home.jsx` inspired by a dark glassmorphism reference UI:
+
+**New layout elements:**
+- **Header**: Clean `GAMES` title, rounded icon buttons
+- **CategoryPill**: Swipe Trending/Popular/New inside a Skia frosted glass card
+- **Stats InfoCard**: Game count with Skia backdrop blur
+- **Featured game card**: Large card with `background_image`, genre badges, metacritic score
+- **FlashList grid**: Unchanged 2-column card grid with pagination
+
+All data-fetching, search, and sidebar logic was preserved identically.
+
+> **Note**: Full local revert was performed (`git checkout -- . && git clean -fd`). Working tree reset to last committed state on `mainbuild`. Bento redesign was not pushed.
+
+---
+
+### 📊 Session 18 Statistics
+
+**Files Modified**: `CategoryPill.jsx`, `SearchBar.jsx`, `SideBar.jsx`, `SearchSuggestionsOverlay.jsx`
+**Files Created**: `src/components/shared/SkiaBlurBox.jsx`, `src/components/shared/GlassCard.jsx`
+**Dependencies Added**: `@shopify/react-native-skia` (installed, Gradle rebuilt)
+**Git Commits**: 2 pushed to `mainbuild`
+**Final State**: Working tree clean, matches last commit
+
+---
+
+### 🚀 Next Priorities
+
+1. Decide on approach for Games home page redesign — push bento layout when ready
+2. Apply Skia `BackdropBlur` selectively where `@react-native-community/blur` underperforms on Android
+3. UI consistency pass across Movies and Games pages
+
+---
+
+_"Experiment boldly. Revert cleanly. Ship confidently."_
+
+---
+
+# AfterCredits - Game Subapp Development Progress
+
+## Subapp Overview
+
+**Game Subapp** is the gaming module of AfterCredits — a retro-arcade-themed section for browsing, tracking, and discovering video games. It uses a deep forest / emerald aesthetic (dark `#070F0A` background, emerald `#4ADE80` accents) to contrast with the anime subapp's violet-night design.
+
+**API**: [RAWG Video Games Database](https://rawg.io/apidocs) — free, comprehensive game data  
+**News Source**: [Insider Gaming](https://insider-gaming.com/feed/) — RSS feed for gaming news  
+**Theme Color**: `#4ADE80` (Emerald Green)  
+**Design Language**: Retro Arcade / Cyberpunk — CRT scanlines, neon glows, holographic borders, arcade button skeuomorphism
+
+---
+
+## Game Subapp Session 1: February 18, 2026
+
+### ✅ Game Home Page (`/src/pages/game_home.jsx`)
+
+**Purpose**: Main game browsing interface with retro arcade aesthetic
+
+**Features**:
+
+- **Retro Header**: "GAMES" title with neon purple text-shadow glow effect
+- **CRT Scanline Overlay**: Subtle full-screen scanline texture (5% opacity) for retro feel
+- **Animated Background Grid**: 20 horizontal purple grid lines (10% opacity) — cyberpunk aesthetic
+- **Neon Buttons**: Menu (purple gradient) and Profile (pink gradient) icon buttons with glow shadows
+- **Arcade Category Pills**: Skeuomorphic 3D buttons (TRENDING / POPULAR / NEW)
+  - Top highlight strip simulates physical button depth
+  - Active state: purple gradient + neon glow bottom bar + translateY press effect
+  - Pressed state: deeper translateY for tactile feedback
+- **Featured Game Card**: Holographic border card for top result
+  - Full-width cover image with dark gradient overlay
+  - Metacritic score badge (green/yellow/red based on score)
+  - Platform badges (first 3 platforms, abbreviated)
+- **Game Grid**: 2-column arcade cabinet style cards
+  - Card bezel effect (dark border + inner shadow)
+  - Cover image with gradient overlay
+  - Star rating (5-star, from RAWG `rating` field)
+  - Metacritic mini badge (top-right)
+  - Neon accent line at bottom
+  - Scale press animation (0.95)
+- **Upcoming Games Section**: Horizontal FlatList of unreleased games
+  - "View All" → navigates to `UpcomingPage`
+  - Shows release date or "TBA"
+- **Gaming News Section**: Latest 5 articles from Insider Gaming RSS
+  - "View All" → navigates to `NewsPage`
+  - Rendered via reusable `NewsCard` component
+- **Sidebar**: Shared `SideBar` component, toggled by menu button
+
+**State Management**:
+
+- `selectedCategory` — controls which API call to make (trending/popular/new)
+- `games` — main game list for grid
+- `upcomingGames` — separate upcoming games list
+- `gamingNews` — news articles array
+- `loading`, `upcomingLoading`, `newsLoading` — independent loading states per section
+- `isSidebarVisible` — sidebar toggle
+
+**Navigation**:
+
+- Game card → `GameDetails` screen (passes `gameId`)
+- Upcoming card → `GameDetails` screen
+- View All (Upcoming) → `UpcomingPage`
+- View All (News) → `NewsPage`
+- Profile button → `ProfilePage`
+
+**Technical Details**:
+
+- `useMediaType()` context hook — sets active media type
+- Three independent `useEffect` hooks: category change triggers `loadGames()`, mount triggers `loadUpcomingGames()` + `loadGamingNews()`
+- `Dimensions.get('window')` for responsive 2-column card width: `(SCREEN_WIDTH - 48) / 2`
+- `LinearGradient` from `expo-linear-gradient` for all gradient effects
+- `Ionicons` from `@expo/vector-icons` for icons
+
+---
+
+### ✅ RAWG API Service (`/src/services/api_games.js`)
+
+**Purpose**: Complete RAWG API client with caching, formatting, and utilities
+
+**API**: RAWG Video Games Database — `https://api.rawg.io/api/`
+
+**Cache System**:
+
+- MMKV-based caching with TTL (time-to-live) per data type
+- Cache durations:
+  - Trending/Popular: 1 hour
+  - New Releases: 30 minutes
+  - Upcoming: 6 hours
+  - Game Details: 24 hours
+  - Genres/Platforms: 7 days
+
+**API Functions**:
+
+| Function | Description | Key Params |
+|---|---|---|
+| `getTrendingGames(page, pageSize)` | Recently added, highly rated | `ordering=-added` |
+| `getPopularGames(page, pageSize)` | By rating and popularity | `ordering=-rating` |
+| `getNewReleases(page, pageSize)` | Released in last 30 days | Dynamic date range |
+| `getUpcomingGames(page, pageSize)` | Not yet released | Future date range |
+| `getGameDetails(id)` | Full game info by RAWG ID | — |
+| `getGameScreenshots(gameId)` | Game screenshots | — |
+| `getGameAchievements(gameId)` | Game achievements | — |
+| `getGameSeries(gameId)` | Game series/DLC | — |
+| `searchGames(query, page, pageSize)` | Search by title | `search` param |
+| `getGamesWithFilters(filters, page, pageSize)` | Advanced filtering | genres, platforms, dates |
+| `getGenres()` | All genres list | Cached 7 days |
+| `getPlatforms()` | All platforms list | Cached 7 days |
+| `getStores()` | All stores (Steam, Epic, etc.) | — |
+
+**Utility Functions**:
+
+- `formatGameData(game)` — normalizes raw RAWG object into app-friendly shape
+- `getPlatformIcon(platformName)` — returns emoji/icon for platform name
+- `getMetacriticColor(score)` — returns hex color (green/yellow/red) based on score
+- `formatReleaseDate(dateString)` — formats ISO date to "Jan 15, 2024"
+- `clearGameCache()` — clears all game-related MMKV cache keys
+
+---
+
+### ✅ Gaming News Service (`/src/services/news_games.js`)
+
+**Source**: `https://insider-gaming.com/feed/`
+
+- Regex-based XML parsing (no external XML library)
+- Extracts: `title`, `link`, `author`, `pubDate`, `description`, `categories`, `image`
+- Image extraction priority: `content:encoded` img tag → `media:content` URL → `enclosure` tag
+- Strips HTML tags and decodes common HTML entities
+
+---
+
+### ✅ Design System — Game Theme (Session 1)
+
+> ⚠️ Theme colors updated in Session 2 — see below.
+
+| Token | Value | Usage |
+|---|---|---|
+| Background | `#0F0F23` | Main app background |
+| Primary | `#7C3AED` | Neon accents, borders, badges |
+| Primary Light | `#A78BFA` | Section titles, icons |
+| Text Primary | `#E2E8F0` | Main text |
+| Score Green | `#10B981` | Metacritic ≥ 75 |
+| Score Yellow | `#FFBE0B` | Metacritic 50–74 |
+| Score Red | `#EF4444` | Metacritic < 50 |
+
+**Visual Effects**: CRT scanline overlay, background grid lines, neon glow text-shadow, holographic border, press animations
+
+---
+
+### 📊 Game Subapp Session 1 Statistics
+
+**Files Created**: 3 (`game_home.jsx`, `api_games.js`, `news_games.js`)  
+**Lines of Code**: ~1,500+  
+**API Integrations**: 2 (RAWG REST API, Insider Gaming RSS)  
+**Sections on Home Page**: 4 (Featured, Game Grid, Upcoming, News)
+
+---
+
+## Game Subapp Session 2: February 20, 2026
+
+### ✅ Movies Subapp — Foundation
+
+**Movies Theme — "Sunset Amber" (`#FF6B35`)**
+
+| Token | Value | Usage |
+|---|---|---|
+| Background | `#0E0A07` | Deep warm charcoal |
+| Accent | `#FF6B35` | Sunset orange — primary accent |
+| Accent Secondary | `#FFB347` | Amber — wishlist icons |
+| accentLight | `rgba(255,107,53,0.12)` | Button bg tints |
+
+---
+
+### ✅ Movie News Service (`/src/services/news_movies.js`)
+
+**Sources** (tried in order, with fallback):
+1. Variety — `https://variety.com/feed/`
+2. The Hollywood Reporter — `https://www.hollywoodreporter.com/t/movies/feed/`
+3. Collider — `https://collider.com/feed/`
+
+Mirrors `news_games.js` architecture — regex XML parser, unified article shape.
+
+---
+
+### ✅ Discover Page — Movies Integration
+
+- `fetchNews()` now branches: `movies → getMovieNews`, `games → getGamingNews`, `anime → getAnimeNews`
+- `fetchWishlist()` resolves type as `'movies'` in movies subapp
+
+### ✅ Post Service — Media-Type Agnostic Refactor
+
+- `getPosts(mediaType)` accepts `mediaType` param — filters by it
+- Database column renamed `anime_covers` → `media_covers`
+- `ListPost.jsx` accepts `accent` prop for dynamic button theming
+
+### ✅ Post Detail — Crash Fix
+
+**Problem**: `post.animeCovers` crashed for non-anime media  
+**Fix**: Changed to `(post.mediaCovers || [])` + generalized cover press handler
+
+---
+
+### ✅ Theme Swap — All Style Handlers
+
+**Anime**: Sakura Pink `#FFB3C6` → **Violet Purple** `#A78BFA`  
+**Games**: Purple `#A78BFA` → **Emerald Green** `#4ADE80`
+
+| File | Tokens Updated |
+|---|---|
+| `postPageStyles.js` | accent, profileIconColor, background |
+| `postDetailStyles.js` | accent, avatarBg, gridImageBg, background |
+| `newsPageStyles.js` | accent, backButtonBg, background |
+| `reviewPageStyles.js` | accent, inactiveStar, background |
+| `discoverStyles.js` | Full palette — accentLight, wishlist rgba, gradients, borders |
+| `upcomingPageStyles.js` | Full palette — wishlist, card surfaces, gradients |
+| `podiumPageStyles.js` | accent, accentSecondary + added `cardBg`/`cardPlaceholderBg` tokens |
+| `mediaThemes.js` | Global accent & glow for anime and game |
+
+**Updated Game Design System**:
+
+| Token | Value | Usage |
+|---|---|---|
+| Background | `#070F0A` | Deep forest black |
+| Card/Surface | `#0F1F14` | Game cards, sections |
+| Accent | `#4ADE80` | Emerald green — primary accent |
+| Accent Secondary | `#34D399` | Teal — secondary highlights |
+
+---
+
+### 📊 Game Subapp Session 2 Statistics
+
+**Files Created**: 1 (`news_movies.js`)  
+**Files Modified**: 11 (discover_page, postService, post_anime, post_detail_anime, ListPost, mediaThemes, 5 style handlers)  
+**New Subapp Vertical**: Movies — Sunset Amber theme (`#FF6B35`)  
+**Theme Swaps**: Anime → Violet Purple, Games → Emerald Green  
+**Branch**: `movies`
+
+---
+
+### ⚠️ Known Issues & TODOs
+
+- [ ] Game grid uses `.map()` instead of FlashList — needs migration
+- [ ] Images use RN `Image` instead of `expo-image`
+- [ ] `GameDetails` and `UpcomingPage` screens not yet created
+- [ ] `NewsPage` screen not yet created
+- [ ] Game-specific font not yet chosen
+- [ ] RAWG API key must be set in `.env` as `EXPO_PUBLIC_RAWG_API_KEY`
+- [ ] Movie news RSS sources may have CORS issues on device — test on hardware
+
+---
+
+_"Insert coin to continue. Two more subapps have entered the arena."_

@@ -20,6 +20,7 @@ import { useMediaType } from '../context/MediaTypeContext';
 import { getTrendingGames, getPopularGames, getNewReleases } from '../services/api_rawg';
 import { searchMedia, debounce } from '../services/search';
 import SideBar from '../components/home_page/SideBar';
+import CategoryPill from '../components/home_page/CategoryPill';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
@@ -218,66 +219,52 @@ const GameHome = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      
-      {/* CRT Scanline Overlay */}
-      <View style={styles.scanlineOverlay} pointerEvents="none" />
-      
-      {/* Animated Background Grid */}
-      <View style={styles.gridBackground} pointerEvents="none">
-        {[...Array(20)].map((_, i) => (
-          <View key={i} style={styles.gridLine} />
-        ))}
+
+      {/* ── Organic blob shapes (behind everything) ── */}
+      <View style={styles.backgroundShapes} pointerEvents="none">
+        <View style={styles.blobShape1} />
+        <View style={styles.blobShape2} />
+        <View style={styles.blobShape3} />
       </View>
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
-        {/* ── Header ── */}
-        <View style={styles.header}>
-          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)} accessibilityRole="button" accessibilityLabel="Open sidebar menu" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <LinearGradient colors={['#7C3AED', '#A78BFA']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
-              <Ionicons name="menu" size={24} color="#E2E8F0" />
-            </LinearGradient>
-          </Pressable>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>GAMES</Text>
-            <View style={styles.titleGlow} />
-          </View>
-          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')} accessibilityRole="button" accessibilityLabel="Go to profile">
-            <LinearGradient colors={['#F43F5E', '#EC4899']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.neonButton}>
-              <Ionicons name="person" size={24} color="#E2E8F0" />
-            </LinearGradient>
-          </Pressable>
-        </View>
-
-        {/* ── Category arcade buttons ── */}
-        <View style={styles.categoryContainer}>
-          {['trending', 'popular', 'new'].map((category) => (
+        {/* ── Shared shape: menu + GAMES title + CategoryPill ── */}
+        <View style={styles.heroCard}>
+          {/* Top row: menu icon + GAMES label */}
+          <View style={styles.heroTopRow}>
             <Pressable
-              key={category}
-              onPress={() => handleCategoryChange(category)}
-              style={({ pressed }) => [
-                styles.categoryButton,
-                selectedCategory === category && styles.categoryButtonActive,
-                pressed && styles.categoryButtonPressed,
-              ]}
+              style={styles.menuButton}
+              onPress={() => setIsSidebarVisible(!isSidebarVisible)}
               accessibilityRole="button"
-              accessibilityLabel={`Filter by ${category}`}
+              accessibilityLabel="Open sidebar menu"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <LinearGradient
-                colors={selectedCategory === category ? ['#7C3AED', '#A78BFA'] : ['#1E1E3F', '#2A2A5A']}
-                start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-                style={styles.categoryGradient}
-              >
-                <View style={styles.categoryHighlight} />
-                <View style={styles.categoryFace}>
-                  <Text style={[styles.categoryText, selectedCategory === category && styles.categoryTextActive]}>
-                    {category.toUpperCase()}
-                  </Text>
-                </View>
-                {selectedCategory === category && <View style={styles.categoryGlow} />}
-              </LinearGradient>
+              <Ionicons name="menu" size={22} color="#E2E8F0" />
             </Pressable>
-          ))}
+            <Text style={styles.title}>GAMES</Text>
+            <Pressable
+              style={styles.profileButton}
+              onPress={() => navigation.navigate('ProfilePage')}
+              accessibilityRole="button"
+              accessibilityLabel="Go to profile"
+            >
+              <Ionicons name="person" size={20} color="#E2E8F0" />
+            </Pressable>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.heroDivider} />
+
+          {/* CategoryPill — shares the same card container as menu */}
+          <View style={styles.heroBottomRow}>
+            <CategoryPill
+              categories={['Trending', 'Popular', 'New']}
+              onCategoryChange={handleCategoryChange}
+              width={180}
+              accentColor="#A78BFA"
+            />
+          </View>
         </View>
 
         {/* ── Search submitted → inline results ── */}
@@ -294,6 +281,11 @@ const GameHome = ({ navigation }) => {
           <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
         ) : (
           <View style={styles.listWrapper}>
+            {/* Blob shapes behind the list */}
+            <View style={styles.listBlobContainer} pointerEvents="none">
+              <View style={styles.listBlob1} />
+              <View style={styles.listBlob2} />
+            </View>
             <FlashList
               data={games}
               keyExtractor={gameKeyExtractor}
@@ -311,9 +303,7 @@ const GameHome = ({ navigation }) => {
                         <Text style={styles.pageButtonText}>Prev</Text>
                       </Pressable>
                     ) : <View style={styles.pageButtonPlaceholder} />}
-
                     <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
                     {hasMore ? (
                       <Pressable style={styles.pageButton} onPress={handleLoadMore} accessibilityRole="button" accessibilityLabel="Next page">
                         <Text style={styles.pageButtonText}>Next</Text>
@@ -354,7 +344,7 @@ const GameHome = ({ navigation }) => {
       )}
 
       {/* Sidebar */}
-      <SideBar 
+      <SideBar
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
@@ -368,89 +358,115 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F0F23',
   },
-  scanlineOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    opacity: 0.05,
-    zIndex: 999,
-  },
-  gridBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.1,
-  },
-  gridLine: {
-    height: 1,
-    backgroundColor: '#7C3AED',
-    marginVertical: 40,
-  },
   safeArea: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 32,
+
+  // ── Background blob shapes (global, like anime page) ──
+  backgroundShapes: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 420,
+    overflow: 'hidden',
   },
-  
-  // Header Styles
-  header: {
+  blobShape1: {
+    position: 'absolute',
+    top: -60,
+    right: -90,
+    width: 320,
+    height: 320,
+    backgroundColor: '#7C3AED',
+    borderRadius: 160,
+    opacity: 0.14,
+    transform: [{ scaleX: 1.6 }, { rotate: '20deg' }],
+  },
+  blobShape2: {
+    position: 'absolute',
+    top: 90,
+    left: -100,
+    width: 260,
+    height: 260,
+    backgroundColor: '#A78BFA',
+    borderRadius: 130,
+    opacity: 0.09,
+    transform: [{ scaleY: 1.4 }, { rotate: '-18deg' }],
+  },
+  blobShape3: {
+    position: 'absolute',
+    top: 190,
+    right: 40,
+    width: 200,
+    height: 200,
+    backgroundColor: '#6D28D9',
+    borderRadius: 100,
+    opacity: 0.07,
+  },
+
+  // ── Shared hero card (menu + CategoryPill in one shape) ──
+  heroCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    backgroundColor: '#1E1E3F',
+    borderRadius: 24,
+    borderCurve: 'continuous',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    shadowColor: '#7C3AED',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.12)',
+  },
+  heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
   },
   menuButton: {
-    width: 48,
-    height: 48,
-  },
-  profileButton: {
-    width: 48,
-    height: 48,
-  },
-  neonButton: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 12,
-    borderCurve: 'continuous',
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(124,58,237,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 10,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.2)',
   },
-  titleContainer: {
-    position: 'relative',
+  profileButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: 'rgba(124,58,237,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.2)',
   },
+  heroDivider: {
+    height: 1,
+    backgroundColor: 'rgba(167,139,250,0.1)',
+    marginVertical: 12,
+    marginHorizontal: -4,
+  },
+  heroBottomRow: {
+    alignItems: 'center',
+  },
+
+
+  // ── Title style ──
   title: {
-    fontFamily: 'System',
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '900',
     color: '#E2E8F0',
     letterSpacing: 4,
     textShadowColor: '#7C3AED',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
-  },
-  titleGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#7C3AED',
-    opacity: 0.3,
-    borderRadius: 8,
-    borderCurve: 'continuous',
-    transform: [{ scaleX: 1.1 }, { scaleY: 1.5 }],
+    textShadowRadius: 12,
   },
 
   // Category Pills - Arcade Buttons
@@ -638,7 +654,44 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Game Grid
+  // ── FlashList grid wrapper + list blobs ──
+  listWrapper: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  listBlobContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  listBlob1: {
+    position: 'absolute',
+    bottom: 200,
+    left: -60,
+    width: 240,
+    height: 240,
+    backgroundColor: '#7C3AED',
+    borderRadius: 120,
+    opacity: 0.07,
+    transform: [{ scaleX: 1.4 }],
+  },
+  listBlob2: {
+    position: 'absolute',
+    bottom: 80,
+    right: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: '#A78BFA',
+    borderRadius: 100,
+    opacity: 0.06,
+  },
+  flashListContent: {
+    paddingBottom: 100,
+    paddingTop: 8,
+  },
   gridSection: {
     paddingHorizontal: 16,
     marginTop: 32,
