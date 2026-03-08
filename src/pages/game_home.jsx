@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Dimensions,
   StatusBar,
@@ -11,6 +10,7 @@ import {
   Image as RNImage,
   Keyboard,
 } from 'react-native';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -216,23 +216,38 @@ const GameHome = ({ navigation }) => {
 
   const gameKeyExtractor = useCallback((item) => item.id.toString(), []);
 
+  // Build the chamfered-cut header path on each render (SCREEN_WIDTH is constant)
+  const headerW = SCREEN_WIDTH - 32; // 16px margin each side
+  const headerH = 64;
+  const cut = 14; // size of the 45-deg chamfer
+
+  const headerPath = useMemo(() => {
+    const p = Skia.Path.Make();
+    p.moveTo(cut, 0);
+    p.lineTo(headerW - cut, 0);
+    p.lineTo(headerW, cut);
+    p.lineTo(headerW, headerH - cut);
+    p.lineTo(headerW - cut, headerH);
+    p.lineTo(cut, headerH);
+    p.lineTo(0, headerH - cut);
+    p.lineTo(0, cut);
+    p.close();
+    return p;
+  }, []);
+
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-
-      {/* ── Organic blob shapes (behind everything) ── */}
-      <View style={styles.backgroundShapes} pointerEvents="none">
-        <View style={styles.blobShape1} />
-        <View style={styles.blobShape2} />
-        <View style={styles.blobShape3} />
-      </View>
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
-        {/* ── Shared shape: menu + GAMES title + CategoryPill ── */}
-        <View style={styles.heroCard}>
-          {/* Top row: menu icon + GAMES label */}
-          <View style={styles.heroTopRow}>
+        {/* ── Chamfered cut header shape (Skia) ── */}
+        <View style={[styles.headerShapeWrapper, { height: headerH }]}>
+          <Canvas style={StyleSheet.absoluteFill}>
+            <Path path={headerPath} color="#33741B" />
+          </Canvas>
+          {/* Content inside the shape */}
+          <View style={styles.headerContent}>
             <Pressable
               style={styles.menuButton}
               onPress={() => setIsSidebarVisible(!isSidebarVisible)}
@@ -240,7 +255,7 @@ const GameHome = ({ navigation }) => {
               accessibilityLabel="Open sidebar menu"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="menu" size={22} color="#E2E8F0" />
+              <Ionicons name="menu" size={22} color="#F8F8F8" />
             </Pressable>
             <Text style={styles.title}>GAMES</Text>
             <Pressable
@@ -249,22 +264,19 @@ const GameHome = ({ navigation }) => {
               accessibilityRole="button"
               accessibilityLabel="Go to profile"
             >
-              <Ionicons name="person" size={20} color="#E2E8F0" />
+              <Ionicons name="person" size={20} color="#F8F8F8" />
             </Pressable>
           </View>
+        </View>
 
-          {/* Divider */}
-          <View style={styles.heroDivider} />
-
-          {/* CategoryPill — shares the same card container as menu */}
-          <View style={styles.heroBottomRow}>
-            <CategoryPill
-              categories={['Trending', 'Popular', 'New']}
-              onCategoryChange={handleCategoryChange}
-              width={180}
-              accentColor="#A78BFA"
-            />
-          </View>
+        {/* ── CategoryPill — standalone pill, left-aligned ── */}
+        <View style={styles.pillRow}>
+          <CategoryPill
+            categories={['Trending', 'Popular', 'New']}
+            onCategoryChange={handleCategoryChange}
+            width={170}
+            accentColor="#5DD62C"
+          />
         </View>
 
         {/* ── Search submitted → inline results ── */}
@@ -275,17 +287,12 @@ const GameHome = ({ navigation }) => {
             searchQuery={searchQuery}
             onResultPress={handleSearchResultPress}
             onClearSearch={handleSearchCancel}
-            theme={{ accent: '#A78BFA' }}
+            theme={{ accent: '#5DD62C' }}
           />
         ) : loading || isLoadingMore ? (
           <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
         ) : (
           <View style={styles.listWrapper}>
-            {/* Blob shapes behind the list */}
-            <View style={styles.listBlobContainer} pointerEvents="none">
-              <View style={styles.listBlob1} />
-              <View style={styles.listBlob2} />
-            </View>
             <FlashList
               data={games}
               keyExtractor={gameKeyExtractor}
@@ -299,7 +306,7 @@ const GameHome = ({ navigation }) => {
                   <View style={styles.paginationContainer}>
                     {currentPage > 1 ? (
                       <Pressable style={styles.pageButton} onPress={handlePrevPage} accessibilityRole="button" accessibilityLabel="Previous page">
-                        <Ionicons name="chevron-back" size={16} color="#A78BFA" />
+                        <Ionicons name="chevron-back" size={16} color="#5DD62C" />
                         <Text style={styles.pageButtonText}>Prev</Text>
                       </Pressable>
                     ) : <View style={styles.pageButtonPlaceholder} />}
@@ -307,7 +314,7 @@ const GameHome = ({ navigation }) => {
                     {hasMore ? (
                       <Pressable style={styles.pageButton} onPress={handleLoadMore} accessibilityRole="button" accessibilityLabel="Next page">
                         <Text style={styles.pageButtonText}>Next</Text>
-                        <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
+                        <Ionicons name="chevron-forward" size={16} color="#5DD62C" />
                       </Pressable>
                     ) : <View style={styles.pageButtonPlaceholder} />}
                   </View>
@@ -339,7 +346,7 @@ const GameHome = ({ navigation }) => {
           searchQuery={searchQuery}
           onResultPress={handleSearchResultPress}
           onClose={handleSearchCancel}
-          theme={{ accent: '#A78BFA' }}
+          theme={{ accent: '#5DD62C' }}
         />
       )}
 
@@ -353,108 +360,50 @@ const GameHome = ({ navigation }) => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
+    backgroundColor: '#0F0F0F',
   },
   safeArea: {
     flex: 1,
   },
 
-  // ── Background blob shapes (global, like anime page) ──
-  backgroundShapes: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 420,
-    overflow: 'hidden',
-  },
-  blobShape1: {
-    position: 'absolute',
-    top: -60,
-    right: -90,
-    width: 320,
-    height: 320,
-    backgroundColor: '#7C3AED',
-    borderRadius: 160,
-    opacity: 0.14,
-    transform: [{ scaleX: 1.6 }, { rotate: '20deg' }],
-  },
-  blobShape2: {
-    position: 'absolute',
-    top: 90,
-    left: -100,
-    width: 260,
-    height: 260,
-    backgroundColor: '#A78BFA',
-    borderRadius: 130,
-    opacity: 0.09,
-    transform: [{ scaleY: 1.4 }, { rotate: '-18deg' }],
-  },
-  blobShape3: {
-    position: 'absolute',
-    top: 190,
-    right: 40,
-    width: 200,
-    height: 200,
-    backgroundColor: '#6D28D9',
-    borderRadius: 100,
-    opacity: 0.07,
-  },
-
-  // ── Shared hero card (menu + CategoryPill in one shape) ──
-  heroCard: {
+  // ── Chamfered cut header shape ──
+  headerShapeWrapper: {
     marginHorizontal: 16,
     marginTop: 8,
-    marginBottom: 8,
-    backgroundColor: '#1E1E3F',
-    borderRadius: 24,
-    borderCurve: 'continuous',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.12)',
   },
-  heroTopRow: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    flex: 1,
   },
   menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(124,58,237,0.25)',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.2)',
   },
   profileButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(124,58,237,0.25)',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.2)',
   },
-  heroDivider: {
-    height: 1,
-    backgroundColor: 'rgba(167,139,250,0.1)',
-    marginVertical: 12,
-    marginHorizontal: -4,
-  },
-  heroBottomRow: {
-    alignItems: 'center',
+
+  // ── CategoryPill standalone row ──
+  pillRow: {
+    paddingHorizontal: 16,
+    marginTop: 10,
+    alignItems: 'flex-start',
   },
 
 
@@ -462,9 +411,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '900',
-    color: '#E2E8F0',
+    color: '#F8F8F8',
     letterSpacing: 4,
-    textShadowColor: '#7C3AED',
+    textShadowColor: '#5DD62C',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
@@ -654,43 +603,21 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // ── FlashList grid wrapper + list blobs ──
+  // ── FlashList grid wrapper — large shape behind cards ──
   listWrapper: {
     flex: 1,
-    paddingHorizontal: 8,
-  },
-  listBlobContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    marginHorizontal: 8,
+    marginTop: 6,
+    backgroundColor: '#111A10',
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(51,116,27,0.3)',
     overflow: 'hidden',
-  },
-  listBlob1: {
-    position: 'absolute',
-    bottom: 200,
-    left: -60,
-    width: 240,
-    height: 240,
-    backgroundColor: '#7C3AED',
-    borderRadius: 120,
-    opacity: 0.07,
-    transform: [{ scaleX: 1.4 }],
-  },
-  listBlob2: {
-    position: 'absolute',
-    bottom: 80,
-    right: -50,
-    width: 200,
-    height: 200,
-    backgroundColor: '#A78BFA',
-    borderRadius: 100,
-    opacity: 0.06,
   },
   flashListContent: {
     paddingBottom: 100,
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingHorizontal: 8,
   },
   gridSection: {
     paddingHorizontal: 16,
