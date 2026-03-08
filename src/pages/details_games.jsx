@@ -4,7 +4,7 @@
  * ║                                                                  ║
  * ║  Data source: IGDB (Twitch API)                                  ║
  * ║    • Game is searched by name, full rich detail is fetched.      ║
- * ║    • If IGDB is unavailable an alert is shown and user goes back. ║
+ * ║    • If IGDB is unavailable an alert is shown and user goes back.║
  * ║    • Route params supply instant cover/title during load.        ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
