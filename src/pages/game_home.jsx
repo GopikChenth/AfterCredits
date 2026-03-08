@@ -224,14 +224,21 @@ const GameHome = ({ navigation }) => {
     const { w, h } = headerSize;
     if (w === 0 || h === 0) return null;
     const p = Skia.Path.Make();
+    
+    // Smooth rounded cuts using quadTo (quadratic bezier curves)
     p.moveTo(CUT, 0);
     p.lineTo(w - CUT, 0);
-    p.lineTo(w, CUT);
+    p.quadTo(w, 0, w, CUT); // Top-right rounded cut
+    
     p.lineTo(w, h - CUT);
-    p.lineTo(w - CUT, h);
+    p.quadTo(w, h, w - CUT, h); // Bottom-right rounded cut
+    
     p.lineTo(CUT, h);
-    p.lineTo(0, h - CUT);
+    p.quadTo(0, h, 0, h - CUT); // Bottom-left rounded cut
+    
     p.lineTo(0, CUT);
+    p.quadTo(0, 0, CUT, 0); // Top-left rounded cut
+    
     p.close();
     return p;
   }, [headerSize]);
@@ -619,18 +626,23 @@ const styles = StyleSheet.create({
   // ── FlashList grid wrapper — large shape behind cards ──
   listWrapper: {
     flex: 1,
-    marginHorizontal: 8,
-    marginTop: 6,
-    backgroundColor: '#111A10',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(51,116,27,0.3)',
+    marginHorizontal: 12,
+    marginTop: 16,
+    backgroundColor: '#1A2818', // Much lighter/visible dark green
+    borderRadius: 32,
+    borderWidth: 1.5,
+    borderColor: '#33741B',
     overflow: 'hidden',
+    shadowColor: '#5DD62C',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 4,
   },
   flashListContent: {
     paddingBottom: 100,
-    paddingTop: 12,
-    paddingHorizontal: 8,
+    paddingTop: 16,
+    paddingHorizontal: 12,
   },
   gridSection: {
     paddingHorizontal: 16,
