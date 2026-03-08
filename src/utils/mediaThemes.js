@@ -10,6 +10,8 @@ import { useEffect } from 'react';
 const FONT_MAP = {
   'Agdasima': require('../../assets/font/Agdasima-Regular.ttf'),
   'Agdasima-Bold': require('../../assets/font/Agdasima-Bold.ttf'),
+  'Genjiro': require('../../assets/font/Genjiro.ttf'),
+  'NinjaNaruto': require('../../assets/font/NinjaNaruto-YOn4.ttf'),
 };
 
 /**

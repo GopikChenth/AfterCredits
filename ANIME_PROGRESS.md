@@ -4208,3 +4208,395 @@ $env:JAVA_HOME = 'C:\Program Files\Java\jdk-21'
 ---
 
 _"From code to APK. The credits roll, but AfterCredits keeps going."_
+
+---
+
+# AfterCredits - Game Subapp Development Progress
+
+## Subapp Overview
+
+**Game Subapp** is the gaming module of AfterCredits — a retro-arcade-themed section for browsing, tracking, and discovering video games. It uses a deep forest / emerald aesthetic (dark `#070F0A` background, emerald `#4ADE80` accents) to contrast with the anime subapp's violet-night design.
+
+**API**: [RAWG Video Games Database](https://rawg.io/apidocs) — free, comprehensive game data  
+**News Source**: [Insider Gaming](https://insider-gaming.com/feed/) — RSS feed for gaming news  
+**Theme Color**: `#4ADE80` (Emerald Green)  
+**Design Language**: Retro Arcade / Cyberpunk — CRT scanlines, neon glows, holographic borders, arcade button skeuomorphism
+
+---
+
+## Session 1: February 18, 2026
+
+### ✅ Game Home Page (`/src/pages/game_home.jsx`)
+
+**Purpose**: Main game browsing interface with retro arcade aesthetic
+
+**Features**:
+
+- **Retro Header**: "GAMES" title with neon purple text-shadow glow effect
+- **CRT Scanline Overlay**: Subtle full-screen scanline texture (5% opacity) for retro feel
+- **Animated Background Grid**: 20 horizontal purple grid lines (10% opacity) — cyberpunk aesthetic
+- **Neon Buttons**: Menu (purple gradient) and Profile (pink gradient) icon buttons with glow shadows
+- **Arcade Category Pills**: Skeuomorphic 3D buttons (TRENDING / POPULAR / NEW)
+  - Top highlight strip simulates physical button depth
+  - Active state: purple gradient + neon glow bottom bar + translateY press effect
+  - Pressed state: deeper translateY for tactile feedback
+- **Featured Game Card**: Holographic border card for top result
+  - Full-width cover image with dark gradient overlay
+  - Metacritic score badge (green/yellow/red based on score)
+  - Platform badges (first 3 platforms, abbreviated)
+- **Game Grid**: 2-column arcade cabinet style cards
+  - Card bezel effect (dark border + inner shadow)
+  - Cover image with gradient overlay
+  - Star rating (5-star, from RAWG `rating` field)
+  - Metacritic mini badge (top-right)
+  - Neon accent line at bottom
+  - Scale press animation (0.95)
+- **Upcoming Games Section**: Horizontal FlatList of unreleased games
+  - "View All" → navigates to `UpcomingPage`
+  - Shows release date or "TBA"
+- **Gaming News Section**: Latest 5 articles from Insider Gaming RSS
+  - "View All" → navigates to `NewsPage`
+  - Rendered via reusable `NewsCard` component
+- **Sidebar**: Shared `SideBar` component, toggled by menu button
+
+**State Management**:
+
+- `selectedCategory` — controls which API call to make (trending/popular/new)
+- `games` — main game list for grid
+- `upcomingGames` — separate upcoming games list
+- `gamingNews` — news articles array
+- `loading`, `upcomingLoading`, `newsLoading` — independent loading states per section
+- `isSidebarVisible` — sidebar toggle
+
+**Navigation**:
+
+- Game card → `GameDetails` screen (passes `gameId`)
+- Upcoming card → `GameDetails` screen
+- View All (Upcoming) → `UpcomingPage`
+- View All (News) → `NewsPage`
+- Profile button → `ProfilePage`
+
+**Technical Details**:
+
+- `useMediaType()` context hook — sets active media type
+- Three independent `useEffect` hooks: category change triggers `loadGames()`, mount triggers `loadUpcomingGames()` + `loadGamingNews()`
+- `Dimensions.get('window')` for responsive 2-column card width: `(SCREEN_WIDTH - 48) / 2`
+- `LinearGradient` from `expo-linear-gradient` for all gradient effects
+- `Ionicons` from `@expo/vector-icons` for icons
+
+---
+
+### ✅ RAWG API Service (`/src/services/api_games.js`)
+
+**Purpose**: Complete RAWG API client with caching, formatting, and utilities
+
+**API**: RAWG Video Games Database — `https://api.rawg.io/api/`
+
+**Cache System**:
+
+- MMKV-based caching with TTL (time-to-live) per data type
+- Cache durations:
+  - Trending/Popular: 1 hour
+  - New Releases: 30 minutes
+  - Upcoming: 6 hours
+  - Game Details: 24 hours
+  - Genres/Platforms: 7 days
+- `getCachedData(key)` — returns cached data if within TTL, else null
+- `setCachedData(key, data)` — stores data with timestamp
+
+**API Functions**:
+
+| Function                                       | Description                    | Key Params                     |
+| ---------------------------------------------- | ------------------------------ | ------------------------------ |
+| `getTrendingGames(page, pageSize)`             | Recently added, highly rated   | `ordering=-added`              |
+| `getPopularGames(page, pageSize)`              | By rating and popularity       | `ordering=-rating`             |
+| `getNewReleases(page, pageSize)`               | Released in last 30 days       | Dynamic date range             |
+| `getUpcomingGames(page, pageSize)`             | Not yet released               | Future date range              |
+| `getGameDetails(id)`                           | Full game info by RAWG ID      | —                              |
+| `getGameScreenshots(gameId)`                   | Game screenshots               | —                              |
+| `getGameAchievements(gameId)`                  | Game achievements              | —                              |
+| `getGameSeries(gameId)`                        | Game series/DLC                | —                              |
+| `searchGames(query, page, pageSize)`           | Search by title                | `search` param                 |
+| `getGamesWithFilters(filters, page, pageSize)` | Advanced filtering             | genres, platforms, dates, etc. |
+| `getGenres()`                                  | All genres list                | Cached 7 days                  |
+| `getPlatforms()`                               | All platforms list             | Cached 7 days                  |
+| `getStores()`                                  | All stores (Steam, Epic, etc.) | —                              |
+
+**Utility Functions**:
+
+- `formatGameData(game)` — normalizes raw RAWG object into app-friendly shape:
+  - `id`, `title`, `coverImage`, `rating`, `metacritic`, `releaseDate`, `platforms`, `genres`, `description`, `playtime`, `screenshots`
+- `getPlatformIcon(platformName)` — returns emoji/icon for platform name
+- `getMetacriticColor(score)` — returns hex color (green/yellow/red) based on score
+- `formatReleaseDate(dateString)` — formats ISO date to "Jan 15, 2024"
+- `clearGameCache()` — clears all game-related MMKV cache keys
+
+**Technical Details**:
+
+- `axios` for HTTP requests
+- All requests include RAWG API key from `.env` (`EXPO_PUBLIC_RAWG_API_KEY`)
+- `executeRequest(endpoint, params, cacheKey)` — shared request helper with cache check
+- `getNewReleases` uses dynamic date range: past 30 days to today
+- `getUpcomingGames` uses dynamic date range: today to 1 year ahead
+
+---
+
+### ✅ Gaming News Service (`/src/services/news_games.js`)
+
+**Purpose**: Fetch and parse gaming news from Insider Gaming RSS feed
+
+**Source**: `https://insider-gaming.com/feed/`
+
+**`parseGamingRSS(xmlText)`**:
+
+- Regex-based XML parsing (no external XML library)
+- Extracts: `title`, `link`, `author` (dc:creator), `pubDate`, `description`, `categories`, `image`
+- Image extraction priority: `content:encoded` img tag → `media:content` URL → `enclosure` tag
+- Strips HTML tags from description
+- Decodes common HTML entities (`&hellip;`, `&#038;`)
+
+**`getGamingNews(limit)`**:
+
+- Fetches RSS with `Accept: application/rss+xml` header and 10s timeout
+- Parses XML → sorts by `publishedAt` descending → slices to `limit`
+- Returns array of `{ id, title, link, author, publishedAt, description, categories, image }`
+
+---
+
+### ✅ Design System — Game Theme (Session 1)
+
+> ⚠️ Theme colors updated in Session 2 — see updated table below.
+
+**Color Palette**:
+
+| Token          | Value                 | Usage                         |
+| -------------- | --------------------- | ----------------------------- |
+| Background     | `#0F0F23`             | Main app background           |
+| Card/Surface   | `#1E1E3F`             | Game cards, sections          |
+| Card Hover     | `#2A2A5A`             | Card gradient end             |
+| Primary        | `#7C3AED`             | Neon accents, borders, badges |
+| Primary Light  | `#A78BFA`             | Section titles, icons         |
+| Text Primary   | `#E2E8F0`             | Main text                     |
+| Text Secondary | `#94A3B8`             | Inactive labels               |
+| Score Green    | `#10B981`             | Metacritic ≥ 75               |
+| Score Yellow   | `#FFBE0B`             | Metacritic 50–74              |
+| Score Red      | `#EF4444`             | Metacritic < 50               |
+| Star Color     | `#FFBE0B`             | Rating stars                  |
+| Pink Accent    | `#F43F5E` / `#EC4899` | Profile button gradient       |
+
+**Typography**:
+
+- System font throughout (game-specific custom font TBD)
+- Section titles: `fontSize: 18`, `fontWeight: 900`, `letterSpacing: 3`, neon text-shadow
+- Featured title: `fontSize: 28`, `fontWeight: 900`, `letterSpacing: 1`
+- Category pills: `fontSize: 14`, `fontWeight: 700`, `letterSpacing: 2`
+
+**Visual Effects**:
+
+- CRT scanline overlay (full-screen, `zIndex: 999`, `opacity: 0.05`)
+- Background grid lines (20 horizontal lines, `#7C3AED`, `opacity: 0.1`)
+- Neon glow: `textShadowColor: #7C3AED`, `shadowRadius: 20`
+- Holographic border: `borderColor: #7C3AED`, `shadowOpacity: 0.8`, `shadowRadius: 15`
+- Press animations: `scale: 0.95` on cards, `translateY: 4` on category buttons
+
+---
+
+### ✅ File Structure Created
+
+```
+/AfterCredits
+├── /src
+│   ├── /pages
+│   │   └── game_home.jsx           ✅ Game home screen (retro arcade UI)
+│   ├── /services
+│   │   ├── api_games.js            ✅ RAWG API client with caching
+│   │   └── news_games.js           ✅ Insider Gaming RSS news service
+│   └── /components
+│       └── /discover_page
+│           └── NewsCard.jsx        ✅ Shared news article card (reused from discover)
+```
+
+---
+
+### 📊 Session 1 Statistics
+
+**Files Created**: 3 (`game_home.jsx`, `api_games.js`, `news_games.js`)  
+**Lines of Code**: ~1,500+  
+**API Integrations**: 2 (RAWG REST API, Insider Gaming RSS)  
+**Sections on Home Page**: 4 (Featured, Game Grid, Upcoming, News)  
+**Design Tokens Defined**: 10+ colors, complete visual effects system
+
+---
+
+### 🎯 Key Session 1 Decisions
+
+1.  **RAWG over IGDB**: RAWG has simpler REST API (no GraphQL), generous free tier, and rich game data
+2.  **Retro Arcade Theme**: Distinct from anime's sakura-pink neumorphic style — avoids visual monotony across subapps
+3.  **CRT + Grid Background**: Non-scrollable decorative layers using `position: absolute` + `pointerEvents: none`
+4.  **Skeuomorphic Category Buttons**: Physical button illusion via highlight strip + translateY press effect
+5.  **Holographic Featured Card**: Premium feel for top game using neon border + glow shadow
+6.  **Independent Loading States**: Each section (grid, upcoming, news) loads independently — no blocking
+
+---
+
+## Session 2: February 20, 2026
+
+### ✅ Movies Subapp — Foundation (`movies` branch)
+
+**Purpose**: Lay the groundwork for a third subapp vertical — Movies — with its own theme, news service, and data layer.
+
+---
+
+### ✅ Movies Theme — "Sunset Amber" (`#FF6B35`)
+
+Applied across all 7 style handler files:
+
+| Token            | Value                   | Usage                          |
+| ---------------- | ----------------------- | ------------------------------ |
+| Background       | `#0E0A07`               | Deep warm charcoal             |
+| Card/Surface     | `#1F1209`               | Cards, sections                |
+| Accent           | `#FF6B35`               | Sunset orange — primary accent |
+| Accent Secondary | `#FFB347`               | Amber — wishlist icons         |
+| accentLight      | `rgba(255,107,53,0.12)` | Button bg tints                |
+| accentBorder     | `rgba(255,107,53,0.35)` | Card borders                   |
+
+---
+
+### ✅ Movie News Service (`/src/services/news_movies.js`)
+
+**Purpose**: Fetch and parse movie news from multiple RSS sources with fallback logic
+
+**Sources** (tried in order):
+
+1.  Variety — `https://variety.com/feed/`
+2.  The Hollywood Reporter — `https://www.hollywoodreporter.com/t/movies/feed/`
+3.  Collider — `https://collider.com/feed/`
+
+**Key Details**:
+
+- Mirrors architecture of `news_games.js` — regex-based XML parser, no external library
+- Falls back to next source if primary fails (CORS/network error)
+- Unified article shape: `{ id, title, link, author, publishedAt, description, image }`
+- `getMovieNews(limit)` — public export, fetches up to `limit` articles
+
+---
+
+### ✅ Discover Page — Movies Integration (`/src/pages/discover_page.jsx`)
+
+- Imported `getMovieNews` from `news_movies.js`
+- `fetchNews()` now has a 3-way branch: `movies → getMovieNews`, `games → getGamingNews`, `anime → getAnimeNews`
+- `fetchWishlist()` resolves type as `'movies'` when in movies subapp (was only `'games'` or `'anime'`)
+- Added `isMovies` const derived from `mediaType === 'movies'`
+
+---
+
+### ✅ Post Service — Media-Type Agnostic Refactor (`/src/services/postService.js`)
+
+- `getPosts(mediaType)` now accepts `mediaType` param (default `'anime'`) and filters by it
+- Database column renamed from `anime_covers` → `media_covers` in mapping
+- `post_anime.jsx` updated to pass `mediaType` and use `post.mediaCovers`
+- `ListPost.jsx` now accepts `accent` prop for dynamic button theming
+
+---
+
+### ✅ Post Detail — Crash Fix (`/src/pages/post_detail_anime.jsx`)
+
+**Problem**: Page crashed because it expected `post.animeCovers` but received `post.mediaCovers`
+
+**Fix**:
+
+- Changed `post.animeCovers` → `(post.mediaCovers || [])` for safe mapping
+- Generalized cover press handler: tries AniList URL extraction first, falls back to `cover.mediaId`
+
+---
+
+### ✅ Theme Swap — All Style Handlers
+
+**Anime**: Sakura Pink `#FFB3C6` → **Violet Purple** `#A78BFA`  
+**Games**: Purple `#A78BFA` → **Emerald Green** `#4ADE80`
+
+| File                    | Tokens Updated                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `postPageStyles.js`     | accent, profileIconColor, background                                                  |
+| `postDetailStyles.js`   | accent, avatarBg, gridImageBg, background                                             |
+| `newsPageStyles.js`     | accent, backButtonBg, background                                                      |
+| `reviewPageStyles.js`   | accent, inactiveStar, background                                                      |
+| `discoverStyles.js`     | Full palette — accentLight, wishlist rgba, gradients, borders                         |
+| `upcomingPageStyles.js` | Full palette — wishlist, card surfaces, gradients                                     |
+| `podiumPageStyles.js`   | accent, accentSecondary, profileIconColor + added `cardBg`/`cardPlaceholderBg` tokens |
+| `mediaThemes.js`        | Global accent & glow for anime and game                                               |
+
+**Podium refactor**: Replaced hardcoded `theme.background === '#0F0F23'` checks in `buildPodiumListStyles` with `theme.cardBg` and `theme.cardPlaceholderBg` tokens — themes now self-describe their surfaces.
+
+---
+
+### ✅ Updated Design System — Current Game Theme
+
+| Token            | Value               | Usage                          |
+| ---------------- | ------------------- | ------------------------------ |
+| Background       | `#070F0A`           | Deep forest black              |
+| Card/Surface     | `#0F1F14`           | Game cards, sections           |
+| Accent           | `#4ADE80`           | Emerald green — primary accent |
+| Accent Secondary | `#34D399`           | Teal — secondary highlights    |
+| wishlistIcon     | `#4ADE80`           | Wishlist heart icon            |
+| inactiveStar     | `#1A3A2A`           | Inactive rating stars          |
+| Gradient         | `rgba(7,15,10,...)` | Dark forest gradient           |
+
+---
+
+### 📊 Session 2 Statistics
+
+**Files Created**: 1 (`news_movies.js`)  
+**Files Modified**: 11 (`discover_page.jsx`, `postService.js`, `post_anime.jsx`, `post_detail_anime.jsx`, `ListPost.jsx`, `mediaThemes.js`, all 5 new+ existing style handlers)  
+**New Subapp Vertical**: Movies — Sunset Amber theme (`#FF6B35`)  
+**Theme Swaps**: Anime → Violet Purple, Games → Emerald Green  
+**Branch**: `movies`
+
+---
+
+### 🚀 Current State & Next Priorities
+
+**Completed**:
+
+- ✅ Game Home page with full retro arcade UI
+- ✅ RAWG API service (trending, popular, new, upcoming, search, details, filters)
+- ✅ Gaming news service (Insider Gaming RSS)
+- ✅ Complete game design system (now Emerald Green palette)
+- ✅ Movies subapp foundation — Sunset Amber theme across all 7 style handlers
+- ✅ Movie news service (`news_movies.js`) with multi-source fallback
+- ✅ Discover page wired for movies (news + wishlist)
+- ✅ postService refactored to be media-type agnostic
+- ✅ post_detail_anime crash fixed for non-anime media types
+
+**Next Priorities**:
+
+1.  **Game Details Page** — Full game info: screenshots carousel, description, platforms, genres, achievements, similar games
+2.  **Movies Home Page** — Similar to `game_home.jsx` but with sunset amber theme and TMDB API
+3.  **TMDB API Service** — Fetch trending, popular, upcoming movies; movie details
+4.  **Upcoming Page** — Full list of upcoming releases with filters (platform, genre, date range)
+5.  **News Page** — Full news feed with pagination
+6.  **Search Integration** — Search bar on home page using `searchGames()`
+7.  **Performance** — Migrate game grid to FlashList, memoize card components, add `expo-image`
+8.  **Game-specific Font** — Find and integrate a retro/pixel font for headings
+9.  **User Library** — "Playing", "Completed", "Wishlist" tracking for games
+10. **Supabase Integration** — Persist game library to user profile
+
+---
+
+### ⚠️ Known Issues & TODOs
+
+- [ ] Game grid uses `.map()` instead of FlashList — needs migration for performance
+- [ ] Images use RN `Image` instead of `expo-image` — needs upgrade for caching
+- [ ] No memoization on game card components — add `React.memo` + `useCallback`
+- [ ] `GameDetails` and `UpcomingPage` screens referenced in navigation but not yet created
+- [ ] `NewsPage` screen referenced but not yet created
+- [ ] Game-specific font not yet chosen or integrated
+- [ ] RAWG API key must be set in `.env` as `EXPO_PUBLIC_RAWG_API_KEY`
+- [ ] `post_detail_anime.jsx` detailsRoute still hardcoded to `'DetailsAnime'` for games/movies — needs separate detail pages
+- [ ] Movie news RSS sources (Variety, THR) may have CORS issues on device — test on physical hardware
+- [ ] `home_anime.jsx`, `crew_anime.jsx`, `details_anime.jsx`, `NavBar.jsx` still have hardcoded `#FFB3C6` pink — not yet updated to purple
+
+---
+
+_"Insert coin to continue. Two more subapps have entered the arena."_
+

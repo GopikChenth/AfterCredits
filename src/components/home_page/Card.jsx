@@ -82,6 +82,7 @@ const styles = StyleSheet.create({
   },
   year: {
     fontSize: 11,
+    fontFamily: 'Agdasima',
     color: '#fff',
     opacity: 0.9,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
