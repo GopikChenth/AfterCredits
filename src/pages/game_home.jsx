@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Image as RNImage,
   Keyboard,
 } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -216,24 +215,7 @@ const GameHome = ({ navigation }) => {
 
   const gameKeyExtractor = useCallback((item) => item.id.toString(), []);
 
-  // Build the chamfered-cut header path on each render (SCREEN_WIDTH is constant)
-  const headerW = SCREEN_WIDTH - 32; // 16px margin each side
-  const headerH = 64;
-  const cut = 14; // size of the 45-deg chamfer
-
-  const headerPath = useMemo(() => {
-    const p = Skia.Path.Make();
-    p.moveTo(cut, 0);
-    p.lineTo(headerW - cut, 0);
-    p.lineTo(headerW, cut);
-    p.lineTo(headerW, headerH - cut);
-    p.lineTo(headerW - cut, headerH);
-    p.lineTo(cut, headerH);
-    p.lineTo(0, headerH - cut);
-    p.lineTo(0, cut);
-    p.close();
-    return p;
-  }, []);
+  const CUT = 18; // corner chamfer size in px
 
   return (
     <View style={styles.container}>
@@ -241,12 +223,16 @@ const GameHome = ({ navigation }) => {
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
-        {/* ── Chamfered cut header shape (Skia) ── */}
-        <View style={[styles.headerShapeWrapper, { height: headerH }]}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            <Path path={headerPath} color="#33741B" />
-          </Canvas>
-          {/* Content inside the shape */}
+        {/* ── Chamfered cut header shape (pure RN) ── */}
+        <View style={styles.headerShapeWrapper}>
+          {/* Green base */}
+          <View style={styles.headerBg} />
+          {/* Corner cuts — rotated black squares clip each corner */}
+          <View style={[styles.cutCorner, { top: -CUT / 2, left: -CUT / 2 }]} />
+          <View style={[styles.cutCorner, { top: -CUT / 2, right: -CUT / 2 }]} />
+          <View style={[styles.cutCorner, { bottom: -CUT / 2, left: -CUT / 2 }]} />
+          <View style={[styles.cutCorner, { bottom: -CUT / 2, right: -CUT / 2 }]} />
+          {/* Content row */}
           <View style={styles.headerContent}>
             <Pressable
               style={styles.menuButton}
@@ -269,7 +255,7 @@ const GameHome = ({ navigation }) => {
           </View>
         </View>
 
-        {/* ── CategoryPill — standalone pill, left-aligned ── */}
+        {/* ── CategoryPill — standalone pill, left-aligned below header ── */}
         <View style={styles.pillRow}>
           <CategoryPill
             categories={['Trending', 'Popular', 'New']}
@@ -370,31 +356,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Chamfered cut header shape ──
+  // ── Chamfered cut header shape (pure RN corners) ──
   headerShapeWrapper: {
     marginHorizontal: 16,
     marginTop: 8,
+    height: 66,
+    // overflow must be visible so cut corners can clip outside bounds
+    overflow: 'visible',
+    zIndex: 1,
+  },
+  headerBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#33741B',
+  },
+  cutCorner: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    backgroundColor: '#0F0F0F',
+    transform: [{ rotate: '45deg' }],
+    zIndex: 2,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    flex: 1,
+    paddingHorizontal: 20,
+    height: '100%',
+    zIndex: 3,
   },
   menuButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileButton: {
     width: 40,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
