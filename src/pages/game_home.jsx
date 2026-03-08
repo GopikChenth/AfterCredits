@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image as RNImage,
   Keyboard,
 } from 'react-native';
+import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -215,7 +216,25 @@ const GameHome = ({ navigation }) => {
 
   const gameKeyExtractor = useCallback((item) => item.id.toString(), []);
 
-  const CUT = 18; // corner chamfer size in px
+  // Skia header shape — measure via onLayout, then draw
+  const [headerSize, setHeaderSize] = useState({ w: 0, h: 0 });
+  const CUT = 16;
+
+  const headerPath = useMemo(() => {
+    const { w, h } = headerSize;
+    if (w === 0 || h === 0) return null;
+    const p = Skia.Path.Make();
+    p.moveTo(CUT, 0);
+    p.lineTo(w - CUT, 0);
+    p.lineTo(w, CUT);
+    p.lineTo(w, h - CUT);
+    p.lineTo(w - CUT, h);
+    p.lineTo(CUT, h);
+    p.lineTo(0, h - CUT);
+    p.lineTo(0, CUT);
+    p.close();
+    return p;
+  }, [headerSize]);
 
   return (
     <View style={styles.container}>
@@ -223,15 +242,19 @@ const GameHome = ({ navigation }) => {
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
 
-        {/* ── Chamfered cut header shape (pure RN) ── */}
-        <View style={styles.headerShapeWrapper}>
-          {/* Green base */}
-          <View style={styles.headerBg} />
-          {/* Corner cuts — rotated black squares clip each corner */}
-          <View style={[styles.cutCorner, { top: -CUT / 2, left: -CUT / 2 }]} />
-          <View style={[styles.cutCorner, { top: -CUT / 2, right: -CUT / 2 }]} />
-          <View style={[styles.cutCorner, { bottom: -CUT / 2, left: -CUT / 2 }]} />
-          <View style={[styles.cutCorner, { bottom: -CUT / 2, right: -CUT / 2 }]} />
+        {/* ── Chamfered header shape (Skia) ── */}
+        <View
+          style={styles.headerShapeWrapper}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setHeaderSize({ w: width, h: height });
+          }}
+        >
+          {headerPath && (
+            <Canvas style={{ position: 'absolute', width: headerSize.w, height: headerSize.h }}>
+              <SkiaPath path={headerPath} color="#33741B" />
+            </Canvas>
+          )}
           {/* Content row */}
           <View style={styles.headerContent}>
             <Pressable
@@ -356,26 +379,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Chamfered cut header shape (pure RN corners) ──
+  // ── Chamfered header shape (Skia Canvas) ──
   headerShapeWrapper: {
     marginHorizontal: 16,
     marginTop: 8,
     height: 66,
-    // overflow must be visible so cut corners can clip outside bounds
-    overflow: 'visible',
-    zIndex: 1,
-  },
-  headerBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#33741B',
-  },
-  cutCorner: {
-    position: 'absolute',
-    width: 28,
-    height: 28,
-    backgroundColor: '#0F0F0F',
-    transform: [{ rotate: '45deg' }],
-    zIndex: 2,
+    overflow: 'hidden',
   },
   headerContent: {
     flexDirection: 'row',
@@ -383,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     height: '100%',
-    zIndex: 3,
+    zIndex: 2,
   },
   menuButton: {
     width: 40,
@@ -401,6 +410,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
 
   // ── CategoryPill standalone row ──
   pillRow: {
