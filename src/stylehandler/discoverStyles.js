@@ -2,7 +2,7 @@ import { StyleSheet, Dimensions } from 'react-native';
 
 /**
  * ╔═══════════════════════════════════════════════════════════════╗
- * ║              DISCOVER PAGE — STYLE HANDLER                   ║
+ * ║              DISCOVER PAGE — STYLE HANDLER                    ║
  * ║                                                               ║
  * ║  Centralises all visual theming for the Discover page.        ║
  * ║  Each media vertical gets its own palette while sharing       ║
@@ -343,7 +343,7 @@ const buildStyles = (theme) =>
     headerTitle: {
       fontSize: 32,
       fontWeight: '800',
-      fontFamily: theme.fontFamily,
+      fontFamily: 'Genjiro',
       color: '#fff',
       letterSpacing: 1,
     },

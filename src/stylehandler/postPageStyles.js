@@ -49,6 +49,7 @@ const baseStyles = {
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
+    fontFamily: 'Genjiro',
     color: '#fff',
     letterSpacing: 1,
   },
@@ -167,7 +168,7 @@ const buildStyles = (theme) =>
     },
     headerTitle: {
       ...baseStyles.headerTitle,
-      fontFamily: theme.fontFamily,
+      fontFamily: 'Genjiro',
     },
     headerSubtitle: {
       ...baseStyles.headerSubtitle,

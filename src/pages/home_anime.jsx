@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   animeText: {
     fontSize: 36,
-    fontWeight: '900',
+    fontFamily: 'Genjiro',
     color: '#FFFFFF',
     letterSpacing: 3,
   },

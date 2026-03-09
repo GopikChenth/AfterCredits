@@ -824,10 +824,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: "600",
-    fontFamily: "Agdasima-Bold",
-    color: "#fff",
-    letterSpacing: 0.5,
+    fontFamily: 'NinjaNaruto',
+    color: '#fff',
+    letterSpacing: 3,
   },
   scrollView: {
     flex: 1,
@@ -981,10 +980,10 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   mainTitle: {
-    fontSize: 18,
-    letterSpacing: 1,
-    fontWeight: "bold",
-    color: "#FFFFFF",
+    fontSize: 22,
+    letterSpacing: 3,
+    fontFamily: 'NinjaNaruto',
+    color: '#FFFFFF',
     flex: 1,
     marginRight: 12,
   },

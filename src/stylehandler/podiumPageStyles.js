@@ -290,6 +290,7 @@ const basePodiumStyles = {
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
+    fontFamily: 'Genjiro',
     color: '#fff',
     letterSpacing: 1,
   },
@@ -337,7 +338,7 @@ const buildPodiumStyles = (theme) =>
     ...basePodiumStyles,
     container: { ...basePodiumStyles.container, backgroundColor: theme.background },
     profileIcon: { ...basePodiumStyles.profileIcon, backgroundColor: theme.accent },
-    headerTitle: { ...basePodiumStyles.headerTitle, fontFamily: theme.fontFamily },
+    headerTitle: { ...basePodiumStyles.headerTitle, fontFamily: 'Genjiro' },
     headerSubtitle: { ...basePodiumStyles.headerSubtitle, fontFamily: theme.fontFamily },
     loadingText: { ...basePodiumStyles.loadingText, fontFamily: theme.fontFamily },
     sectionTitle: { ...basePodiumStyles.sectionTitle, fontFamily: theme.fontFamily },
