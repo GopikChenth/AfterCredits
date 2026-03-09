@@ -48,6 +48,7 @@ const animeTheme = {
   profileIconColor: '#A78BFA',
   fontFamily: 'Agdasima',
   fontFamilyBold: 'Agdasima-Bold',
+  titleFont: 'Genjiro',
 
   // ─── Labels ──────────────────────────────────────────────
   headerTitle: 'Podium',
@@ -341,7 +342,7 @@ const buildPodiumStyles = (theme) =>
     headerTitle: { ...basePodiumStyles.headerTitle, fontFamily: 'Genjiro' },
     headerSubtitle: { ...basePodiumStyles.headerSubtitle, fontFamily: theme.fontFamily },
     loadingText: { ...basePodiumStyles.loadingText, fontFamily: theme.fontFamily },
-    sectionTitle: { ...basePodiumStyles.sectionTitle, fontFamily: theme.fontFamily },
+    sectionTitle: { ...basePodiumStyles.sectionTitle, fontFamily: theme.titleFont || theme.fontFamily },
   });
 
 
@@ -416,19 +417,14 @@ const buildPodiumListStyles = (theme) =>
 // ║                   CACHE & PUBLIC API                           ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
-const podiumStyleCache = {};
-const podiumListStyleCache = {};
-
 export const getPodiumPageStyles = (mediaType = 'anime') => {
   const key = THEME_MAP[mediaType] ? mediaType : 'anime';
-  if (!podiumStyleCache[key]) podiumStyleCache[key] = buildPodiumStyles(THEME_MAP[key]);
-  return podiumStyleCache[key];
+  return buildPodiumStyles(THEME_MAP[key]);
 };
 
 export const getPodiumListStyles = (mediaType = 'anime') => {
   const key = THEME_MAP[mediaType] ? mediaType : 'anime';
-  if (!podiumListStyleCache[key]) podiumListStyleCache[key] = buildPodiumListStyles(THEME_MAP[key]);
-  return podiumListStyleCache[key];
+  return buildPodiumListStyles(THEME_MAP[key]);
 };
 
 export const getPodiumPageTheme = (mediaType = 'anime') => {

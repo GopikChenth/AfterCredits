@@ -194,18 +194,9 @@ const buildStyles = (theme) =>
 // ║                   CACHE & PUBLIC API                           ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
-const styleCache = {};
-
-/**
- * @param {'anime' | 'games' | 'movies'} mediaType
- * @returns {StyleSheet}
- */
 export const getPostPageStyles = (mediaType = 'anime') => {
   const key = THEME_MAP[mediaType] ? mediaType : 'anime';
-  if (!styleCache[key]) {
-    styleCache[key] = buildStyles(THEME_MAP[key]);
-  }
-  return styleCache[key];
+  return buildStyles(THEME_MAP[key]);
 };
 
 /**

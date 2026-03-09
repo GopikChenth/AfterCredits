@@ -980,8 +980,8 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   mainTitle: {
-    fontSize: 22,
-    letterSpacing: 3,
+    fontSize: 16,
+    letterSpacing: 2,
     fontFamily: 'NinjaNaruto',
     color: '#FFFFFF',
     flex: 1,

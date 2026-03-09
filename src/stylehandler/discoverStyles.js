@@ -212,6 +212,7 @@ const animeTheme = {
   detailsBg: 'rgba(167, 139, 250, 0.15)',
   gradientOverlay: ['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.98)'],
   fontFamily: 'Agdasima',
+  titleFont: 'Genjiro',
   profileIconColor: '#A78BFA',
   subtitleText: 'Explore anime, find your next obsession',
   comingSoonTitle: 'Coming Soon',
@@ -357,7 +358,7 @@ const buildStyles = (theme) =>
     sectionTitle: {
       fontSize: 22,
       fontWeight: '700',
-      fontFamily: theme.fontFamily,
+      fontFamily: theme.titleFont || theme.fontFamily,
       color: '#fff',
       letterSpacing: 0.5,
     },
@@ -496,10 +497,8 @@ const buildStyles = (theme) =>
 
 
 // ╔═══════════════════════════════════════════════════════════════╗
-// ║                   CACHE & PUBLIC API                           ║
+// ║                        PUBLIC API                              ║
 // ╚═══════════════════════════════════════════════════════════════╝
-
-const styleCache = {};
 
 /**
  * Get the themed StyleSheet for the Discover page.
@@ -508,10 +507,7 @@ const styleCache = {};
  */
 export const getDiscoverStyles = (mediaType = 'anime') => {
   const key = THEME_MAP[mediaType] ? mediaType : 'anime';
-  if (!styleCache[key]) {
-    styleCache[key] = buildStyles(THEME_MAP[key]);
-  }
-  return styleCache[key];
+  return buildStyles(THEME_MAP[key]);
 };
 
 /**
