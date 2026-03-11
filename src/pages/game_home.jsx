@@ -50,6 +50,8 @@ const GAME_THEME = { accent: GAME_ACCENT };
 // Notch cut from top-left corner to leave space for the CategoryPill
 const NOTCH_W = 185; // width of the pill notch  (px from left)
 const NOTCH_H = 80;  // height of the pill notch (px from top)
+// Approx height of the top header row (48px icon + 8+8 vertical padding)
+const HEADER_H = 64;
 
 // ─── Game card ─────────────────────────────────────────────────────────────
 const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
@@ -266,31 +268,40 @@ const GameHome = ({ navigation }) => {
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
-  // ── Measured size of the content area (heroRow + cards) ──
-  const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
+  // ── Measure the hero row height so we can size the step-shape correctly ──
+  const [heroRowH, setHeroRowH] = useState(0);
 
-  // ── Inverted-L step path (straight lines only — matches reference photo) ──
+  // ── Inverted-L step path (straight lines, no curves) ──────────────────────
   //
-  //   (NOTCH_W, 0) ─────────────── (W, 0)
-  //        │                           │
-  //   (NOTCH_W, NOTCH_H)               │
-  //        │                           │
-  //   (0, NOTCH_H) ─── (0, H)         │
-  //        └───────────(W, H) ─────────┘
+  //   Top-left notch is left empty for the CategoryPill.
+  //   The rest (GAMES title + all cards) is covered by the dark surface.
+  //
+  //         NOTCH_W
+  //           ↓
+  //           ______________ ← SCREEN_WIDTH
+  //          |              |
+  //          |  GAMES text  |  ← heroRowH
+  //   _______|              |
+  //  |                      |
+  //  |    cards area        |
+  //  |______________________|  ← very large (card list)
   //
   const stepPath = useMemo(() => {
-    const { width: W, height: H } = contentSize;
-    if (!W || !H) return null;
+    if (!heroRowH) return null;
+    const W = SCREEN_WIDTH;
+    // Make the path tall enough to cover a full card list viewport
+    // (actual clipping is done by the View rendering, not the path)
+    const H = heroRowH;
     const p = Skia.Path.Make();
-    p.moveTo(NOTCH_W, 0);          // top of right portion
-    p.lineTo(W, 0);                // top-right corner
-    p.lineTo(W, H);                // bottom-right corner
-    p.lineTo(0, H);                // bottom-left corner
-    p.lineTo(0, NOTCH_H);         // up left edge to step
-    p.lineTo(NOTCH_W, NOTCH_H);   // right along notch bottom
-    p.close();                     // back to (NOTCH_W, 0)
+    p.moveTo(NOTCH_W, 0);         // start: right edge of the pill notch
+    p.lineTo(W, 0);               // top-right corner
+    p.lineTo(W, H);               // bottom-right corner
+    p.lineTo(0, H);               // bottom-left corner
+    p.lineTo(0, NOTCH_H);        // up left edge to the step ledge
+    p.lineTo(NOTCH_W, NOTCH_H); // right along the step ledge
+    p.close();                    // back to (NOTCH_W, 0)
     return p;
-  }, [contentSize]);
+  }, [heroRowH]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -339,6 +350,27 @@ const GameHome = ({ navigation }) => {
         </Pressable>
       </View>
 
+      {/* ── Skia step-shape: absolute layer, sits behind everything ────── */}
+      {/* Canvas is OUTSIDE the ScrollView so height is always measurable.   */}
+      {/* It only needs to cover the hero row area. Cards below use a        */}
+      {/* matching backgroundColor so they appear as one continuous surface.  */}
+      {stepPath ? (
+        <Canvas
+          style={[styles.heroCanvas, { top: HEADER_H }]}
+          width={SCREEN_WIDTH}
+          height={heroRowH}
+          pointerEvents="none"
+        >
+          <SkiaPath path={stepPath} color="#131A13" />
+          <SkiaPath
+            path={stepPath}
+            color="rgba(93,214,44,0.28)"
+            style="stroke"
+            strokeWidth={1.5}
+          />
+        </Canvas>
+      ) : null}
+
       {/* ── Content ─────────────────────────────────────────────────────── */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -360,32 +392,15 @@ const GameHome = ({ navigation }) => {
               theme={GAME_THEME}
             />
           ) : (
-            <View
-              style={styles.contentArea}
-              onLayout={e => {
-                const { width, height } = e.nativeEvent.layout;
-                setContentSize(s =>
-                  s.width === width && s.height === height ? s : { width, height }
-                );
-              }}
-            >
-              {/* Skia step-shape canvas — absoluteFill behind content */}
-              {stepPath ? (
-                <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {/* Filled surface */}
-                  <SkiaPath path={stepPath} color="#131A13" />
-                  {/* Thin green border along the shape edge */}
-                  <SkiaPath
-                    path={stepPath}
-                    color="rgba(93,214,44,0.22)"
-                    style="stroke"
-                    strokeWidth={1.5}
-                  />
-                </Canvas>
-              ) : null}
-
-              {/* Hero row: pill (sits in notch) + GAMES title (sits on shape) */}
-              <View style={styles.heroSection}>
+            <>
+              {/* Hero row — measure height here to drive the step shape */}
+              <View
+                style={styles.heroSection}
+                onLayout={e => {
+                  const h = e.nativeEvent.layout.height;
+                  setHeroRowH(prev => prev === h ? prev : h);
+                }}
+              >
                 <View style={styles.heroRow}>
                   <CategoryPill
                     categories={['Trending', 'Popular', 'New']}
@@ -397,7 +412,7 @@ const GameHome = ({ navigation }) => {
                 </View>
               </View>
 
-              {/* Cards area */}
+              {/* Cards area — same bg color as the step shape fill */}
               {isLoading || isLoadingMore ? (
                 <SkeletonLoader cardHeight={cardHeight} count={6} />
               ) : error ? (
@@ -460,7 +475,7 @@ const GameHome = ({ navigation }) => {
                   />
                 </View>
               )}
-            </View>
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -603,12 +618,14 @@ const styles = StyleSheet.create({
   // ── Hero section ──
   scrollView: { flex: 1 },
 
-  // Outer wrapper measured by onLayout so the Canvas knows its size
-  contentArea: {
-    flex: 1,
+  // Absolute Canvas that draws the step shape behind the hero row
+  heroCanvas: {
+    position: 'absolute',
+    left: 0,
+    // top is set inline from heroRowOffset constant
   },
 
-  // Hero row sits directly in contentArea — give it breathing room
+  // Hero row — measured via onLayout to drive canvas height
   heroSection: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -632,9 +649,11 @@ const styles = StyleSheet.create({
   },
 
   // ── Content wrapper ──
+  // Same bg color as step shape fill — creates one seamless surface
   contentWrapper: {
     flex: 1,
     paddingHorizontal: 16,
+    backgroundColor: '#131A13',
   },
   flashListContent: {
     paddingBottom: 80,
