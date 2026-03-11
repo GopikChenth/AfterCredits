@@ -40,8 +40,9 @@ const GAME_BG       = '#0B0F0B';
 const GAME_CARD_BG  = '#111711';
 const GAME_SURFACE  = '#1E261E';
 
-// Panel notch: top-right corner is cut at a 45-degree straight line
-const NOTCH = 28;  // size of the straight-line notch
+// ── Inverted-L panel constants ──
+const STEP_X  = 140;  // how far from the left the narrow top section starts
+const STEP_Y  = 68;   // height of the narrow top section before it steps out
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH  = (SCREEN_WIDTH - 56) / 2;
@@ -51,26 +52,34 @@ const GAME_THEME = {
   accent: GAME_ACCENT,
 };
 
-// Build the Skia path for the content panel:
-// A full-width rounded-left rectangle with a straight chamfer on the top-right corner.
-// Width and height are passed in since we measure with onLayout.
+// Build the Skia path for the inverted-L panel:
+//
+//        (stepX, 0) ─────── (w, 0)
+//        |                       |
+//        |   GAMES title         |
+//        |                       |
+// (0, stepY) ────────────────────|
+// |                              |
+// |    category pill + cards     |
+// |                              |
+// (0, h) ─────────────── (w, h)
+//
 const buildPanelPath = (w, h) => {
   const p = Skia.Path.Make();
-  const r = 20; // corner radius (used for left corners only)
-  // Top-left rounded
-  p.moveTo(r, 0);
-  // Top edge (leaves room for notch on top-right)
-  p.lineTo(w - NOTCH, 0);
-  // Straight diagonal notch cut down to right edge
-  p.lineTo(w, NOTCH);
-  // Right edge straight down
+  // Start at top-left of the narrow section
+  p.moveTo(STEP_X, 0);
+  // Top edge
+  p.lineTo(w, 0);
+  // Right edge all the way down
   p.lineTo(w, h);
-  // Bottom-right straight (no rounding)
+  // Bottom edge
   p.lineTo(0, h);
-  // Left edge straight up
-  p.lineTo(0, r);
-  // Top-left rounded corner
-  p.quadTo(0, 0, r, 0);
+  // Left edge up to the step
+  p.lineTo(0, STEP_Y);
+  // Step inward (horizontal line to the right)
+  p.lineTo(STEP_X, STEP_Y);
+  // Up to starting point
+  p.lineTo(STEP_X, 0);
   p.close();
   return p;
 };
