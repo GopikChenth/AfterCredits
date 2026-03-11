@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,9 +44,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH  = (SCREEN_WIDTH - 56) / 2;
 const CARD_HEIGHT = CARD_WIDTH * 1.35;
 
-const GAME_THEME = {
-  accent: GAME_ACCENT,
-};
+const GAME_THEME = { accent: GAME_ACCENT };
+
+// ─── Step-shape constants ────────────────────────────────────────────────
+// Notch cut from top-left corner to leave space for the CategoryPill
+const NOTCH_W = 185; // width of the pill notch  (px from left)
+const NOTCH_H = 80;  // height of the pill notch (px from top)
 
 // ─── Game card ─────────────────────────────────────────────────────────────
 const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
@@ -262,6 +266,32 @@ const GameHome = ({ navigation }) => {
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
+  // ── Measured size of the content area (heroRow + cards) ──
+  const [contentSize, setContentSize] = useState({ width: 0, height: 0 });
+
+  // ── Inverted-L step path (straight lines only — matches reference photo) ──
+  //
+  //   (NOTCH_W, 0) ─────────────── (W, 0)
+  //        │                           │
+  //   (NOTCH_W, NOTCH_H)               │
+  //        │                           │
+  //   (0, NOTCH_H) ─── (0, H)         │
+  //        └───────────(W, H) ─────────┘
+  //
+  const stepPath = useMemo(() => {
+    const { width: W, height: H } = contentSize;
+    if (!W || !H) return null;
+    const p = Skia.Path.Make();
+    p.moveTo(NOTCH_W, 0);          // top of right portion
+    p.lineTo(W, 0);                // top-right corner
+    p.lineTo(W, H);                // bottom-right corner
+    p.lineTo(0, H);                // bottom-left corner
+    p.lineTo(0, NOTCH_H);         // up left edge to step
+    p.lineTo(NOTCH_W, NOTCH_H);   // right along notch bottom
+    p.close();                     // back to (NOTCH_W, 0)
+    return p;
+  }, [contentSize]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={GAME_BG} />
@@ -330,22 +360,44 @@ const GameHome = ({ navigation }) => {
               theme={GAME_THEME}
             />
           ) : (
-            <>
-              {/* ── Hero card: category pill + title ── */}
+            <View
+              style={styles.contentArea}
+              onLayout={e => {
+                const { width, height } = e.nativeEvent.layout;
+                setContentSize(s =>
+                  s.width === width && s.height === height ? s : { width, height }
+                );
+              }}
+            >
+              {/* Skia step-shape canvas — absoluteFill behind content */}
+              {stepPath ? (
+                <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {/* Filled surface */}
+                  <SkiaPath path={stepPath} color="#131A13" />
+                  {/* Thin green border along the shape edge */}
+                  <SkiaPath
+                    path={stepPath}
+                    color="rgba(93,214,44,0.22)"
+                    style="stroke"
+                    strokeWidth={1.5}
+                  />
+                </Canvas>
+              ) : null}
+
+              {/* Hero row: pill (sits in notch) + GAMES title (sits on shape) */}
               <View style={styles.heroSection}>
-                <View style={styles.heroCard}>
-                  <View style={styles.heroRow}>
-                    <CategoryPill
-                      categories={['Trending', 'Popular', 'New']}
-                      onCategoryChange={handleCategoryChange}
-                      width={160}
-                      accentColor={GAME_ACCENT}
-                    />
-                    <Text style={styles.gamesText}>GAMES</Text>
-                  </View>
+                <View style={styles.heroRow}>
+                  <CategoryPill
+                    categories={['Trending', 'Popular', 'New']}
+                    onCategoryChange={handleCategoryChange}
+                    width={160}
+                    accentColor={GAME_ACCENT}
+                  />
+                  <Text style={styles.gamesText}>GAMES</Text>
                 </View>
               </View>
 
+              {/* Cards area */}
               {isLoading || isLoadingMore ? (
                 <SkeletonLoader cardHeight={cardHeight} count={6} />
               ) : error ? (
@@ -408,7 +460,7 @@ const GameHome = ({ navigation }) => {
                   />
                 </View>
               )}
-            </>
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -550,25 +602,19 @@ const styles = StyleSheet.create({
 
   // ── Hero section ──
   scrollView: { flex: 1 },
+
+  // Outer wrapper measured by onLayout so the Canvas knows its size
+  contentArea: {
+    flex: 1,
+  },
+
+  // Hero row sits directly in contentArea — give it breathing room
   heroSection: {
     paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingTop: 8,
+    paddingBottom: 10,
   },
-  heroCard: {
-    backgroundColor: '#1A221A',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: -8, height: -8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(93,214,44,0.14)',
-  },
+
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
