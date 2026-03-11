@@ -15,6 +15,7 @@ import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
@@ -39,12 +40,39 @@ const GAME_BG       = '#0B0F0B';
 const GAME_CARD_BG  = '#111711';
 const GAME_SURFACE  = '#1E261E';
 
+// Panel notch: top-right corner is cut at a 45-degree straight line
+const NOTCH = 28;  // size of the straight-line notch
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH  = (SCREEN_WIDTH - 56) / 2;
 const CARD_HEIGHT = CARD_WIDTH * 1.35;
 
 const GAME_THEME = {
   accent: GAME_ACCENT,
+};
+
+// Build the Skia path for the content panel:
+// A full-width rounded-left rectangle with a straight chamfer on the top-right corner.
+// Width and height are passed in since we measure with onLayout.
+const buildPanelPath = (w, h) => {
+  const p = Skia.Path.Make();
+  const r = 20; // corner radius (used for left corners only)
+  // Top-left rounded
+  p.moveTo(r, 0);
+  // Top edge (leaves room for notch on top-right)
+  p.lineTo(w - NOTCH, 0);
+  // Straight diagonal notch cut down to right edge
+  p.lineTo(w, NOTCH);
+  // Right edge straight down
+  p.lineTo(w, h);
+  // Bottom-right straight (no rounding)
+  p.lineTo(0, h);
+  // Left edge straight up
+  p.lineTo(0, r);
+  // Top-left rounded corner
+  p.quadTo(0, 0, r, 0);
+  p.close();
+  return p;
 };
 
 // ─── Game card ─────────────────────────────────────────────────────────────
@@ -262,16 +290,17 @@ const GameHome = ({ navigation }) => {
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
+  const [panelSize, setPanelSize] = React.useState({ width: 0, height: 0 });
+
+  const panelPath = React.useMemo(() => {
+    const { width, height } = panelSize;
+    if (!width || !height) return null;
+    return buildPanelPath(width, height);
+  }, [panelSize]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={GAME_BG} />
-
-      {/* ── Background blobs (green palette) ─────────────────────────── */}
-      <View style={styles.backgroundShapes}>
-        <View style={styles.blobShape1} />
-        <View style={styles.blobShape2} />
-        <View style={styles.blobShape3} />
-      </View>
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
@@ -331,37 +360,56 @@ const GameHome = ({ navigation }) => {
             />
           ) : (
             <>
-              {/* ── Hero card: category pill + title ── */}
-              <View style={styles.heroSection}>
-                <View style={styles.heroCard}>
-                  <View style={styles.heroRow}>
-                    <CategoryPill
-                      categories={['Trending', 'Popular', 'New']}
-                      onCategoryChange={handleCategoryChange}
-                      width={160}
-                      accentColor={GAME_ACCENT}
+              {/* ── Skia panel wrapping title + cards ── */}
+              <View
+                style={styles.panelShell}
+                onLayout={e => {
+                  const { width, height } = e.nativeEvent.layout;
+                  setPanelSize(p =>
+                    p.width === width && p.height === height ? p : { width, height }
+                  );
+                }}
+              >
+                {/* Skia canvas drawing the chamfered dark panel */}
+                {panelPath ? (
+                  <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+                    <SkiaPath path={panelPath} color="#0E170E" />
+                    <SkiaPath
+                      path={panelPath}
+                      color="rgba(93,214,44,0.18)"
+                      style="stroke"
+                      strokeWidth={1.5}
                     />
-                    <Text style={styles.gamesText}>GAMES</Text>
-                  </View>
-                </View>
-              </View>
+                  </Canvas>
+                ) : null}
 
-              {isLoading || isLoadingMore ? (
-                <SkeletonLoader cardHeight={cardHeight} count={6} />
-              ) : error ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
-                  <Pressable
-                    style={styles.retryButton}
-                    onPress={() => fetchGames(selectedCategory)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Retry loading games"
-                  >
-                    <Text style={styles.retryText}>Retry</Text>
-                  </Pressable>
+                {/* ── Hero row: category pill + GAMES title ── */}
+                <View style={styles.heroRow}>
+                  <CategoryPill
+                    categories={['Trending', 'Popular', 'New']}
+                    onCategoryChange={handleCategoryChange}
+                    width={160}
+                    accentColor={GAME_ACCENT}
+                  />
+                  <Text style={styles.gamesText}>GAMES</Text>
                 </View>
-              ) : (
-                <View style={styles.contentWrapper}>
+
+                {/* ── Cards area ── */}
+                {isLoading || isLoadingMore ? (
+                  <SkeletonLoader cardHeight={cardHeight} count={6} />
+                ) : error ? (
+                  <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <Pressable
+                      style={styles.retryButton}
+                      onPress={() => fetchGames(selectedCategory)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Retry loading games"
+                    >
+                      <Text style={styles.retryText}>Retry</Text>
+                    </Pressable>
+                  </View>
+                ) : (
                   <FlashList
                     data={games}
                     renderItem={renderGameCard}
@@ -406,12 +454,13 @@ const GameHome = ({ navigation }) => {
                       ) : null
                     }
                   />
-                </View>
-              )}
+                )}
+              </View>
             </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
 
       {/* ── Search bar ─────────────────────────────────────────────────── */}
       <KeyboardAwareSearchBar
@@ -548,31 +597,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── Hero section ──
+  // ── Skia panel shell ──
   scrollView: { flex: 1 },
-  heroSection: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
-  },
-  heroCard: {
-    backgroundColor: '#1A221A',
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: -8, height: -8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(93,214,44,0.14)',
+  panelShell: {
+    flex: 1,
+    marginHorizontal: 0,
+    overflow: 'hidden',
   },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     gap: 8,
   },
   gamesText: {
@@ -583,12 +621,6 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(93,214,44,0.45)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
-  },
-
-  // ── Content wrapper ──
-  contentWrapper: {
-    flex: 1,
-    paddingHorizontal: 16,
   },
   flashListContent: {
     paddingBottom: 80,
