@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet } from "react-native";
 
 /**
  * ╔═══════════════════════════════════════════════════════════════╗
@@ -16,7 +16,6 @@ import { StyleSheet } from 'react-native';
  * ╚═══════════════════════════════════════════════════════════════╝
  */
 
-
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                    SHARED / BASE STYLES                       ║
 // ╚═══════════════════════════════════════════════════════════════╝
@@ -29,9 +28,9 @@ const baseStyles = {
     flex: 1,
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
@@ -39,7 +38,7 @@ const baseStyles = {
     width: 48,
     height: 48,
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   profileIcon: {
     width: 48,
@@ -48,14 +47,13 @@ const baseStyles = {
   },
   headerTitle: {
     fontSize: 32,
-    fontWeight: '800',
-    fontFamily: 'Genjiro',
-    color: '#fff',
+    fontFamily: "Genjiro",
+    color: "#fff",
     letterSpacing: 1,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#888',
+    color: "#888",
     letterSpacing: 0.5,
     marginTop: 2,
   },
@@ -66,15 +64,15 @@ const baseStyles = {
     paddingBottom: 10,
   },
   errorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 40,
     gap: 12,
   },
   errorText: {
-    color: '#888',
+    color: "#888",
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: "center",
   },
   retryButton: {
     paddingHorizontal: 24,
@@ -83,40 +81,37 @@ const baseStyles = {
   },
   retryText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 };
-
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                      ANIME THEME  💜                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const animeTheme = {
-  accent: '#A78BFA',
-  background: '#0D0D0D',
-  profileIconColor: '#A78BFA',
-  fontFamily: 'Agdasima',
-  headerTitle: 'Post',
-  headerSubtitle: 'Curated anime lists from the community',
-  detailRoute: 'PostDetailAnime',
+  accent: "#A78BFA",
+  background: "#0D0D0D",
+  profileIconColor: "#A78BFA",
+  fontFamily: "Agdasima",
+  headerTitle: "Post",
+  headerSubtitle: "Curated anime lists from the community",
+  detailRoute: "PostDetailAnime",
 };
-
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                      GAMES THEME  🎮                          ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#4ADE80',
-  background: '#070F0A',
-  profileIconColor: '#4ADE80',
-  fontFamily: 'System',
-  headerTitle: 'Post',
-  headerSubtitle: 'Curated game lists from the community',
-  detailRoute: 'PostDetailAnime', // Shared detail page
+  accent: "#4ADE80",
+  background: "#070F0A",
+  profileIconColor: "#4ADE80",
+  fontFamily: "System",
+  headerTitle: "Post",
+  headerSubtitle: "Curated game lists from the community",
+  detailRoute: "PostDetailAnime", // Shared detail page
 };
-
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                     MOVIES THEME  🎬                          ║
@@ -125,15 +120,14 @@ const gamesTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const moviesTheme = {
-  accent: '#FF6B35',              // Sunset orange
-  background: '#0E0A07',          // Deep warm charcoal
-  profileIconColor: '#FFB347',    // Amber glow
-  fontFamily: 'System',
-  headerTitle: 'Post',
-  headerSubtitle: 'Curated film lists from the community',
-  detailRoute: 'PostDetailAnime', // TODO: replace with PostDetailMovies
+  accent: "#FF6B35", // Sunset orange
+  background: "#0E0A07", // Deep warm charcoal
+  profileIconColor: "#FFB347", // Amber glow
+  fontFamily: "System",
+  headerTitle: "Post",
+  headerSubtitle: "Curated film lists from the community",
+  detailRoute: "PostDetailAnime", // TODO: replace with PostDetailMovies
 };
-
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                    THEME MAP & REGISTRY                       ║
@@ -144,7 +138,6 @@ const THEME_MAP = {
   games: gamesTheme,
   movies: moviesTheme,
 };
-
 
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║               STYLE BUILDER  (Theme → StyleSheet)             ║
@@ -168,7 +161,7 @@ const buildStyles = (theme) =>
     },
     headerTitle: {
       ...baseStyles.headerTitle,
-      fontFamily: 'Genjiro',
+      fontFamily: "Genjiro",
     },
     headerSubtitle: {
       ...baseStyles.headerSubtitle,
@@ -189,13 +182,12 @@ const buildStyles = (theme) =>
     },
   });
 
-
 // ╔═══════════════════════════════════════════════════════════════╗
 // ║                   CACHE & PUBLIC API                           ║
 // ╚═══════════════════════════════════════════════════════════════╝
 
-export const getPostPageStyles = (mediaType = 'anime') => {
-  const key = THEME_MAP[mediaType] ? mediaType : 'anime';
+export const getPostPageStyles = (mediaType = "anime") => {
+  const key = THEME_MAP[mediaType] ? mediaType : "anime";
   return buildStyles(THEME_MAP[key]);
 };
 
@@ -203,6 +195,6 @@ export const getPostPageStyles = (mediaType = 'anime') => {
  * @param {'anime' | 'games' | 'movies'} mediaType
  * @returns {object}
  */
-export const getPostPageTheme = (mediaType = 'anime') => {
+export const getPostPageTheme = (mediaType = "anime") => {
   return THEME_MAP[mediaType] || THEME_MAP.anime;
 };

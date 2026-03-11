@@ -1,138 +1,211 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
+  ScrollView,
   Pressable,
+  StyleSheet,
   Dimensions,
   StatusBar,
-  ActivityIndicator,
-  Image as RNImage,
   Keyboard,
-} from "react-native";
-import { Canvas, Path as SkiaPath, Skia } from "@shopify/react-native-skia";
-import { Image } from "expo-image";
-import { FlashList } from "@shopify/flash-list";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { useMediaType } from "../context/MediaTypeContext";
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { FlashList } from '@shopify/flash-list';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useProfileStore } from '../stores/useProfileStore';
+import { getCardDimensions } from '../utils/responsiveCard';
+import { getMediaTheme } from '../utils/mediaThemes';
+import CategoryPill from '../components/home_page/CategoryPill';
+import SideBar from '../components/home_page/SideBar';
+import SkeletonLoader from '../components/skeletons/SkeletonHome';
+import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
+import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
+import InlineSearchResults from '../components/home_page/InlineSearchResults';
 import {
   getTrendingGames,
   getPopularGames,
   getNewReleases,
-} from "../services/api_rawg";
-import { searchMedia, debounce } from "../services/search";
-import SideBar from "../components/home_page/SideBar";
-import CategoryPill from "../components/home_page/CategoryPill";
-import SkeletonLoader from "../components/skeletons/SkeletonHome";
-import { KeyboardAwareSearchBar } from "../components/home_page/SearchBar";
-import SearchSuggestionsOverlay from "../components/home_page/SearchSuggestionsOverlay";
-import InlineSearchResults from "../components/home_page/InlineSearchResults";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+} from '../services/api_rawg';
+import { searchMedia, debounce } from '../services/search';
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
+const GAME_ACCENT   = '#5DD62C';
+const GAME_ACCENT2  = '#3BA818';
+const GAME_BG       = '#0B0F0B';
+const GAME_CARD_BG  = '#111711';
+const GAME_SURFACE  = '#1E261E';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH  = (SCREEN_WIDTH - 56) / 2;
 const CARD_HEIGHT = CARD_WIDTH * 1.35;
 
-// ── L-blob shape — change these numbers to resize ──
-const L_BTN_W = 64; // width:  hamburger button section (top of L)
-const L_BTN_H = 64; // height: hamburger button section
-const L_PILL_W = 210; // width:  pill arm (bottom of L, must be > L_BTN_W)
-const L_PILL_H = 50; // height: pill arm
-const L_R = 18; // outer corner radius
-const L_TOTAL_H = L_BTN_H + L_PILL_H; // total height of the L bounding box
+const GAME_THEME = {
+  accent: GAME_ACCENT,
+};
 
+// ─── Game card ─────────────────────────────────────────────────────────────
+const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
+  const score = game.metacritic ?? Math.round((game.rating || 0) * 20);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.gameCard,
+        { height: cardHeight },
+        pressed && styles.gameCardPressed,
+      ]}
+      onPress={() => onPress(game)}
+      accessibilityRole="button"
+      accessibilityLabel={`View game: ${game.name}`}
+    >
+      {game.background_image ? (
+        <Image
+          source={{ uri: game.background_image }}
+          style={styles.cardImage}
+          contentFit="cover"
+          recyclingKey={`game-${game.id}`}
+        />
+      ) : (
+        <View style={[styles.cardImage, styles.cardPlaceholder]}>
+          <Ionicons name="game-controller-outline" size={32} color="rgba(93,214,44,0.35)" />
+        </View>
+      )}
+
+      <LinearGradient
+        colors={['transparent', 'rgba(11,15,11,0.78)', 'rgba(11,15,11,0.97)']}
+        style={styles.cardOverlay}
+      />
+
+      {score > 0 && (
+        <View
+          style={[
+            styles.scoreBadge,
+            {
+              backgroundColor:
+                score >= 75 ? '#3BA818' : score >= 50 ? '#FFBE0B' : '#EF4444',
+            },
+          ]}
+        >
+          <Text style={styles.scoreText}>{score}</Text>
+        </View>
+      )}
+
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {game.name}
+        </Text>
+        <View style={styles.ratingRow}>
+          {[...Array(5)].map((_, i) => (
+            <Ionicons
+              key={i}
+              name={i < Math.round(game.rating || 0) ? 'star' : 'star-outline'}
+              size={11}
+              color="#FFBE0B"
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* bottom accent stripe — green instead of purple */}
+      <View style={styles.cardAccentStripe} />
+    </Pressable>
+  );
+});
+
+// ─── Main screen ──────────────────────────────────────────────────────────
 const GameHome = ({ navigation }) => {
-  const { setMediaType } = useMediaType();
-  const tabBarHeight = useBottomTabBarHeight();
-  const [selectedCategory, setSelectedCategory] = useState("trending");
-  const [games, setGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [activeSection, setActiveSection] = useState("game");
+  const tabBarHeight   = useBottomTabBarHeight();
+  const dimensions     = getCardDimensions();
+  const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
 
-  // ── Search state ──
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('Trending');
+  const [isSidebarVisible, setIsSidebarVisible]  = useState(false);
+
+  const [games, setGames]             = useState([]);
+  const [isLoading, setIsLoading]     = useState(true);
+  const [error, setError]             = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore]         = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const [searchQuery, setSearchQuery]         = useState('');
+  const [searchResults, setSearchResults]     = useState([]);
+  const [isSearching, setIsSearching]         = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
 
-  const loadGames = useCallback(
-    async (category = selectedCategory, page = 1) => {
-      if (page === 1) setLoading(true);
-      else setIsLoadingMore(true);
-      try {
-        let data;
-        switch (category) {
-          case "popular":
-            data = await getPopularGames(page, 20);
-            break;
-          case "new":
-            data = await getNewReleases(page, 20);
-            break;
-          case "trending":
-          default:
-            data = await getTrendingGames(page, 20);
-        }
-        setGames(data.results || []);
-        setCurrentPage(page);
-        setHasMore(!!data.next); // RAWG returns next=null on last page
-      } catch (error) {
-        console.error("Error loading games:", error);
-        setGames([]);
-      } finally {
-        setLoading(false);
-        setIsLoadingMore(false);
-      }
-    },
-    [selectedCategory],
-  );
+  const userProfile  = useProfileStore(s => s.profile);
+  const fetchProfile = useProfileStore(s => s.fetchProfile);
 
+  // Responsive card sizing
   useEffect(() => {
-    loadGames(selectedCategory, 1);
-  }, [selectedCategory]);
+    const sub = Dimensions.addEventListener('change', () => {
+      setCardHeight(getCardDimensions().cardHeight);
+    });
+    return () => sub?.remove();
+  }, []);
 
-  const handleCategoryChange = useCallback(
-    (category) => {
-      setSelectedCategory(category);
-      setCurrentPage(1);
-      setHasMore(true);
-      loadGames(category, 1);
-    },
-    [loadGames],
-  );
+  // Profile
+  useEffect(() => {
+    fetchProfile();
+    const unsub = navigation.addListener('focus', fetchProfile);
+    return unsub;
+  }, [navigation, fetchProfile]);
+
+  // Fetch games
+  const fetchGames = useCallback(async (category, page = 1) => {
+    setIsLoadingMore(page > 1);
+    setIsLoading(page === 1);
+    setError(null);
+    try {
+      let data;
+      switch (category) {
+        case 'Popular': data = await getPopularGames(page, 20);  break;
+        case 'New':     data = await getNewReleases(page, 20);   break;
+        default:        data = await getTrendingGames(page, 20); break;
+      }
+      setGames(data.results || []);
+      setCurrentPage(page);
+      setHasMore(Boolean(data.next));
+    } catch (err) {
+      console.error('Error loading games:', err);
+      setError('Failed to load games. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchGames(selectedCategory); }, []);
+
+  const handleCategoryChange = useCallback((cat) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchGames(cat, 1);
+  }, [fetchGames]);
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
-      loadGames(selectedCategory, currentPage + 1);
-    }
-  }, [isLoadingMore, hasMore, currentPage, selectedCategory, loadGames]);
+    if (!isLoadingMore && hasMore) fetchGames(selectedCategory, currentPage + 1);
+  }, [isLoadingMore, hasMore, currentPage, selectedCategory, fetchGames]);
 
   const handlePrevPage = useCallback(() => {
-    if (!isLoadingMore && currentPage > 1) {
-      loadGames(selectedCategory, currentPage - 1);
-    }
-  }, [isLoadingMore, currentPage, selectedCategory, loadGames]);
+    if (!isLoadingMore && currentPage > 1) fetchGames(selectedCategory, currentPage - 1);
+  }, [isLoadingMore, currentPage, selectedCategory, fetchGames]);
 
-  // ── Search handlers ─────────────────────────────────────────────────────
-
+  // Search
   const performSuggestionSearch = useCallback(
     debounce(async (query) => {
       if (!query || query.trim().length < 2) {
-        setSearchResults([]);
-        setIsSearching(false);
-        return;
+        setSearchResults([]); setIsSearching(false); return;
       }
       setIsSearching(true);
       try {
-        const results = await searchMedia(query, "games", 3);
-        setSearchResults(results);
-      } catch (error) {
-        console.error("Game suggestion search error:", error);
+        setSearchResults(await searchMedia(query, 'games', 3));
+      } catch {
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -141,293 +214,206 @@ const GameHome = ({ navigation }) => {
     [],
   );
 
-  const handleSearchChange = useCallback(
-    (text) => {
-      setSearchQuery(text);
-      setIsSearchSubmitted(false);
-      if (text.trim().length >= 2) {
-        performSuggestionSearch(text);
-      } else {
-        setSearchResults([]);
-        setIsSearching(false);
-      }
-    },
-    [performSuggestionSearch],
-  );
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+    setIsSearchSubmitted(false);
+    if (text.trim().length >= 2) performSuggestionSearch(text);
+    else { setSearchResults([]); setIsSearching(false); }
+  }, [performSuggestionSearch]);
 
   const handleSearchSubmit = useCallback(async () => {
     if (!searchQuery || searchQuery.trim().length < 2) return;
     setIsSearchSubmitted(true);
     Keyboard.dismiss();
     setIsSearching(true);
-    try {
-      const results = await searchMedia(searchQuery, "games", 50);
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Game search error:", error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
+    try { setSearchResults(await searchMedia(searchQuery, 'games', 50)); }
+    catch { setSearchResults([]); }
+    finally { setIsSearching(false); }
   }, [searchQuery]);
 
   const handleSearchCancel = useCallback(() => {
-    setSearchQuery("");
-    setSearchResults([]);
-    setIsSearching(false);
-    setIsSearchSubmitted(false);
+    setSearchQuery(''); setSearchResults([]);
+    setIsSearching(false); setIsSearchSubmitted(false);
   }, []);
 
-  const handleSearchResultPress = useCallback(
-    (item) => {
-      navigation.navigate("DetailsGames", {
-        gameId: item.id,
-        gameName: item.title,
-        coverImage: item.coverImage,
-      });
-      handleSearchCancel();
-    },
-    [navigation, handleSearchCancel],
-  );
+  const handleSearchResultPress = useCallback((item) => {
+    navigation.navigate('DetailsGames', {
+      gameId: item.id, gameName: item.title, coverImage: item.coverImage,
+    });
+    handleSearchCancel();
+  }, [navigation, handleSearchCancel]);
 
-  // Memoized FlashList callbacks
-  const renderGameCard = useCallback(
-    ({ item: game }) => (
-      <Pressable
-        style={({ pressed }) => [
-          styles.gameCard,
-          pressed && styles.gameCardPressed,
-        ]}
-        onPress={() =>
-          navigation.navigate("DetailsGames", {
-            gameId: game.id,
-            gameName: game.name,
-            coverImage: game.background_image,
-            rating: game.rating,
-            metacritic: game.metacritic,
-            genres: game.genres?.map((g) => g.name) || [],
-            playtime: game.playtime,
-            esrbRating: game.esrb_rating?.name || "Not Rated",
-          })
-        }
-        accessibilityRole="button"
-        accessibilityLabel={`View game: ${game.name}`}
-      >
-        {game.background_image ? (
-          <Image
-            source={{ uri: game.background_image }}
-            style={styles.cardImage}
-            contentFit="cover"
-            recyclingKey={`game-${game.id}`}
-          />
-        ) : (
-          <View style={[styles.cardImage, styles.cardPlaceholder]}>
-            <Ionicons
-              name="game-controller-outline"
-              size={32}
-              color="rgba(167,139,250,0.3)"
-            />
-          </View>
-        )}
-        <LinearGradient
-          colors={["transparent", "rgba(15,15,35,0.82)", "rgba(15,15,35,0.97)"]}
-          style={styles.cardOverlay}
-        />
-        {game.metacritic ? (
-          <View
-            style={[
-              styles.metacriticBadge,
-              {
-                backgroundColor:
-                  game.metacritic >= 75
-                    ? "#10B981"
-                    : game.metacritic >= 50
-                      ? "#FFBE0B"
-                      : "#EF4444",
-              },
-            ]}
-          >
-            <Text style={styles.metacriticText}>{game.metacritic}</Text>
-          </View>
-        ) : null}
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle} numberOfLines={2}>
-            {game.name}
-          </Text>
-          <View style={styles.ratingRow}>
-            {[...Array(5)].map((_, i) => (
-              <Ionicons
-                key={i}
-                name={i < Math.round(game.rating) ? "star" : "star-outline"}
-                size={11}
-                color="#FFBE0B"
-              />
-            ))}
-          </View>
-        </View>
-        <View style={styles.cardAccent} />
-      </Pressable>
-    ),
-    [navigation],
-  );
+  const handleGamePress = useCallback((game) => {
+    navigation.navigate('DetailsGames', {
+      gameId: game.id,
+      gameName: game.name,
+      coverImage: game.background_image,
+      rating: game.rating,
+      metacritic: game.metacritic,
+      genres: game.genres?.map(g => g.name) || [],
+      playtime: game.playtime,
+      esrbRating: game.esrb_rating?.name || 'Not Rated',
+    });
+  }, [navigation]);
 
-  const gameKeyExtractor = useCallback((item) => item.id.toString(), []);
+  const renderGameCard = useCallback(({ item }) => (
+    <GameCardItem game={item} cardHeight={cardHeight} onPress={handleGamePress} />
+  ), [cardHeight, handleGamePress]);
 
-  // ── L-blob path (module constants used — no deps needed) ──
-  const lBlobPath = useMemo(() => {
-    const p = Skia.Path.Make();
-    //
-    // Shape (clockwise). Top bar is narrow (L_BTN_W), pill arm is wider (L_PILL_W):
-    //
-    //  (0,0)──────(L_BTN_W,0)
-    //  │  hamburger  │
-    //  │             └──────────────(L_PILL_W, L_BTN_H)
-    //  │   pill arm                 │
-    //  (0,L_TOTAL_H)────────────────(L_PILL_W, L_TOTAL_H)
-    //
-    p.moveTo(L_R, 0);
-    p.lineTo(L_BTN_W - L_R, 0); // top edge of button section
-    p.quadTo(L_BTN_W, 0, L_BTN_W, L_R); // top-right corner
-    p.lineTo(L_BTN_W, L_BTN_H - L_R); // right side of button section
-    p.quadTo(L_BTN_W, L_BTN_H, L_BTN_W + L_R, L_BTN_H); // outer step corner (widens rightward)
-    p.lineTo(L_PILL_W - L_R, L_BTN_H); // step ledge
-    p.quadTo(L_PILL_W, L_BTN_H, L_PILL_W, L_BTN_H + L_R); // top-right of pill arm
-    p.lineTo(L_PILL_W, L_TOTAL_H - L_R); // right side of pill arm
-    p.quadTo(L_PILL_W, L_TOTAL_H, L_PILL_W - L_R, L_TOTAL_H); // bottom-right
-    p.lineTo(L_R, L_TOTAL_H); // bottom edge
-    p.quadTo(0, L_TOTAL_H, 0, L_TOTAL_H - L_R); // bottom-left
-    p.lineTo(0, L_R); // left side
-    p.quadTo(0, 0, L_R, 0); // top-left
-    p.close();
-    return p;
-  }, []);
+  const keyExtractor = useCallback((item) => item.id.toString(), []);
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" backgroundColor={GAME_BG} />
 
-      <SafeAreaView style={styles.safeArea} edges={["top"]}>
-        {/* ── Header area: L-blob (left) + title/profile (right) ── */}
-        <View style={styles.headerArea}>
-          {/* L-blob: hamburger on top, category pill on bottom arm */}
-          <View style={styles.lBlobWrapper}>
-            <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-              <SkiaPath path={lBlobPath} color="#0F3D0A" />
-              <SkiaPath
-                path={lBlobPath}
-                color="#2A7A1F"
-                style="stroke"
-                strokeWidth={1.5}
-              />
-            </Canvas>
+      {/* ── Background blobs (green palette) ─────────────────────────── */}
+      <View style={styles.backgroundShapes}>
+        <View style={styles.blobShape1} />
+        <View style={styles.blobShape2} />
+        <View style={styles.blobShape3} />
+      </View>
 
-            {/* Hamburger — sits in the narrow top section of the L */}
-            <View style={styles.lBtnArea}>
-              <Pressable
-                style={styles.menuButton}
-                onPress={() => setIsSidebarVisible(!isSidebarVisible)}
-                accessibilityRole="button"
-                accessibilityLabel="Open sidebar menu"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="menu" size={22} color="#F8F8F8" />
-              </Pressable>
-            </View>
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <View style={styles.header}>
+        <Pressable
+          style={styles.menuButton}
+          onPress={() => setIsSidebarVisible(v => !v)}
+          accessibilityRole="button"
+          accessibilityLabel="Open sidebar menu"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="menu" size={22} color="#E0FFD4" />
+        </Pressable>
 
-            {/* Category pill — sits in the wider bottom arm of the L */}
-            <View style={styles.pillRow}>
-              <CategoryPill
-                categories={["Trending", "Popular", "New"]}
-                onCategoryChange={handleCategoryChange}
-                width={170}
-                accentColor="#5DD62C"
-              />
-            </View>
-          </View>
+        <Text style={styles.headerTitle}>AfterCredits</Text>
 
-          {/* Title + profile — outside the blob, aligned to the button row height */}
-          <View style={styles.headerTitleRow}>
-            <Text style={styles.title}>GAMES</Text>
-            <Pressable
-              style={styles.profileButton}
-              onPress={() => navigation.navigate("ProfilePage")}
-              accessibilityRole="button"
-              accessibilityLabel="Go to profile"
-            >
-              <Ionicons name="person" size={20} color="#F8F8F8" />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ── Search submitted → inline results ── */}
-        {isSearchSubmitted ? (
-          <InlineSearchResults
-            results={searchResults}
-            isLoading={isSearching}
-            searchQuery={searchQuery}
-            onResultPress={handleSearchResultPress}
-            onClearSearch={handleSearchCancel}
-            theme={{ accent: "#5DD62C" }}
-          />
-        ) : loading || isLoadingMore ? (
-          <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
-        ) : (
-          <View style={styles.listWrapper}>
-            <FlashList
-              data={games}
-              keyExtractor={gameKeyExtractor}
-              estimatedItemSize={CARD_HEIGHT + 12}
-              numColumns={2}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.flashListContent}
-              renderItem={renderGameCard}
-              ListFooterComponent={
-                currentPage > 1 || hasMore ? (
-                  <View style={styles.paginationContainer}>
-                    {currentPage > 1 ? (
-                      <Pressable
-                        style={styles.pageButton}
-                        onPress={handlePrevPage}
-                        accessibilityRole="button"
-                        accessibilityLabel="Previous page"
-                      >
-                        <Ionicons
-                          name="chevron-back"
-                          size={16}
-                          color="#5DD62C"
-                        />
-                        <Text style={styles.pageButtonText}>Prev</Text>
-                      </Pressable>
-                    ) : (
-                      <View style={styles.pageButtonPlaceholder} />
-                    )}
-                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-                    {hasMore ? (
-                      <Pressable
-                        style={styles.pageButton}
-                        onPress={handleLoadMore}
-                        accessibilityRole="button"
-                        accessibilityLabel="Next page"
-                      >
-                        <Text style={styles.pageButtonText}>Next</Text>
-                        <Ionicons
-                          name="chevron-forward"
-                          size={16}
-                          color="#5DD62C"
-                        />
-                      </Pressable>
-                    ) : (
-                      <View style={styles.pageButtonPlaceholder} />
-                    )}
-                  </View>
-                ) : null
-              }
+        <Pressable
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('ProfilePage')}
+          accessibilityRole="button"
+          accessibilityLabel="Go to profile"
+        >
+          {userProfile ? (
+            <Image
+              source={{
+                uri: userProfile.avatar_url ||
+                  `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`,
+              }}
+              style={styles.profileIcon}
             />
-          </View>
-        )}
-      </SafeAreaView>
+          ) : (
+            <View style={styles.profileIconContainer}>
+              <Ionicons name="person-circle-outline" size={48} color={GAME_ACCENT} />
+            </View>
+          )}
+        </Pressable>
+      </View>
 
-      {/* Search Bar */}
+      {/* ── Content ─────────────────────────────────────────────────────── */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {isSearchSubmitted ? (
+            <InlineSearchResults
+              results={searchResults}
+              isLoading={isSearching}
+              searchQuery={searchQuery}
+              onResultPress={handleSearchResultPress}
+              onClearSearch={handleSearchCancel}
+              theme={GAME_THEME}
+            />
+          ) : (
+            <>
+              {/* ── Hero card: category pill + title ── */}
+              <View style={styles.heroSection}>
+                <View style={styles.heroCard}>
+                  <View style={styles.heroRow}>
+                    <CategoryPill
+                      categories={['Trending', 'Popular', 'New']}
+                      onCategoryChange={handleCategoryChange}
+                      width={160}
+                      accentColor={GAME_ACCENT}
+                    />
+                    <Text style={styles.gamesText}>GAMES</Text>
+                  </View>
+                </View>
+              </View>
+
+              {isLoading || isLoadingMore ? (
+                <SkeletonLoader cardHeight={cardHeight} count={6} />
+              ) : error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <Pressable
+                    style={styles.retryButton}
+                    onPress={() => fetchGames(selectedCategory)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading games"
+                  >
+                    <Text style={styles.retryText}>Retry</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <View style={styles.contentWrapper}>
+                  <FlashList
+                    data={games}
+                    renderItem={renderGameCard}
+                    keyExtractor={keyExtractor}
+                    estimatedItemSize={cardHeight + 16}
+                    numColumns={2}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.flashListContent}
+                    ListFooterComponent={
+                      currentPage > 1 || hasMore ? (
+                        <View style={styles.paginationContainer}>
+                          {currentPage > 1 ? (
+                            <Pressable
+                              style={styles.pageButton}
+                              onPress={handlePrevPage}
+                              accessibilityRole="button"
+                              accessibilityLabel="Previous page"
+                            >
+                              <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
+                              <Text style={styles.pageButtonText}>Prev</Text>
+                            </Pressable>
+                          ) : (
+                            <View style={styles.pageButtonPlaceholder} />
+                          )}
+
+                          <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+                          {hasMore ? (
+                            <Pressable
+                              style={styles.pageButton}
+                              onPress={handleLoadMore}
+                              accessibilityRole="button"
+                              accessibilityLabel="Next page"
+                            >
+                              <Text style={styles.pageButtonText}>Next</Text>
+                              <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
+                            </Pressable>
+                          ) : (
+                            <View style={styles.pageButtonPlaceholder} />
+                          )}
+                        </View>
+                      ) : null
+                    }
+                  />
+                </View>
+              )}
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* ── Search bar ─────────────────────────────────────────────────── */}
       <KeyboardAwareSearchBar
         theme="games"
         placeholder="Search games..."
@@ -440,7 +426,7 @@ const GameHome = ({ navigation }) => {
         tabBarHeight={tabBarHeight}
       />
 
-      {/* Search Suggestions Overlay */}
+      {/* ── Search suggestions overlay ─────────────────────────────────── */}
       {!isSearchSubmitted && (searchQuery.length >= 2 || isSearching) && (
         <SearchSuggestionsOverlay
           results={searchResults}
@@ -448,580 +434,293 @@ const GameHome = ({ navigation }) => {
           searchQuery={searchQuery}
           onResultPress={handleSearchResultPress}
           onClose={handleSearchCancel}
-          theme={{ accent: "#5DD62C" }}
+          theme={GAME_THEME}
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <SideBar
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
-        activeSection={activeSection}
+        activeSection="game"
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
+// ─── Styles ────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F0F0F",
-  },
-  safeArea: {
-    flex: 1,
+    backgroundColor: GAME_BG,
   },
 
-  // ── Header layout ──
-  headerArea: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginHorizontal: 16,
-    marginTop: 8,
+  // ── Background blobs ──
+  backgroundShapes: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    height: 400,
+    overflow: 'hidden',
   },
-  // L-blob bounding box — width = widest part (pill arm), height = btn + pill
-  lBlobWrapper: {
-    width: L_PILL_W,
-    height: L_TOTAL_H,
+  blobShape1: {
+    position: 'absolute',
+    top: -48, right: -80,
+    width: 304, height: 304,
+    backgroundColor: '#1A5C0D',
+    borderRadius: 152,
+    borderCurve: 'continuous',
+    opacity: 0.22,
+    transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
   },
-  // Top section of L: narrow, centres the hamburger button
-  lBtnArea: {
-    width: L_BTN_W,
-    height: L_BTN_H,
-    alignItems: "center",
-    justifyContent: "center",
+  blobShape2: {
+    position: 'absolute',
+    top: 96, left: -96,
+    width: 248, height: 248,
+    backgroundColor: '#3BA818',
+    borderRadius: 124,
+    borderCurve: 'continuous',
+    opacity: 0.12,
+    transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
   },
-  // Title + profile sit to the right of the blob, same height as button row
-  headerTitleRow: {
-    flex: 1,
-    height: L_BTN_H,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
+  blobShape3: {
+    position: 'absolute',
+    top: 200, right: 48,
+    width: 200, height: 200,
+    backgroundColor: GAME_ACCENT,
+    borderRadius: 100,
+    borderCurve: 'continuous',
+    opacity: 0.07,
+  },
+
+  // ── Header ──
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    zIndex: 10,
   },
   menuButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 48, height: 48,
+    borderRadius: 24,
+    borderCurve: 'continuous',
+    backgroundColor: '#1C2A1C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(93,214,44,0.18)',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.25)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 48, height: 48,
+    borderRadius: 24,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  profileIcon: {
+    width: 48, height: 48,
+    borderRadius: 24,
+    borderCurve: 'continuous',
+    backgroundColor: GAME_ACCENT2,
+  },
+  profileIconContainer: {
+    width: 48, height: 48,
+    borderRadius: 24,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  // ── CategoryPill — bottom arm of L ──
-  pillRow: {
-    paddingHorizontal: 8,
+  // ── Hero section ──
+  scrollView: { flex: 1 },
+  heroSection: {
+    paddingHorizontal: 16,
     paddingTop: 4,
-    alignItems: "flex-start",
+    paddingBottom: 8,
   },
-
-  // ── Title style ──
-  title: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#F8F8F8",
-    letterSpacing: 4,
-    textShadowColor: "#5DD62C",
+  heroCard: {
+    backgroundColor: '#1A221A',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: -8, height: -8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(93,214,44,0.14)',
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  gamesText: {
+    fontSize: 36,
+    fontFamily: 'Genjiro',
+    color: '#E8FFD8',
+    letterSpacing: 3,
+    textShadowColor: 'rgba(93,214,44,0.45)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
 
-  // Category Pills - Arcade Buttons
-  categoryContainer: {
-    flexDirection: "row",
+  // ── Content wrapper ──
+  contentWrapper: {
+    flex: 1,
     paddingHorizontal: 16,
-    gap: 12,
-    marginTop: 8,
   },
-  categoryButton: {
-    flex: 1,
-    height: 56,
-    borderRadius: 8,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  categoryButtonActive: {
-    transform: [{ translateY: 2 }],
-  },
-  categoryButtonPressed: {
-    transform: [{ translateY: 4 }],
-  },
-  categoryGradient: {
-    flex: 1,
-    borderRadius: 8,
-    borderCurve: "continuous",
-    borderWidth: 2,
-    borderColor: "#7C3AED40",
-  },
-  categoryHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 8,
-    backgroundColor: "#FFFFFF20",
-    borderTopLeftRadius: 6,
-    borderTopRightRadius: 6,
-  },
-  categoryFace: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  categoryText: {
-    fontFamily: "System",
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#94A3B8",
-    letterSpacing: 2,
-  },
-  categoryTextActive: {
-    color: "#E2E8F0",
-    textShadowColor: "#7C3AED",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  categoryGlow: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: "#7C3AED",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
+  flashListContent: {
+    paddingBottom: 80,
   },
 
-  // Featured Section
-  featuredSection: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  sectionTitle: {
-    fontFamily: "System",
-    fontSize: 18,
-    fontWeight: "900",
-    color: "#E2E8F0",
-    letterSpacing: 3,
-    marginBottom: 16,
-    textShadowColor: "#7C3AED",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  featuredCard: {
-    height: 200,
+  // ── Game card ──
+  gameCard: {
+    flex: 1,
+    margin: 6,
     borderRadius: 16,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  featuredGradient: {
-    flex: 1,
-    padding: 3,
-  },
-  holoBorder: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-    borderCurve: "continuous",
-    borderWidth: 2,
-    borderColor: "#7C3AED",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-  },
-  featuredImage: {
-    position: "absolute",
-    top: 3,
-    left: 3,
-    right: 3,
-    bottom: 3,
-    borderRadius: 13,
-    borderCurve: "continuous",
-  },
-  featuredImageOverlay: {
-    position: "absolute",
-    top: 3,
-    left: 3,
-    right: 3,
-    bottom: 3,
-    borderRadius: 13,
-    borderCurve: "continuous",
-  },
-  featuredContent: {
-    flex: 1,
-    borderRadius: 13,
-    borderCurve: "continuous",
-    padding: 20,
-    justifyContent: "space-between",
-  },
-  featuredTitle: {
-    fontFamily: "System",
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#E2E8F0",
-    letterSpacing: 1,
-  },
-  scoreBadge: {
-    position: "absolute",
-    top: 20,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderCurve: "continuous",
-    overflow: "hidden",
-  },
-  scoreGradient: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#0F0F23",
-  },
-  scoreText: {
-    fontFamily: "System",
-    fontSize: 20,
-    fontWeight: "900",
-    color: "#FFFFFF",
-  },
-  platformRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  platformBadge: {
-    backgroundColor: "#7C3AED40",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderCurve: "continuous",
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    backgroundColor: GAME_CARD_BG,
     borderWidth: 1,
-    borderColor: "#7C3AED",
-  },
-  platformText: {
-    fontFamily: "System",
-    fontSize: 10,
-    fontWeight: "700",
-    color: "#A78BFA",
-    letterSpacing: 1,
-  },
-
-  // ── FlashList grid wrapper — large shape behind cards ──
-  listWrapper: {
-    flex: 1,
-    marginHorizontal: 12,
-    marginTop: 16,
-    backgroundColor: "#1A2818", // Much lighter/visible dark green
-    borderRadius: 32,
-    borderWidth: 1.5,
-    borderColor: "#33741B",
-    overflow: "hidden",
-    shadowColor: "#5DD62C",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    borderColor: 'rgba(255,255,255,0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 4,
   },
-  flashListContent: {
-    paddingBottom: 100,
-    paddingTop: 16,
-    paddingHorizontal: 12,
-  },
-  gridSection: {
-    paddingHorizontal: 16,
-    marginTop: 32,
-  },
-  loadingContainer: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  loadingText: {
-    fontFamily: "System",
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#7C3AED",
-    letterSpacing: 3,
-    marginTop: 16,
-  },
-  gameGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-  },
-  gameCard: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    borderRadius: 12,
-    borderCurve: "continuous",
-    overflow: "hidden",
-    margin: 6,
-  },
   gameCardPressed: {
-    transform: [{ scale: 0.95 }],
-  },
-  cardGradient: {
-    flex: 1,
-    padding: 4,
-  },
-  cardBezel: {
-    flex: 1,
-    backgroundColor: "#0F0F23",
-    borderRadius: 8,
-    borderCurve: "continuous",
-    overflow: "hidden",
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   cardImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 8,
-    borderCurve: "continuous",
-  },
-  cardImageOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  cardInnerShadow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 20,
-    backgroundColor: "#00000040",
-  },
-  cardContent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-  },
-  cardTitle: {
-    fontFamily: "System",
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#E2E8F0",
-    lineHeight: 18,
-  },
-  ratingRow: {
-    flexDirection: "row",
-    gap: 2,
-  },
-  miniScoreBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#7C3AED",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderCurve: "continuous",
-  },
-  miniScoreText: {
-    fontFamily: "System",
-    fontSize: 12,
-    fontWeight: "900",
-    color: "#FFFFFF",
-  },
-  cardAccent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: "#7C3AED",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-  },
-  // ── Upcoming Games Section ──
-  upcomingSection: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-  },
-  upcomingSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  upcomingSectionTitleLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  upcomingSectionTitle: {
-    fontFamily: "System",
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#A78BFA",
-    letterSpacing: 3,
-  },
-  upcomingSectionSubtitle: {
-    fontFamily: "System",
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-  viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    backgroundColor: "rgba(124, 58, 237, 0.15)",
-    borderRadius: 8,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.3)",
-  },
-  viewAllText: {
-    fontFamily: "System",
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#A78BFA",
-    letterSpacing: 0.3,
-  },
-  upcomingCard: {
-    width: 150,
-    height: 200,
-    borderRadius: 12,
-    borderCurve: "continuous",
-    overflow: "hidden",
-    marginRight: 12,
-    backgroundColor: "#1E1E3F",
-    borderWidth: 1,
-    borderColor: "rgba(124, 58, 237, 0.2)",
-  },
-  upcomingCardImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1E1E3F",
-  },
-  upcomingCardOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  upcomingCardContent: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-  },
-  upcomingCardTitle: {
-    fontFamily: "System",
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#E2E8F0",
-    lineHeight: 17,
-  },
-  upcomingCardDate: {
-    fontFamily: "System",
-    fontSize: 11,
-    color: "#A78BFA",
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-  // ── Gaming News Section ──
-  newsSection: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-    paddingBottom: 24,
-  },
-
-  // ── FlashList grid ──
-  listWrapper: {
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  flashListContent: {
-    paddingBottom: 100,
-    paddingTop: 8,
-  },
-  cardOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
   },
   cardPlaceholder: {
-    backgroundColor: "#1E1E3F",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0F160F',
   },
-  metacriticBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
+  cardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  scoreBadge: {
+    position: 'absolute',
+    top: 8, right: 8,
+    minWidth: 30,
     paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 6,
-    borderCurve: "continuous",
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  metacriticText: {
-    fontSize: 11,
-    fontWeight: "900",
-    color: "#fff",
+  scoreText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  cardContent: {
+    position: 'absolute',
+    left: 10, right: 10, bottom: 10,
+  },
+  cardTitle: {
+    color: '#F0FFF0',
+    fontSize: 13,
+    fontWeight: '800',
+    lineHeight: 18,
+    marginBottom: 5,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  cardAccentStripe: {
+    position: 'absolute',
+    left: 0, right: 0, bottom: 0,
+    height: 3,
+    backgroundColor: GAME_ACCENT2,
   },
 
-  // ── Pagination row ──
+  // ── Error ──
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 96,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff6b6b',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: GAME_ACCENT2,
+    paddingHorizontal: 24,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderCurve: 'continuous',
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // ── Pagination ──
   paginationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 20,
     paddingHorizontal: 8,
   },
   pageButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    backgroundColor: "rgba(124,58,237,0.15)",
+    backgroundColor: 'rgba(93,214,44,0.12)',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
-    borderCurve: "continuous",
+    borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: "rgba(124,58,237,0.35)",
-    minWidth: 90,
-    justifyContent: "center",
-  },
-  pageButtonPlaceholder: {
+    borderColor: 'rgba(93,214,44,0.28)',
     minWidth: 90,
   },
+  pageButtonPlaceholder: { minWidth: 90 },
   pageButtonText: {
-    color: "#A78BFA",
+    color: GAME_ACCENT,
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: '600',
+    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
   },
   pageIndicator: {
-    color: "#888",
+    color: '#7A9B7A',
     fontSize: 14,
+    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
   },
 });

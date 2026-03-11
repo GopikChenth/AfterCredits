@@ -824,8 +824,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontFamily: 'NinjaNaruto',
-    color: '#fff',
+    fontFamily: "Genjiro",
+    color: "#fff",
     letterSpacing: 3,
   },
   scrollView: {
@@ -982,8 +982,8 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 16,
     letterSpacing: 2,
-    fontFamily: 'NinjaNaruto',
-    color: '#FFFFFF',
+    fontFamily: "Genjiro",
+    color: "#FFFFFF",
     flex: 1,
     marginRight: 12,
   },

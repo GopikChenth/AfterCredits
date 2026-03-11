@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "Genjiro",
     color: "#fff",
     letterSpacing: 0.5,
   },
@@ -937,7 +937,7 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontFamily: "Genjiro",
     color: "#fff",
     flex: 1,
     marginRight: 12,
