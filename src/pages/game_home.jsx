@@ -41,45 +41,49 @@ const GAME_CARD_BG  = '#111711';
 const GAME_SURFACE  = '#1E261E';
 
 // ── Inverted-L panel constants ──
-const STEP_X  = 140;  // how far from the left the narrow top section starts
-const STEP_Y  = 68;   // height of the narrow top section before it steps out
+const STEP_X  = 200;  // how far from the left the narrow top section starts
+const STEP_Y  = 72;   // height of the narrow top section before it steps out
+const R       = 22;   // corner radius applied to every corner
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH  = (SCREEN_WIDTH - 56) / 2;
-const CARD_HEIGHT = CARD_WIDTH * 1.35;
-
-const GAME_THEME = {
-  accent: GAME_ACCENT,
-};
-
-// Build the Skia path for the inverted-L panel:
-//
-//        (stepX, 0) ─────── (w, 0)
-//        |                       |
-//        |   GAMES title         |
-//        |                       |
-// (0, stepY) ────────────────────|
-// |                              |
-// |    category pill + cards     |
-// |                              |
-// (0, h) ─────────────── (w, h)
-//
 const buildPanelPath = (w, h) => {
   const p = Skia.Path.Make();
-  // Start at top-left of the narrow section
-  p.moveTo(STEP_X, 0);
-  // Top edge
-  p.lineTo(w, 0);
-  // Right edge all the way down
-  p.lineTo(w, h);
-  // Bottom edge
-  p.lineTo(0, h);
-  // Left edge up to the step
-  p.lineTo(0, STEP_Y);
-  // Step inward (horizontal line to the right)
-  p.lineTo(STEP_X, STEP_Y);
-  // Up to starting point
-  p.lineTo(STEP_X, 0);
+
+  //  Corners (clockwise from top of the step):
+  //
+  //        A ─────── B
+  //        |         |         A = (STEP_X, 0)  — top-left of narrow arm
+  //        |         |         B = (w, 0)        — top-right
+  //  G────H|         |         H = (STEP_X, STEP_Y) — inner step corner
+  //  |       C=w,STEP_Y        G = (0, STEP_Y)  — outer step corner
+  //  |               |         F = (w, h)        — bottom-right
+  //  F───────────────E         E = (0, h)        — bottom-left
+
+  // Move to just after corner A (top-left of narrow arm)
+  p.moveTo(STEP_X + R, 0);
+  // Top edge → B
+  p.lineTo(w - R, 0);
+  // B: top-right corner (rounded)
+  p.quadTo(w, 0, w, R);
+  // Right edge down to just above F
+  p.lineTo(w, h - R);
+  // F: bottom-right corner (rounded)
+  p.quadTo(w, h, w - R, h);
+  // Bottom edge → E
+  p.lineTo(R, h);
+  // E: bottom-left corner (rounded)
+  p.quadTo(0, h, 0, h - R);
+  // Left edge up to just below G
+  p.lineTo(0, STEP_Y + R);
+  // G: outer step corner — convex rounding going inward
+  p.quadTo(0, STEP_Y, R, STEP_Y);
+  // Step ledge → just before H
+  p.lineTo(STEP_X - R, STEP_Y);
+  // H: inner step corner — concave, so control point is the corner itself
+  p.quadTo(STEP_X, STEP_Y, STEP_X, STEP_Y - R);
+  // Up to just below A
+  p.lineTo(STEP_X, R);
+  // A: top-left of narrow arm (rounded)
+  p.quadTo(STEP_X, 0, STEP_X + R, 0);
   p.close();
   return p;
 };
@@ -633,6 +637,7 @@ const styles = StyleSheet.create({
   },
   flashListContent: {
     paddingBottom: 80,
+    paddingHorizontal: 10,
   },
 
   // ── Game card ──
