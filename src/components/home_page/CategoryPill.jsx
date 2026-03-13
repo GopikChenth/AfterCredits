@@ -106,33 +106,26 @@ const CategoryPill = ({
   // Swipe gesture handler
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Detect horizontal swipe (more than 5px)
-        return Math.abs(gestureState.dx) > 5;
+        // Only claim horizontal swipes
+        return Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-        // Capture horizontal swipes before parent ScrollView
-        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-      },
-      onPanResponderGrant: () => {
-        // User started touching
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // Lower threshold for better mobile responsiveness
-        const swipeThreshold = 30;
+        const swipeThreshold = 20;
+        const velocityThreshold = 0.3;
         
-        if (gestureState.dx > swipeThreshold) {
+        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
           // Swiped right -> previous category
           changeCategory(-1);
-        } else if (gestureState.dx < -swipeThreshold) {
+        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
           // Swiped left -> next category
           changeCategory(1);
         }
-      },
-      onPanResponderTerminate: () => {
-        // Gesture was interrupted
       },
     })
   ).current;

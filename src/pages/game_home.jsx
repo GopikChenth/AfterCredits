@@ -35,14 +35,14 @@ import {
 import { searchMedia, debounce } from '../services/search';
 
 const GAME_ACCENT   = '#5DD62C';
-const GAME_ACCENT2  = '#3BA818';
-const GAME_BG       = '#0B0F0B';
-const GAME_CARD_BG  = '#111711';
-const GAME_SURFACE  = '#1E261E';
+const GAME_ACCENT2  = '#337418';
+const GAME_BG       = '#0F0F0F';
+const GAME_CARD_BG  = '#202020';
+const GAME_TEXT     = '#F8F8F8';
 
 // ── Inverted-L panel constants ──
-const STEP_X  = 200;  // how far from the left the narrow top section starts
-const STEP_Y  = 72;   // height of the narrow top section before it steps out
+const STEP_X  = 178;  // how far from the left the narrow top section starts
+const STEP_Y  = 76;   // height of the narrow top section before it steps out
 const R       = 22;   // corner radius applied to every corner
 
 const buildPanelPath = (w, h) => {
@@ -112,12 +112,12 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
         />
       ) : (
         <View style={[styles.cardImage, styles.cardPlaceholder]}>
-          <Ionicons name="game-controller-outline" size={32} color="rgba(93,214,44,0.35)" />
+          <Ionicons name="game-controller-outline" size={32} color="#337418" />
         </View>
       )}
 
       <LinearGradient
-        colors={['transparent', 'rgba(11,15,11,0.78)', 'rgba(11,15,11,0.97)']}
+        colors={['transparent', '#0F0F0F']}
         style={styles.cardOverlay}
       />
 
@@ -127,7 +127,7 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
             styles.scoreBadge,
             {
               backgroundColor:
-                score >= 75 ? '#3BA818' : score >= 50 ? '#FFBE0B' : '#EF4444',
+                score >= 75 ? '#337418' : score >= 50 ? '#FFBE0B' : '#EF4444',
             },
           ]}
         >
@@ -139,20 +139,7 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
         <Text style={styles.cardTitle} numberOfLines={2}>
           {game.name}
         </Text>
-        <View style={styles.ratingRow}>
-          {[...Array(5)].map((_, i) => (
-            <Ionicons
-              key={i}
-              name={i < Math.round(game.rating || 0) ? 'star' : 'star-outline'}
-              size={11}
-              color="#FFBE0B"
-            />
-          ))}
-        </View>
       </View>
-
-      {/* bottom accent stripe — green instead of purple */}
-      <View style={styles.cardAccentStripe} />
     </Pressable>
   );
 });
@@ -372,104 +359,101 @@ const GameHome = ({ navigation }) => {
               theme={GAME_THEME}
             />
           ) : (
-            <>
-              {/* ── Skia panel wrapping title + cards ── */}
-              <View
-                style={styles.panelShell}
-                onLayout={e => {
-                  const { width, height } = e.nativeEvent.layout;
-                  setPanelSize(p =>
-                    p.width === width && p.height === height ? p : { width, height }
-                  );
-                }}
-              >
-                {/* Skia canvas drawing the chamfered dark panel */}
-                {panelPath ? (
-                  <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-                    <SkiaPath path={panelPath} color="#0E170E" />
-                    <SkiaPath
-                      path={panelPath}
-                      color="rgba(93,214,44,0.18)"
-                      style="stroke"
-                      strokeWidth={1.5}
-                    />
-                  </Canvas>
-                ) : null}
-
-                {/* ── Hero row: category pill + GAMES title ── */}
-                <View style={styles.heroRow}>
-                  <CategoryPill
-                    categories={['Trending', 'Popular', 'New']}
-                    onCategoryChange={handleCategoryChange}
-                    width={160}
-                    accentColor={GAME_ACCENT}
-                  />
-                  <Text style={styles.gamesText}>GAMES</Text>
-                </View>
-
-                {/* ── Cards area ── */}
-                {isLoading || isLoadingMore ? (
-                  <SkeletonLoader cardHeight={cardHeight} count={6} />
-                ) : error ? (
-                  <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <Pressable
-                      style={styles.retryButton}
-                      onPress={() => fetchGames(selectedCategory)}
-                      accessibilityRole="button"
-                      accessibilityLabel="Retry loading games"
-                    >
-                      <Text style={styles.retryText}>Retry</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <FlashList
-                    data={games}
-                    renderItem={renderGameCard}
-                    keyExtractor={keyExtractor}
-                    estimatedItemSize={cardHeight + 16}
-                    numColumns={2}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.flashListContent}
-                    ListFooterComponent={
-                      currentPage > 1 || hasMore ? (
-                        <View style={styles.paginationContainer}>
-                          {currentPage > 1 ? (
-                            <Pressable
-                              style={styles.pageButton}
-                              onPress={handlePrevPage}
-                              accessibilityRole="button"
-                              accessibilityLabel="Previous page"
-                            >
-                              <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
-                              <Text style={styles.pageButtonText}>Prev</Text>
-                            </Pressable>
-                          ) : (
-                            <View style={styles.pageButtonPlaceholder} />
-                          )}
-
-                          <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                          {hasMore ? (
-                            <Pressable
-                              style={styles.pageButton}
-                              onPress={handleLoadMore}
-                              accessibilityRole="button"
-                              accessibilityLabel="Next page"
-                            >
-                              <Text style={styles.pageButtonText}>Next</Text>
-                              <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
-                            </Pressable>
-                          ) : (
-                            <View style={styles.pageButtonPlaceholder} />
-                          )}
-                        </View>
-                      ) : null
-                    }
-                  />
-                )}
+            <View
+              style={styles.panelShell}
+              onLayout={e => {
+                const { width, height } = e.nativeEvent.layout;
+                setPanelSize(p =>
+                  p.width === width && p.height === height ? p : { width, height }
+                );
+              }}
+            >
+              {/* ── Hero row: always mounted so CategoryPill keeps its index ── */}
+              <View style={styles.heroRow}>
+                <CategoryPill
+                  categories={['Trending', 'Popular', 'New']}
+                  onCategoryChange={handleCategoryChange}
+                  width={160}
+                  accentColor={GAME_ACCENT}
+                />
+                <Text style={styles.gamesText}>GAMES</Text>
               </View>
-            </>
+
+              {/* Skia canvas — behind content */}
+              {panelPath ? (
+                <Canvas style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
+                  <SkiaPath path={panelPath} color="#337418" />
+                  <SkiaPath
+                    path={panelPath}
+                    color="#337418"
+                    style="stroke"
+                    strokeWidth={1.5}
+                  />
+                </Canvas>
+              ) : null}
+
+              {/* ── Cards / skeleton area ── */}
+              {isLoading || isLoadingMore ? (
+                <SkeletonLoader cardHeight={cardHeight} count={6} />
+              ) : error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                  <Pressable
+                    style={styles.retryButton}
+                    onPress={() => fetchGames(selectedCategory)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Retry loading games"
+                  >
+                    <Text style={styles.retryText}>Retry</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <FlashList
+                  data={games}
+                  renderItem={renderGameCard}
+                  keyExtractor={keyExtractor}
+                  estimatedItemSize={cardHeight + 16}
+                  numColumns={2}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.flashListContent}
+                  ListFooterComponent={
+                    currentPage > 1 || hasMore ? (
+                      <View style={styles.paginationContainer}>
+                        {currentPage > 1 ? (
+                          <Pressable
+                            style={styles.pageButton}
+                            onPress={handlePrevPage}
+                            accessibilityRole="button"
+                            accessibilityLabel="Previous page"
+                          >
+                            <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
+                            <Text style={styles.pageButtonText}>Prev</Text>
+                          </Pressable>
+                        ) : (
+                          <View style={styles.pageButtonPlaceholder} />
+                        )}
+
+                        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+                        {hasMore ? (
+                          <Pressable
+                            style={styles.pageButton}
+                            onPress={handleLoadMore}
+                            accessibilityRole="button"
+                            accessibilityLabel="Next page"
+                          >
+                            <Text style={styles.pageButtonText}>Next</Text>
+                            <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
+                          </Pressable>
+                        ) : (
+                          <View style={styles.pageButtonPlaceholder} />
+                        )}
+                      </View>
+                    ) : null
+                  }
+                />
+              )}
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -528,30 +512,30 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -48, right: -80,
     width: 304, height: 304,
-    backgroundColor: '#1A5C0D',
+    backgroundColor: '#337418',
     borderRadius: 152,
     borderCurve: 'continuous',
-    opacity: 0.22,
+    opacity: 0.15,
     transform: [{ scaleX: 1.5 }, { rotate: '25deg' }],
   },
   blobShape2: {
     position: 'absolute',
     top: 96, left: -96,
     width: 248, height: 248,
-    backgroundColor: '#3BA818',
+    backgroundColor: '#337418',
     borderRadius: 124,
     borderCurve: 'continuous',
-    opacity: 0.12,
+    opacity: 0.10,
     transform: [{ scaleY: 1.3 }, { rotate: '-15deg' }],
   },
   blobShape3: {
     position: 'absolute',
     top: 200, right: 48,
     width: 200, height: 200,
-    backgroundColor: GAME_ACCENT,
+    backgroundColor: '#5DD62C',
     borderRadius: 100,
     borderCurve: 'continuous',
-    opacity: 0.07,
+    opacity: 0.06,
   },
 
   // ── Header ──
@@ -567,7 +551,7 @@ const styles = StyleSheet.create({
     width: 48, height: 48,
     borderRadius: 24,
     borderCurve: 'continuous',
-    backgroundColor: '#1C2A1C',
+    backgroundColor: '#337418',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -576,12 +560,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     borderWidth: 1,
-    borderColor: 'rgba(93,214,44,0.18)',
+    borderColor: '#337418',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: GAME_TEXT,
     letterSpacing: 0.5,
   },
   profileButton: {
@@ -614,30 +598,30 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   panelShell: {
     flex: 1,
-    marginHorizontal: 0,
+    marginHorizontal: 12,
     overflow: 'hidden',
   },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingLeft: 12,
+    paddingRight: 12,
     paddingTop: 12,
     paddingBottom: 10,
-    gap: 8,
   },
   gamesText: {
     fontSize: 36,
     fontFamily: 'Genjiro',
-    color: '#E8FFD8',
+    color: GAME_TEXT,
     letterSpacing: 3,
-    textShadowColor: 'rgba(93,214,44,0.45)',
+    textShadowColor: '#337418',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
   flashListContent: {
     paddingBottom: 80,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
   },
 
   // ── Game card ──
@@ -649,10 +633,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: GAME_CARD_BG,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: '#2A2A2A',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -666,7 +650,7 @@ const styles = StyleSheet.create({
   cardPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0F160F',
+    backgroundColor: '#1A1A1A',
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -683,28 +667,17 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 10,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: GAME_TEXT,
   },
   cardContent: {
     position: 'absolute',
     left: 10, right: 10, bottom: 10,
   },
   cardTitle: {
-    color: '#F0FFF0',
+    color: GAME_TEXT,
     fontSize: 13,
     fontWeight: '800',
     lineHeight: 18,
-    marginBottom: 5,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  cardAccentStripe: {
-    position: 'absolute',
-    left: 0, right: 0, bottom: 0,
-    height: 3,
-    backgroundColor: GAME_ACCENT2,
   },
 
   // ── Error ──
