@@ -2,14 +2,12 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
-  ScrollView, 
   Pressable, 
   StyleSheet, 
   Dimensions,
   StatusBar,
   ActivityIndicator,
   Keyboard,
-  Image as RNImage,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -249,6 +247,89 @@ const HomeAnime = ({ navigation }) => {
 
   const animeKeyExtractor = useCallback((item) => item.id.toString(), []);
 
+  const renderListHeader = useCallback(() => (
+    <View style={styles.heroSection}>
+      <View style={styles.heroCard}>
+        <View style={styles.heroRow}>
+          <CategoryPill
+            categories={['Trending', 'Popular', 'New']}
+            onCategoryChange={handleCategoryChange}
+            width={160}
+            accentColor={theme.accent}
+          />
+          <Text style={styles.animeText}>ANIME</Text>
+        </View>
+      </View>
+    </View>
+  ), [handleCategoryChange, theme.accent]);
+
+  const renderListEmpty = useMemo(() => {
+    if (isLoading) {
+      return <SkeletonLoader cardHeight={cardHeight} count={6} />;
+    }
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable 
+            style={styles.retryButton}
+            onPress={() => fetchAnimeData(selectedCategory)}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading anime"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return null;
+  }, [isLoading, error, cardHeight, fetchAnimeData, selectedCategory]);
+
+  const renderListFooter = useMemo(() => {
+    if (!(currentPage > 1 || hasMore)) return null;
+    return (
+      <View style={styles.paginationContainer}>
+        {currentPage > 1 ? (
+          <Pressable
+            style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
+            onPress={handlePrevPage}
+            accessibilityRole="button"
+            accessibilityLabel="Previous page"
+            disabled={isLoadingMore}
+          >
+            <Ionicons name="chevron-back" size={16} color="#A78BFA" />
+            <Text style={styles.loadMoreText}>Prev</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.loadMoreButtonPlaceholder} />
+        )}
+
+        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+        {hasMore ? (
+          <Pressable
+            style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
+            onPress={handleLoadMore}
+            accessibilityRole="button"
+            accessibilityLabel="Next page"
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color="#A78BFA" />
+            ) : (
+              <>
+                <Text style={styles.loadMoreText}>Next</Text>
+                <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
+              </>
+            )}
+          </Pressable>
+        ) : (
+          <View style={styles.loadMoreButtonPlaceholder} />
+        )}
+      </View>
+    );
+  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
@@ -301,12 +382,6 @@ const HomeAnime = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Show full search results page when submitted (Enter pressed) */}
         {isSearchSubmitted ? (
           <InlineSearchResults
             results={searchResults}
@@ -317,88 +392,27 @@ const HomeAnime = ({ navigation }) => {
             theme={theme}
           />
         ) : (
-          <>
-            {/* Hero Section with Neumorphic Design */}
-            <View style={styles.heroSection}>
-              <View style={styles.heroCard}>
-                <View style={styles.heroRow}>
-                  <CategoryPill
-                    categories={['Trending', 'Popular', 'New']}
-                    onCategoryChange={handleCategoryChange}
-                    width={160}
-                    accentColor={theme.accent}
-                  />
-                  <Text style={styles.animeText}>ANIME</Text>
-                </View>
-              </View>
-            </View>
-
-            {isLoading || isLoadingMore ? (
-              <SkeletonLoader cardHeight={cardHeight} count={6} />
-            ) : error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Pressable 
-                  style={styles.retryButton}
-                  onPress={() => fetchAnimeData(selectedCategory)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Retry loading anime"
-                >
-                  <Text style={styles.retryText}>Retry</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.contentWrapper}>
-                {/* Virtualized Grid with FlashList */}
-                <FlashList
-                  data={animeList}
-                  renderItem={renderAnimeCard}
-                  keyExtractor={animeKeyExtractor}
-                  estimatedItemSize={cardHeight + 16}
-                  numColumns={2}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.flashListContent}
-                  ListFooterComponent={
-                    (currentPage > 1 || hasMore) ? (
-                      <View style={styles.paginationContainer}>
-                        {currentPage > 1 ? (
-                          <Pressable
-                            style={styles.loadMoreButton}
-                            onPress={handlePrevPage}
-                            accessibilityRole="button"
-                            accessibilityLabel="Previous page"
-                          >
-                            <Ionicons name="chevron-back" size={16} color="#A78BFA" />
-                            <Text style={styles.loadMoreText}>Prev</Text>
-                          </Pressable>
-                        ) : (
-                          <View style={styles.loadMoreButtonPlaceholder} />
-                        )}
-
-                        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                        {hasMore ? (
-                          <Pressable
-                            style={styles.loadMoreButton}
-                            onPress={handleLoadMore}
-                            accessibilityRole="button"
-                            accessibilityLabel="Next page"
-                          >
-                            <Text style={styles.loadMoreText}>Next</Text>
-                            <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
-                          </Pressable>
-                        ) : (
-                          <View style={styles.loadMoreButtonPlaceholder} />
-                        )}
-                      </View>
-                    ) : null
-                  }
-                />
-              </View>
-            )}
-          </>
+          <View style={styles.contentWrapper}>
+            <FlashList
+              data={animeList}
+              renderItem={renderAnimeCard}
+              keyExtractor={animeKeyExtractor}
+              estimatedItemSize={cardHeight + 16}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.flashListContent}
+              ListHeaderComponent={renderListHeader}
+              ListEmptyComponent={renderListEmpty}
+              ListFooterComponent={renderListFooter}
+              removeClippedSubviews
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={6}
+              updateCellsBatchingPeriod={50}
+              drawDistance={200}
+            />
+          </View>
         )}
-      </ScrollView>
       </KeyboardAvoidingView>
 
 
@@ -536,11 +550,7 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     backgroundColor: '#A78BFA',
   },
-  scrollView: {
-    flex: 1,
-  },
   heroSection: {
-    paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 8,
   },
@@ -570,10 +580,10 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   flashListContent: {
     paddingBottom: 80,
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -639,6 +649,9 @@ const styles = StyleSheet.create({
   },
   loadMoreButtonPlaceholder: {
     minWidth: 90,
+  },
+  loadMoreButtonDisabled: {
+    opacity: 0.6,
   },
   loadMoreText: {
     color: '#A78BFA',

@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import MediaCard from './Card';
 
 /**
@@ -20,6 +21,52 @@ const InlineSearchResults = ({
   onClearSearch,
   theme = { accent: '#FFB3C6' }
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const { cardWrapperWidth, cardWidth, cardHeight } = useMemo(() => {
+    const wrapperWidth = (screenWidth - 32 - 12) / 2; // 32 padding, 12 gap
+    const computedCardWidth = wrapperWidth - 16; // Subtract padding inside wrapper
+    return {
+      cardWrapperWidth: wrapperWidth,
+      cardWidth: computedCardWidth,
+      cardHeight: computedCardWidth * 1.444,
+    };
+  }, [screenWidth]);
+
+  const renderItem = useCallback(({ item, index }) => (
+    <View
+      key={`${item.id}-${index}`}
+      style={[styles.cardWrapper, { width: cardWrapperWidth }]}
+    >
+      <Pressable onPress={() => onResultPress && onResultPress(item)}>
+        <MediaCard
+          theme="anime"
+          title={item.title}
+          year={item.year}
+          imageUrl={item.coverImage}
+          width={cardWidth}
+          height={cardHeight}
+        />
+      </Pressable>
+    </View>
+  ), [cardWrapperWidth, cardWidth, cardHeight, onResultPress]);
+
+  const listHeader = useMemo(() => (
+    <View style={styles.header}>
+      <View>
+        <Text style={styles.headerTitle}>Search Results</Text>
+        <Text style={styles.headerCount}>
+          {results.length} found for "{searchQuery}"
+        </Text>
+      </View>
+      <Pressable 
+        onPress={onClearSearch}
+        style={styles.clearButton}
+      >
+        <Text style={styles.clearButtonText}>✕ Clear</Text>
+      </Pressable>
+    </View>
+  ), [results.length, searchQuery, onClearSearch]);
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -47,51 +94,17 @@ const InlineSearchResults = ({
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Search Results</Text>
-          <Text style={styles.headerCount}>
-            {results.length} found for "{searchQuery}"
-          </Text>
-        </View>
-        <Pressable 
-          onPress={onClearSearch}
-          style={styles.clearButton}
-        >
-          <Text style={styles.clearButtonText}>✕ Clear</Text>
-        </Pressable>
-      </View>
-
-      {/* Results Grid */}
-      <View style={styles.gridContainer}>
-        {results.map((item, index) => {
-          const { width: screenWidth } = Dimensions.get('window');
-          const cardWrapperWidth = (screenWidth - 32 - 12) / 2; // 32 = padding, 12 = gap between columns
-          const cardWidth = cardWrapperWidth - 16; // Subtract padding inside wrapper
-          const cardHeight = cardWidth * 1.444; // 9:13 aspect ratio
-          
-          return (
-            <View
-              key={`${item.id}-${index}`}
-              style={[styles.cardWrapper, { width: cardWrapperWidth }]}
-            >
-              <Pressable
-                onPress={() => onResultPress && onResultPress(item)}
-              >
-                <MediaCard
-                  theme="anime"
-                  title={item.title}
-                  year={item.year}
-                  imageUrl={item.coverImage}
-                  width={cardWidth}
-                  height={cardHeight}
-                />
-              </Pressable>
-            </View>
-          );
-        })}
-      </View>
+      <FlashList
+        data={results}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        estimatedItemSize={cardHeight + 24}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.columnWrapper}
+      />
     </View>
   );
 };
@@ -130,9 +143,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  listContent: {
+    paddingBottom: 24,
+  },
+  columnWrapper: {
     paddingHorizontal: 16,
     justifyContent: 'space-between',
   },

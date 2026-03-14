@@ -232,12 +232,12 @@ export const KeyboardAwareSearchBar = ({
   tabBarHeight = 0,
   ...props 
 }) => {
-  const bottomAnim = useRef(new Animated.Value(defaultBottom)).current;
+  const translateAnim = useRef(new Animated.Value(0)).current;
   const keyboardListenersRef = useRef({ show: null, hide: null });
 
   useEffect(() => {
     // Reset position on mount/hot reload
-    bottomAnim.setValue(defaultBottom);
+    translateAnim.setValue(0);
     
     const keyboardShowEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const keyboardHideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -246,20 +246,21 @@ export const KeyboardAwareSearchBar = ({
     const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
       const targetPosition = keyboardHeight - tabBarHeight + keyboardOffset;
+      const translateY = -(targetPosition - defaultBottom);
       
-      Animated.timing(bottomAnim, {
-        toValue: targetPosition,
+      Animated.timing(translateAnim, {
+        toValue: translateY,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
     // Keyboard hide handler
     const handleKeyboardHide = () => {
-      Animated.timing(bottomAnim, {
-        toValue: defaultBottom,
+      Animated.timing(translateAnim, {
+        toValue: 0,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
@@ -272,10 +273,15 @@ export const KeyboardAwareSearchBar = ({
       keyboardListenersRef.current.show?.remove();
       keyboardListenersRef.current.hide?.remove();
     };
-  }, [defaultBottom, keyboardOffset, bottomAnim]);
+  }, [defaultBottom, keyboardOffset, tabBarHeight, translateAnim]);
 
   return (
-    <Animated.View style={[styles.keyboardAwareContainer, { bottom: bottomAnim }]}>
+    <Animated.View
+      style={[
+        styles.keyboardAwareContainer,
+        { bottom: defaultBottom, transform: [{ translateY: translateAnim }] },
+      ]}
+    >
       <SearchBar {...props} />
     </Animated.View>
   );

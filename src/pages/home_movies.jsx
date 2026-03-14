@@ -3,12 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Dimensions,
   StatusBar,
-  Image as RNImage,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -210,6 +209,54 @@ const HomeMovies = ({ navigation }) => {
 
   const movieKeyExtractor = useCallback((item) => item.id.toString(), []);
 
+  const renderListEmpty = useCallback(() => {
+    if (loading && movies.length === 0) {
+      return <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />;
+    }
+    return null;
+  }, [loading, movies.length]);
+
+  const renderListFooter = useCallback(() => {
+    if (!(currentPage > 1 || hasMore)) return null;
+    return (
+      <View style={styles.paginationContainer}>
+        {currentPage > 1 ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handlePrevPage}
+            accessibilityRole="button"
+            accessibilityLabel="Previous page"
+            disabled={isLoadingMore}
+          >
+            <Ionicons name="chevron-back" size={16} color={ACCENT} />
+            <Text style={styles.pageButtonText}>Prev</Text>
+          </Pressable>
+        ) : <View style={styles.pageButtonPlaceholder} />}
+
+        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+        {hasMore ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handleLoadMore}
+            accessibilityRole="button"
+            accessibilityLabel="Next page"
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color={ACCENT} />
+            ) : (
+              <>
+                <Text style={styles.pageButtonText}>Next</Text>
+                <Ionicons name="chevron-forward" size={16} color={ACCENT} />
+              </>
+            )}
+          </Pressable>
+        ) : <View style={styles.pageButtonPlaceholder} />}
+      </View>
+    );
+  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+
   // ── Render ──
   return (
     <View style={styles.container}>
@@ -276,8 +323,6 @@ const HomeMovies = ({ navigation }) => {
             onClearSearch={handleSearchCancel}
             theme={{ accent: ACCENT }}
           />
-        ) : loading || isLoadingMore ? (
-          <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
         ) : (
           <View style={styles.listWrapper}>
             <FlashList
@@ -288,27 +333,14 @@ const HomeMovies = ({ navigation }) => {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.flashListContent}
               renderItem={renderMovieCard}
-              ListFooterComponent={
-                (currentPage > 1 || hasMore) ? (
-                  <View style={styles.paginationContainer}>
-                    {currentPage > 1 ? (
-                      <Pressable style={styles.pageButton} onPress={handlePrevPage} accessibilityRole="button" accessibilityLabel="Previous page">
-                        <Ionicons name="chevron-back" size={16} color={ACCENT} />
-                        <Text style={styles.pageButtonText}>Prev</Text>
-                      </Pressable>
-                    ) : <View style={styles.pageButtonPlaceholder} />}
-
-                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                    {hasMore ? (
-                      <Pressable style={styles.pageButton} onPress={handleLoadMore} accessibilityRole="button" accessibilityLabel="Next page">
-                        <Text style={styles.pageButtonText}>Next</Text>
-                        <Ionicons name="chevron-forward" size={16} color={ACCENT} />
-                      </Pressable>
-                    ) : <View style={styles.pageButtonPlaceholder} />}
-                  </View>
-                ) : null
-              }
+              ListEmptyComponent={renderListEmpty}
+              ListFooterComponent={renderListFooter}
+              removeClippedSubviews
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={6}
+              updateCellsBatchingPeriod={50}
+              drawDistance={200}
             />
           </View>
         )}
@@ -527,6 +559,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,107,53,0.3)',
     minWidth: 90,
     justifyContent: 'center',
+  },
+  pageButtonDisabled: {
+    opacity: 0.6,
   },
   pageButtonPlaceholder: { minWidth: 90 },
   pageButtonText: {

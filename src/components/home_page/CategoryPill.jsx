@@ -20,42 +20,44 @@ const CategoryPill = ({
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hintAnim = useRef(new Animated.Value(0)).current;
   const hasInteracted = useRef(false); // Stop hinting once user swipes
+  const hintLoopRef = useRef(null);
 
-  const runHintAnimation = () => {
-    Animated.sequence([
+  // Fire once on mount after 600ms, then loop every 5s until user swipes
+  useEffect(() => {
+    const sequence = Animated.sequence([
       Animated.timing(hintAnim, { toValue: -8, duration: 150, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: 8,  duration: 200, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: -5, duration: 150, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: 5,  duration: 150, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: 0,  duration: 120, useNativeDriver: true }),
-    ]).start();
-  };
+      Animated.delay(5000),
+    ]);
 
-  // Fire once on mount after 600ms, then repeat every 5s until user swipes
-  useEffect(() => {
-    const initial = setTimeout(runHintAnimation, 600);
-    const interval = setInterval(() => {
-      if (!hasInteracted.current) runHintAnimation();
-    }, 5000);
+    hintLoopRef.current = Animated.loop(sequence, { resetBeforeIteration: true });
+    const initial = setTimeout(() => {
+      if (!hasInteracted.current) {
+        hintLoopRef.current?.start();
+      }
+    }, 600);
+
     return () => {
       clearTimeout(initial);
-      clearInterval(interval);
+      hintLoopRef.current?.stop();
     };
-  }, []);
+  }, [hintAnim]);
 
   const changeCategory = (direction) => {
     const newIndex = currentIndexRef.current + direction;
     
     // Boundary check
-    if (newIndex < 0 || newIndex >= categories.length) {
-      console.log('Boundary reached:', newIndex, 'current:', currentIndexRef.current);
-      return;
-    }
+    if (newIndex < 0 || newIndex >= categories.length) return;
 
     // Stop hint animation loop after first interaction
-    hasInteracted.current = true;
-
-    console.log('Changing from', currentIndexRef.current, 'to', newIndex, 'direction:', direction);
+    if (!hasInteracted.current) {
+      hasInteracted.current = true;
+      hintLoopRef.current?.stop();
+      hintAnim.setValue(0);
+    }
 
     // Update ref immediately
     currentIndexRef.current = newIndex;

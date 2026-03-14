@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   Pressable,
   StyleSheet,
   Dimensions,
@@ -10,6 +9,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -39,6 +39,8 @@ const GAME_ACCENT2  = '#337418';
 const GAME_BG       = '#0F0F0F';
 const GAME_CARD_BG  = '#202020';
 const GAME_TEXT     = '#F8F8F8';
+
+const GAME_THEME = getMediaTheme('game');
 
 // ── Inverted-L panel constants ──
 const STEP_X  = 178;  // how far from the left the narrow top section starts
@@ -298,6 +300,85 @@ const GameHome = ({ navigation }) => {
     return buildPanelPath(width, height);
   }, [panelSize]);
 
+  const renderListHeader = useCallback(() => (
+    <View style={styles.heroRow}>
+      <CategoryPill
+        categories={['Trending', 'Popular', 'New']}
+        onCategoryChange={handleCategoryChange}
+        width={160}
+        accentColor={GAME_ACCENT}
+      />
+      <Text style={styles.gamesText}>GAMES</Text>
+    </View>
+  ), [handleCategoryChange]);
+
+  const renderListEmpty = useMemo(() => {
+    if (isLoading) {
+      return <SkeletonLoader cardHeight={cardHeight} count={6} />;
+    }
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => fetchGames(selectedCategory)}
+            accessibilityRole="button"
+            accessibilityLabel="Retry loading games"
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return null;
+  }, [isLoading, error, cardHeight, fetchGames, selectedCategory]);
+
+  const renderListFooter = useMemo(() => {
+    if (!(currentPage > 1 || hasMore)) return null;
+    return (
+      <View style={styles.paginationContainer}>
+        {currentPage > 1 ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handlePrevPage}
+            accessibilityRole="button"
+            accessibilityLabel="Previous page"
+            disabled={isLoadingMore}
+          >
+            <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
+            <Text style={styles.pageButtonText}>Prev</Text>
+          </Pressable>
+        ) : (
+          <View style={styles.pageButtonPlaceholder} />
+        )}
+
+        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+        {hasMore ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handleLoadMore}
+            accessibilityRole="button"
+            accessibilityLabel="Next page"
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color={GAME_ACCENT} />
+            ) : (
+              <>
+                <Text style={styles.pageButtonText}>Next</Text>
+                <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
+              </>
+            )}
+          </Pressable>
+        ) : (
+          <View style={styles.pageButtonPlaceholder} />
+        )}
+      </View>
+    );
+  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={GAME_BG} />
@@ -344,118 +425,58 @@ const GameHome = ({ navigation }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {isSearchSubmitted ? (
-            <InlineSearchResults
-              results={searchResults}
-              isLoading={isSearching}
-              searchQuery={searchQuery}
-              onResultPress={handleSearchResultPress}
-              onClearSearch={handleSearchCancel}
-              theme={GAME_THEME}
+        {isSearchSubmitted ? (
+          <InlineSearchResults
+            results={searchResults}
+            isLoading={isSearching}
+            searchQuery={searchQuery}
+            onResultPress={handleSearchResultPress}
+            onClearSearch={handleSearchCancel}
+            theme={GAME_THEME}
+          />
+        ) : (
+          <View
+            style={styles.panelShell}
+            onLayout={e => {
+              const { width, height } = e.nativeEvent.layout;
+              setPanelSize(p =>
+                p.width === width && p.height === height ? p : { width, height }
+              );
+            }}
+          >
+            {/* Skia canvas — behind content */}
+            {panelPath ? (
+              <Canvas style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
+                <SkiaPath path={panelPath} color="#337418" />
+                <SkiaPath
+                  path={panelPath}
+                  color="#337418"
+                  style="stroke"
+                  strokeWidth={1.5}
+                />
+              </Canvas>
+            ) : null}
+
+            <FlashList
+              data={games}
+              renderItem={renderGameCard}
+              keyExtractor={keyExtractor}
+              estimatedItemSize={cardHeight + 16}
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.flashListContent}
+              ListHeaderComponent={renderListHeader}
+              ListEmptyComponent={renderListEmpty}
+              ListFooterComponent={renderListFooter}
+              removeClippedSubviews
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={6}
+              updateCellsBatchingPeriod={50}
+              drawDistance={200}
             />
-          ) : (
-            <View
-              style={styles.panelShell}
-              onLayout={e => {
-                const { width, height } = e.nativeEvent.layout;
-                setPanelSize(p =>
-                  p.width === width && p.height === height ? p : { width, height }
-                );
-              }}
-            >
-              {/* ── Hero row: always mounted so CategoryPill keeps its index ── */}
-              <View style={styles.heroRow}>
-                <CategoryPill
-                  categories={['Trending', 'Popular', 'New']}
-                  onCategoryChange={handleCategoryChange}
-                  width={160}
-                  accentColor={GAME_ACCENT}
-                />
-                <Text style={styles.gamesText}>GAMES</Text>
-              </View>
-
-              {/* Skia canvas — behind content */}
-              {panelPath ? (
-                <Canvas style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
-                  <SkiaPath path={panelPath} color="#337418" />
-                  <SkiaPath
-                    path={panelPath}
-                    color="#337418"
-                    style="stroke"
-                    strokeWidth={1.5}
-                  />
-                </Canvas>
-              ) : null}
-
-              {/* ── Cards / skeleton area ── */}
-              {isLoading || isLoadingMore ? (
-                <SkeletonLoader cardHeight={cardHeight} count={6} />
-              ) : error ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>{error}</Text>
-                  <Pressable
-                    style={styles.retryButton}
-                    onPress={() => fetchGames(selectedCategory)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Retry loading games"
-                  >
-                    <Text style={styles.retryText}>Retry</Text>
-                  </Pressable>
-                </View>
-              ) : (
-                <FlashList
-                  data={games}
-                  renderItem={renderGameCard}
-                  keyExtractor={keyExtractor}
-                  estimatedItemSize={cardHeight + 16}
-                  numColumns={2}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.flashListContent}
-                  ListFooterComponent={
-                    currentPage > 1 || hasMore ? (
-                      <View style={styles.paginationContainer}>
-                        {currentPage > 1 ? (
-                          <Pressable
-                            style={styles.pageButton}
-                            onPress={handlePrevPage}
-                            accessibilityRole="button"
-                            accessibilityLabel="Previous page"
-                          >
-                            <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
-                            <Text style={styles.pageButtonText}>Prev</Text>
-                          </Pressable>
-                        ) : (
-                          <View style={styles.pageButtonPlaceholder} />
-                        )}
-
-                        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                        {hasMore ? (
-                          <Pressable
-                            style={styles.pageButton}
-                            onPress={handleLoadMore}
-                            accessibilityRole="button"
-                            accessibilityLabel="Next page"
-                          >
-                            <Text style={styles.pageButtonText}>Next</Text>
-                            <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
-                          </Pressable>
-                        ) : (
-                          <View style={styles.pageButtonPlaceholder} />
-                        )}
-                      </View>
-                    ) : null
-                  }
-                />
-              )}
-            </View>
-          )}
-        </ScrollView>
+          </View>
+        )}
       </KeyboardAvoidingView>
 
 
@@ -595,7 +616,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Skia panel shell ──
-  scrollView: { flex: 1 },
   panelShell: {
     flex: 1,
     marginHorizontal: 12,
@@ -727,6 +747,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(93,214,44,0.28)',
     minWidth: 90,
+  },
+  pageButtonDisabled: {
+    opacity: 0.6,
   },
   pageButtonPlaceholder: { minWidth: 90 },
   pageButtonText: {

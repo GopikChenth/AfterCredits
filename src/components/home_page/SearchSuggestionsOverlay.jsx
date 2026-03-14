@@ -30,7 +30,7 @@ const SearchSuggestionsOverlay = ({
   onClose,
   theme = { accent: '#FFB3C6' }
 }) => {
-  const bottomAnim = useRef(new Animated.Value(157)).current;
+  const translateAnim = useRef(new Animated.Value(0)).current;
   const keyboardListenersRef = useRef({ show: null, hide: null });
 
   // Constants
@@ -55,18 +55,19 @@ const SearchSuggestionsOverlay = ({
     const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
       const bottomPosition = calculateKeyboardPosition(keyboardHeight);
-      Animated.timing(bottomAnim, {
-        toValue: bottomPosition,
+      const translateY = -(bottomPosition - CONSTANTS.DEFAULT_BOTTOM);
+      Animated.timing(translateAnim, {
+        toValue: translateY,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
     const handleKeyboardHide = () => {
-      Animated.timing(bottomAnim, {
-        toValue: CONSTANTS.DEFAULT_BOTTOM,
+      Animated.timing(translateAnim, {
+        toValue: 0,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
@@ -77,17 +78,17 @@ const SearchSuggestionsOverlay = ({
           const metrics = await Keyboard.metrics();
           if (metrics && metrics.height > 0) {
             const bottomPosition = calculateKeyboardPosition(metrics.height);
-            bottomAnim.setValue(bottomPosition);
+            translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
           }
         } else {
           const typicalIOSKeyboardHeight = 336;
           const bottomPosition = calculateKeyboardPosition(typicalIOSKeyboardHeight);
-          bottomAnim.setValue(bottomPosition);
+          translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
         }
       } catch (e) {
         const typicalKeyboardHeight = 300;
         const bottomPosition = calculateKeyboardPosition(typicalKeyboardHeight);
-        bottomAnim.setValue(bottomPosition);
+        translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
       }
     };
 
@@ -100,7 +101,7 @@ const SearchSuggestionsOverlay = ({
       keyboardListenersRef.current.show?.remove();
       keyboardListenersRef.current.hide?.remove();
     };
-  }, [bottomAnim, CONSTANTS, calculateKeyboardPosition]);
+  }, [translateAnim, CONSTANTS, calculateKeyboardPosition]);
 
   const handleResultPress = useCallback((item) => {
     if (onResultPress) onResultPress(item);
@@ -196,8 +197,14 @@ const SearchSuggestionsOverlay = ({
       />
 
       {/* Suggestions Overlay */}
-      <Animated.View
-        style={[styles.container, { bottom: bottomAnim }]}
+    <Animated.View
+        style={[
+          styles.container,
+          {
+            bottom: CONSTANTS.DEFAULT_BOTTOM,
+            transform: [{ translateY: translateAnim }],
+          },
+        ]}
         pointerEvents="box-none"
       >
         <View style={styles.overlayContainerNative}>
