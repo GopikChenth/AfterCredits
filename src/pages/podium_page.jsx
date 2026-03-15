@@ -19,7 +19,19 @@ import { getPodiumPageStyles, getPodiumPageTheme } from '../stylehandler/podiumP
 import { useProfileStore } from '../stores/useProfileStore';
 
 const mediaDetailCache = {};
+const MEDIA_DETAIL_CACHE_MAX = 150;
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/** Evict oldest entries when the cache exceeds MEDIA_DETAIL_CACHE_MAX. */
+const evictCacheIfNeeded = () => {
+  const keys = Object.keys(mediaDetailCache);
+  if (keys.length > MEDIA_DETAIL_CACHE_MAX) {
+    // Remove the first (oldest inserted) entries to stay under the cap
+    keys.slice(0, keys.length - MEDIA_DETAIL_CACHE_MAX).forEach(k => {
+      delete mediaDetailCache[k];
+    });
+  }
+};
 
 const PodiumPage = ({ navigation }) => {
   const { mediaType } = useMediaType();
@@ -75,10 +87,11 @@ const PodiumPage = ({ navigation }) => {
         batch.map(async (item) => {
           try {
             const result = await fetchDetails(item.media_id);
-            if (result) {
-              const formatted = formatData(result);
-              mediaDetailCache[cachePrefix + item.media_id] = formatted;
-              return formatted;
+              if (result) {
+                const formatted = formatData(result);
+                mediaDetailCache[cachePrefix + item.media_id] = formatted;
+                evictCacheIfNeeded();
+                return formatted;
             }
           } catch (error) {
             console.warn(`Failed to fetch ${theme.statusMediaType} ${item.media_id}:`, error.message);

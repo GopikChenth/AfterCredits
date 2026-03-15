@@ -4,13 +4,13 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
-  Image, 
   Pressable,
   StatusBar,
   Switch,
   Alert,
   ActivityIndicator
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -381,6 +381,7 @@ const ProfilePage = ({ navigation }) => {
             <Image 
               source={{ uri: profile?.avatar_url || 'https://api.dicebear.com/7.x/avataaars/png?seed=user123' }}
               style={[styles.avatar, { borderColor: theme.accent }]}
+              cachePolicy="memory-disk"
             />
             {/* Edit Button */}
             <Pressable 

@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -210,26 +211,29 @@ const MovieDetail = ({ route, navigation }) => {
     }
   };
 
-  // Reviews (from Supabase)
-  useEffect(() => {
-    if (!movieId) return;
-    const load = async () => {
-      setIsLoadingReviews(true);
-      try {
-        const [rv, st] = await Promise.allSettled([
-          getMediaReviews("movies", movieId),
-          getMediaReviewStats("movies", movieId),
-        ]);
-        if (rv.status === "fulfilled" && rv.value?.success)
-          setDbReviews(rv.value.reviews || []);
-        if (st.status === "fulfilled" && st.value?.success)
-          setReviewStats(st.value.stats);
-      } finally {
-        setIsLoadingReviews(false);
-      }
-    };
-    load();
-  }, [movieId]);
+  // Reviews (from Supabase) — re-runs every time this screen gains focus
+  // so newly submitted reviews appear immediately after returning from the review form
+  useFocusEffect(
+    useCallback(() => {
+      if (!movieId) return;
+      const load = async () => {
+        setIsLoadingReviews(true);
+        try {
+          const [rv, st] = await Promise.allSettled([
+            getMediaReviews("movies", movieId),
+            getMediaReviewStats("movies", movieId),
+          ]);
+          if (rv.status === "fulfilled" && rv.value?.success)
+            setDbReviews(rv.value.reviews || []);
+          if (st.status === "fulfilled" && st.value?.success)
+            setReviewStats(st.value.stats);
+        } finally {
+          setIsLoadingReviews(false);
+        }
+      };
+      load();
+    }, [movieId])
+  );
 
   // User status
   useEffect(() => {

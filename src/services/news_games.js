@@ -6,8 +6,13 @@
  */
 
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GAMING_RSS_URL = 'https://insider-gaming.com/feed/';
+
+// Cache TTL: 30 minutes
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
+const GAMES_NEWS_CACHE_KEY = 'NEWS_CACHE:games';
 
 /**
  * Parse RSS XML to extract gaming news articles
@@ -96,6 +101,15 @@ const parseGamingRSS = (xmlText) => {
  */
 export const getGamingNews = async (limit = 10) => {
   try {
+    // Check cache first
+    const cached = await AsyncStorage.getItem(GAMES_NEWS_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < NEWS_CACHE_TTL) {
+        return data.slice(0, limit);
+      }
+    }
+
     const response = await axios.get(GAMING_RSS_URL, {
       headers: {
         'Accept': 'application/rss+xml, application/xml, text/xml',
@@ -105,10 +119,15 @@ export const getGamingNews = async (limit = 10) => {
     });
 
     const articles = parseGamingRSS(response.data);
+    const sorted = articles.sort((a, b) => b.publishedAt - a.publishedAt);
 
-    return articles
-      .sort((a, b) => b.publishedAt - a.publishedAt)
-      .slice(0, limit);
+    // Persist to cache
+    await AsyncStorage.setItem(
+      GAMES_NEWS_CACHE_KEY,
+      JSON.stringify({ data: sorted, timestamp: Date.now() })
+    );
+
+    return sorted.slice(0, limit);
   } catch (error) {
     console.error('Error fetching gaming news:', error);
     throw error;

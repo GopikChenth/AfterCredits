@@ -76,34 +76,37 @@ const AnimeDetail = ({ route, navigation }) => {
   // Get anime theme with integrated font utilities
   const theme = getMediaTheme("anime");
 
-  // Fetch reviews from database
-  useEffect(() => {
-    const fetchReviews = async () => {
-      if (!animeId) return;
+  // Fetch reviews from database — re-runs every time this screen gains focus
+  // so newly submitted reviews appear immediately after returning from the review form
+  useFocusEffect(
+    useCallback(() => {
+      const fetchReviews = async () => {
+        if (!animeId) return;
 
-      setIsLoadingReviews(true);
+        setIsLoadingReviews(true);
 
-      try {
-        // Fetch reviews
-        const reviewsResult = await getMediaReviews("anime", animeId);
-        if (reviewsResult.success) {
-          setDbReviews(reviewsResult.reviews || []);
+        try {
+          // Fetch reviews
+          const reviewsResult = await getMediaReviews("anime", animeId);
+          if (reviewsResult.success) {
+            setDbReviews(reviewsResult.reviews || []);
+          }
+
+          // Fetch stats
+          const statsResult = await getMediaReviewStats("anime", animeId);
+          if (statsResult.success) {
+            setReviewStats(statsResult.stats);
+          }
+        } catch (error) {
+          console.error("Error fetching reviews:", error);
+        } finally {
+          setIsLoadingReviews(false);
         }
+      };
 
-        // Fetch stats
-        const statsResult = await getMediaReviewStats("anime", animeId);
-        if (statsResult.success) {
-          setReviewStats(statsResult.stats);
-        }
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
-      } finally {
-        setIsLoadingReviews(false);
-      }
-    };
-
-    fetchReviews();
-  }, [animeId]);
+      fetchReviews();
+    }, [animeId])
+  );
 
   // Fetch user's status for this anime
   useEffect(() => {

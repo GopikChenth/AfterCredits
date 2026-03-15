@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -32,6 +32,9 @@ import { useMediaType } from "../context/MediaTypeContext";
 import { getDiscoverStyles, getDiscoverTheme, CARD_WIDTH, CARD_HEIGHT, EXPANDED_CARD_WIDTH } from "../stylehandler/discoverStyles";
 import { useProfileStore } from '../stores/useProfileStore';
 
+// Season order for sorting anime — defined at module level to avoid recreation each render.
+const SEASON_ORDER = { WINTER: 0, SPRING: 1, SUMMER: 2, FALL: 3 };
+
 const DiscoverPage = ({ navigation }) => {
   const { mediaType } = useMediaType();
   const styles = getDiscoverStyles(mediaType);
@@ -48,9 +51,6 @@ const DiscoverPage = ({ navigation }) => {
   const [newsLoading, setNewsLoading] = useState(true);
   const [expandedItemId, setExpandedItemId] = useState(null);
   const [wishlistedIds, setWishlistedIds] = useState([]);
-
-  // Season order for sorting anime (earliest first)
-  const SEASON_ORDER = { WINTER: 0, SPRING: 1, SUMMER: 2, FALL: 3 };
 
   // ─── Re-fetch when media type changes ──────────────────────────
   useEffect(() => {
@@ -210,7 +210,7 @@ const DiscoverPage = ({ navigation }) => {
   };
 
   // ─── Card Renderer ─────────────────────────────────────────────
-  const renderUpcomingCard = (item) => {
+  const renderUpcomingCard = useCallback(({ item }) => {
     const isExpanded = expandedItemId === item.id;
 
     return (
@@ -304,7 +304,9 @@ const DiscoverPage = ({ navigation }) => {
         )}
       </Pressable>
     );
-  };
+  }, [expandedItemId, styles, theme, isGames, isMovies, navigation,
+      formatDate, getTitle, getCoverImage, getGenres, getSubInfo, getSubInfoIcon,
+      isWishlisted, toggleWishlist]);
 
   // ─── Render ────────────────────────────────────────────────────
   return (
@@ -367,7 +369,7 @@ const DiscoverPage = ({ navigation }) => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalScroll}
               keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => renderUpcomingCard(item)}
+              renderItem={renderUpcomingCard}
               style={styles.flatList}
               scrollEnabled={true}
             />

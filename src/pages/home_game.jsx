@@ -21,7 +21,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getMediaTheme } from '../utils/mediaThemes';
-import CategoryPill from '../components/home_page/CategoryPill';
+import CategoryPill, { PILL_BORDER_RADIUS } from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
@@ -43,25 +43,26 @@ const GAME_TEXT     = '#F8F8F8';
 const GAME_THEME = getMediaTheme('game');
 
 // ── Inverted-L panel constants ──
-const STEP_X  = 178;  // how far from the left the narrow top section starts
-const STEP_Y  = 76;   // height of the narrow top section before it steps out
-const R       = 22;   // corner radius applied to every corner
+// R matches the pill's own borderRadius so the notch corners look identical.
+// STEP_X and STEP_Y are derived at runtime from the measured pill size so the
+// shape stays flush on every screen width (see heroRow onLayout below).
+const R = PILL_BORDER_RADIUS; // corner radius applied to every corner of the L
 
-const buildPanelPath = (w, h) => {
+const buildPanelPath = (w, h, stepX, stepY) => {
   const p = Skia.Path.Make();
 
   //  Corners (clockwise from top of the step):
   //
   //        A ─────── B
-  //        |         |         A = (STEP_X, 0)  — top-left of narrow arm
-  //        |         |         B = (w, 0)        — top-right
-  //  G────H|         |         H = (STEP_X, STEP_Y) — inner step corner
-  //  |       C=w,STEP_Y        G = (0, STEP_Y)  — outer step corner
-  //  |               |         F = (w, h)        — bottom-right
-  //  F───────────────E         E = (0, h)        — bottom-left
+  //        |         |         A = (stepX, 0)       — top-left of narrow arm
+  //        |         |         B = (w, 0)            — top-right
+  //  G────H|         |         H = (stepX, stepY)   — inner step corner
+  //  |       C=w,stepY         G = (0, stepY)        — outer step corner
+  //  |               |         F = (w, h)            — bottom-right
+  //  F───────────────E         E = (0, h)            — bottom-left
 
   // Move to just after corner A (top-left of narrow arm)
-  p.moveTo(STEP_X + R, 0);
+  p.moveTo(stepX + R, 0);
   // Top edge → B
   p.lineTo(w - R, 0);
   // B: top-right corner (rounded)
@@ -75,17 +76,17 @@ const buildPanelPath = (w, h) => {
   // E: bottom-left corner (rounded)
   p.quadTo(0, h, 0, h - R);
   // Left edge up to just below G
-  p.lineTo(0, STEP_Y + R);
+  p.lineTo(0, stepY + R);
   // G: outer step corner — convex rounding going inward
-  p.quadTo(0, STEP_Y, R, STEP_Y);
+  p.quadTo(0, stepY, R, stepY);
   // Step ledge → just before H
-  p.lineTo(STEP_X - R, STEP_Y);
+  p.lineTo(stepX - R, stepY);
   // H: inner step corner — concave, so control point is the corner itself
-  p.quadTo(STEP_X, STEP_Y, STEP_X, STEP_Y - R);
+  p.quadTo(stepX, stepY, stepX, stepY - R);
   // Up to just below A
-  p.lineTo(STEP_X, R);
+  p.lineTo(stepX, R);
   // A: top-left of narrow arm (rounded)
-  p.quadTo(STEP_X, 0, STEP_X + R, 0);
+  p.quadTo(stepX, 0, stepX + R, 0);
   p.close();
   return p;
 };
@@ -293,21 +294,52 @@ const GameHome = ({ navigation }) => {
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
   const [panelSize, setPanelSize] = React.useState({ width: 0, height: 0 });
+  // heroRowHeight: the measured height of the pill row — used as stepY so the
+  // L-shape notch bottom aligns exactly with the bottom of the row.
+  const [heroRowHeight, setHeroRowHeight] = React.useState(0);
+  // pillWidth: the measured width of the CategoryPill — used as stepX anchor.
+  const [pillWidth, setPillWidth] = React.useState(0);
 
   const panelPath = React.useMemo(() => {
     const { width, height } = panelSize;
-    if (!width || !height) return null;
-    return buildPanelPath(width, height);
-  }, [panelSize]);
+    if (!width || !height || !heroRowHeight || !pillWidth) return null;
+
+    // heroRow has paddingLeft:12. The pill sits flush against the left padding,
+    // so its right edge is at paddingLeft + pillWidth from the panel's left edge.
+    // We add paddingRight:12 as the gap between the pill and the notch wall so
+    // both gaps (below and to the right) are equal.
+    const HERO_PAD_LEFT  = 12;
+    const HERO_PAD_RIGHT = 12;
+    const stepX = HERO_PAD_LEFT + pillWidth + HERO_PAD_RIGHT;
+
+    // stepY equals the full measured height of heroRow so the notch bottom sits
+    // flush with the row bottom on every device.
+    const stepY = heroRowHeight;
+
+    return buildPanelPath(width, height, stepX, stepY);
+  }, [panelSize, heroRowHeight, pillWidth]);
 
   const renderListHeader = useCallback(() => (
-    <View style={styles.heroRow}>
-      <CategoryPill
-        categories={['Trending', 'Popular', 'New']}
-        onCategoryChange={handleCategoryChange}
-        width={160}
-        accentColor={GAME_ACCENT}
-      />
+    <View
+      style={styles.heroRow}
+      onLayout={e => {
+        const h = e.nativeEvent.layout.height;
+        setHeroRowHeight(prev => (prev === h ? prev : h));
+      }}
+    >
+      <View
+        onLayout={e => {
+          const w = e.nativeEvent.layout.width;
+          setPillWidth(prev => (prev === w ? prev : w));
+        }}
+      >
+        <CategoryPill
+          categories={['Trending', 'Popular', 'New']}
+          onCategoryChange={handleCategoryChange}
+          width={160}
+          accentColor={GAME_ACCENT}
+        />
+      </View>
       <Text style={styles.gamesText}>GAMES</Text>
     </View>
   ), [handleCategoryChange]);
@@ -628,7 +660,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     paddingRight: 12,
     paddingTop: 12,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   gamesText: {
     fontSize: 36,

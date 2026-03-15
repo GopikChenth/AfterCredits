@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  Pressable, 
   StyleSheet, 
   Animated,
   PanResponder,
 } from 'react-native';
+
+// Exported so home_game.jsx can read the same value for its Skia corner radius.
+export const PILL_BORDER_RADIUS = 20;
 
 const CategoryPill = ({ 
   categories = ['Trending', 'Popular', 'New'],

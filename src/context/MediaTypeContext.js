@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useMemo, useCallback } from 'react';
 
 /**
  * MediaTypeContext - Global state for current media type
@@ -11,7 +11,7 @@ export const MediaTypeProvider = ({ children }) => {
   const [mediaType, setMediaType] = useState('anime'); // Default to anime
 
   // Get the home route name for current media type
-  const getHomeRoute = () => {
+  const getHomeRoute = useCallback(() => {
     const routeMap = {
       anime: 'HomeAnime',
       movies: 'HomeMovies',
@@ -20,10 +20,16 @@ export const MediaTypeProvider = ({ children }) => {
       manga: 'HomeManga',
     };
     return routeMap[mediaType] || 'HomeAnime';
-  };
+  }, [mediaType]);
+
+  // Memoize context value so consumers only re-render when mediaType actually changes
+  const contextValue = useMemo(
+    () => ({ mediaType, setMediaType, getHomeRoute }),
+    [mediaType, getHomeRoute]
+  );
 
   return (
-    <MediaTypeContext.Provider value={{ mediaType, setMediaType, getHomeRoute }}>
+    <MediaTypeContext.Provider value={contextValue}>
       {children}
     </MediaTypeContext.Provider>
   );

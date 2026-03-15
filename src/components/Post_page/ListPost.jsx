@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   FlatList,
   StyleSheet,
   Pressable,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress, accent = '#FFB3C6' }) => {

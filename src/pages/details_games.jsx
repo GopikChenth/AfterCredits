@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -205,26 +206,29 @@ const GameDetail = ({ route, navigation }) => {
     }
   };
 
-  // Reviews
-  useEffect(() => {
-    if (!gameId) return;
-    const load = async () => {
-      setIsLoadingReviews(true);
-      try {
-        const [rv, st] = await Promise.allSettled([
-          getMediaReviews("games", gameId),
-          getMediaReviewStats("games", gameId),
-        ]);
-        if (rv.status === "fulfilled" && rv.value?.success)
-          setDbReviews(rv.value.reviews || []);
-        if (st.status === "fulfilled" && st.value?.success)
-          setReviewStats(st.value.stats);
-      } finally {
-        setIsLoadingReviews(false);
-      }
-    };
-    load();
-  }, [gameId]);
+  // Reviews — re-runs every time this screen gains focus
+  // so newly submitted reviews appear immediately after returning from the review form
+  useFocusEffect(
+    useCallback(() => {
+      if (!gameId) return;
+      const load = async () => {
+        setIsLoadingReviews(true);
+        try {
+          const [rv, st] = await Promise.allSettled([
+            getMediaReviews("games", gameId),
+            getMediaReviewStats("games", gameId),
+          ]);
+          if (rv.status === "fulfilled" && rv.value?.success)
+            setDbReviews(rv.value.reviews || []);
+          if (st.status === "fulfilled" && st.value?.success)
+            setReviewStats(st.value.stats);
+        } finally {
+          setIsLoadingReviews(false);
+        }
+      };
+      load();
+    }, [gameId])
+  );
 
   // User status
   useEffect(() => {

@@ -36,6 +36,15 @@ const MEDIA_TO_SECTION = {
   manga: 'manga',
 };
 
+// Defined at module level — recreating this array on every render is wasteful.
+const ALL_SECTIONS = [
+  { id: 'anime',  label: 'Anime',  icon: '🎌', settingKey: 'showAnime' },
+  { id: 'movies', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
+  { id: 'games',  label: 'Games',  icon: '🎮', settingKey: 'showGames' },
+  { id: 'comics', label: 'Comics', icon: '📚', settingKey: 'showComics' },
+  { id: 'manga',  label: 'Manga',  icon: '📖', settingKey: 'showManga' },
+];
+
 const SideBar = ({
   isVisible = false,
   onClose,
@@ -50,13 +59,7 @@ const SideBar = ({
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const [visibleSections, setVisibleSections] = React.useState([]);
 
-  const allSections = [
-    { id: 'anime', label: 'Anime', icon: '🎌', settingKey: 'showAnime' },
-    { id: 'movies', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
-    { id: 'games', label: 'Games', icon: '🎮', settingKey: 'showGames' },
-    { id: 'comics', label: 'Comics', icon: '📚', settingKey: 'showComics' },
-    { id: 'manga', label: 'Manga', icon: '📖', settingKey: 'showManga' },
-  ];
+  // allSections is defined at module level to avoid recreation on every render
 
   // Load settings and filter sections when sidebar becomes visible
   useEffect(() => {
@@ -65,7 +68,7 @@ const SideBar = ({
 
   const loadVisibleSections = async () => {
     const settings = await getSettings();
-    const filtered = allSections.filter(s => settings[s.settingKey]);
+    const filtered = ALL_SECTIONS.filter(s => settings[s.settingKey]);
     setVisibleSections(filtered);
   };
 
