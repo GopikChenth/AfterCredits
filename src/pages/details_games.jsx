@@ -43,6 +43,7 @@ import CompletionChart from "../components/details_page/CompletionChart";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { getMetacriticColor } from "../services/api_rawg";
 import { fetchIGDBByName } from "../services/api_igdb";
+import { hasIGDBCredentials } from "../services/settings";
 import {
   getMediaReviews,
   getMediaReviewStats,
@@ -157,6 +158,8 @@ const GameDetail = ({ route, navigation }) => {
   // ── State ──────────────────────────────────────────────────────────────────
   const [igdbData, setIgdbData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  // null = not yet checked, false = has credentials, true = missing credentials
+  const [noCredentials, setNoCredentials] = useState(null);
 
   const [userStatus, setUserStatus] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -178,7 +181,18 @@ const GameDetail = ({ route, navigation }) => {
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (gameId) fetchAll();
+    if (!gameId) return;
+    // Check for user-supplied IGDB credentials first.
+    // If missing, block the page entirely — do NOT attempt an API call.
+    hasIGDBCredentials().then((has) => {
+      if (!has) {
+        setNoCredentials(true);
+        setIsLoading(false);
+      } else {
+        setNoCredentials(false);
+        fetchAll();
+      }
+    });
   }, [gameId]);
 
   const fetchAll = async () => {
@@ -336,6 +350,47 @@ const GameDetail = ({ route, navigation }) => {
       <View style={styles.blobShape3} />
     </View>
   );
+
+  // ── No IGDB credentials — block the page entirely ─────────────────────────
+
+  if (noCredentials === true) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor={BG} />
+        <Blobs />
+        <SafeAreaView style={styles.noCredSafeArea} edges={["top", "bottom"]}>
+          <View style={styles.noCredContainer}>
+            <View style={styles.noCredIconWrap}>
+              <Ionicons name="game-controller-outline" size={56} color={ACCENT} />
+            </View>
+            <Text style={styles.noCredTitle}>IGDB API Key Required</Text>
+            <Text style={styles.noCredBody}>
+              Game details are powered by the IGDB database. To view this page
+              you need to add your own Twitch / IGDB Client ID and Access Token
+              in Settings.
+            </Text>
+            <Pressable
+              style={styles.noCredPrimaryButton}
+              onPress={() => navigation?.navigate("ProfilePage")}
+              accessibilityRole="button"
+              accessibilityLabel="Go to Settings to add IGDB credentials"
+            >
+              <Ionicons name="settings-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.noCredPrimaryText}>Go to Settings</Text>
+            </Pressable>
+            <Pressable
+              style={styles.noCredSecondaryButton}
+              onPress={() => navigation?.goBack()}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <Text style={styles.noCredSecondaryText}>Go Back</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   // ── Loading state ──────────────────────────────────────────────────────────
 
@@ -1197,6 +1252,77 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
   },
   retryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  // ── No credentials screen ──────────────────────────────────────────────────
+  noCredSafeArea: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noCredContainer: {
+    alignItems: "center",
+    paddingHorizontal: 32,
+    maxWidth: 380,
+    width: "100%",
+  },
+  noCredIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    borderCurve: "continuous",
+    backgroundColor: "rgba(167,139,250,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(167,139,250,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  noCredTitle: {
+    fontSize: 22,
+    fontFamily: "Genjiro",
+    color: "#fff",
+    letterSpacing: 0.5,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  noCredBody: {
+    fontSize: 14,
+    color: "#aaa",
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  noCredPrimaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: ACCENT,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderCurve: "continuous",
+    width: "100%",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  noCredPrimaryText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  noCredSecondaryButton: {
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderCurve: "continuous",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
+    width: "100%",
+    alignItems: "center",
+  },
+  noCredSecondaryText: {
+    color: "#888",
+    fontSize: 15,
+    fontWeight: "500",
+  },
 });
 
 export default GameDetail;

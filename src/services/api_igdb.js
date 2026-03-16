@@ -38,6 +38,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { runRequestWithPolicy } from './requestPolicy';
+import { getIGDBCredentials } from './settings';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -45,8 +46,20 @@ import { runRequestWithPolicy } from './requestPolicy';
 
 const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 
-const IGDB_CLIENT_ID     = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID     || '';
-const IGDB_ACCESS_TOKEN  = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN  || '';
+/**
+ * Resolve the user-supplied IGDB credentials from AsyncStorage.
+ * Returns { clientId, accessToken } — either or both may be empty strings
+ * if the user has not configured them yet.
+ * NOTE: env-var fallbacks are intentionally NOT used — only the user's own key is accepted.
+ */
+const resolveCredentials = async () => {
+  try {
+    const { clientId, accessToken } = await getIGDBCredentials();
+    return { clientId: clientId || '', accessToken: accessToken || '' };
+  } catch {
+    return { clientId: '', accessToken: '' };
+  }
+};
 
 /** Cache durations in milliseconds */
 const CACHE_DURATION = {
@@ -92,8 +105,9 @@ const setCached = async (key, data, ttl) => {
  * @returns {Promise<{ ok: boolean, message: string, latencyMs: number }>}
  */
 export const checkIGDBHealth = async () => {
-  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
-    return { ok: false, message: 'Missing IGDB credentials in .env', latencyMs: 0 };
+  const { clientId, accessToken } = await resolveCredentials();
+  if (!clientId || !accessToken) {
+    return { ok: false, message: 'No IGDB credentials — add them in Settings', latencyMs: 0 };
   }
 
   const start = Date.now();
@@ -101,8 +115,8 @@ export const checkIGDBHealth = async () => {
     const response = await fetch(`${IGDB_BASE_URL}/games`, {
       method: 'POST',
       headers: {
-        'Client-ID': IGDB_CLIENT_ID,
-        'Authorization': `Bearer ${IGDB_ACCESS_TOKEN}`,
+        'Client-ID': clientId,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'text/plain',
         'Accept': 'application/json',
       },
@@ -147,11 +161,12 @@ export const checkIGDBHealth = async () => {
  * @param {number} [ttl]     - Cache TTL in ms
  */
 const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATION.IGDB_DETAILS) => {
-  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
+  const { clientId, accessToken } = await resolveCredentials();
+  if (!clientId || !accessToken) {
     console.warn(
       '⚠️  IGDB credentials missing.\n' +
-      '   Add EXPO_PUBLIC_IGDB_CLIENT_ID and EXPO_PUBLIC_IGDB_ACCESS_TOKEN to your .env file.\n' +
-      '   See the setup guide at the top of api_igdb.js.'
+      '   Add them via Settings > IGDB API, or set EXPO_PUBLIC_IGDB_CLIENT_ID and\n' +
+      '   EXPO_PUBLIC_IGDB_ACCESS_TOKEN in your .env file.'
     );
     return [];
   }
@@ -170,8 +185,8 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
         const response = await fetch(`${IGDB_BASE_URL}/${endpoint}`, {
           method: 'POST',
           headers: {
-            'Client-ID': IGDB_CLIENT_ID,
-            'Authorization': `Bearer ${IGDB_ACCESS_TOKEN}`,
+            'Client-ID': clientId,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'text/plain',
             'Accept': 'application/json',
           },
