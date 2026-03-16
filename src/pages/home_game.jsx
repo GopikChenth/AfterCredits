@@ -319,30 +319,8 @@ const GameHome = ({ navigation }) => {
     return buildPanelPath(width, height, stepX, stepY);
   }, [panelSize, heroRowHeight, pillWidth]);
 
-  const renderListHeader = useCallback(() => (
-    <View
-      style={styles.heroRow}
-      onLayout={e => {
-        const h = e.nativeEvent.layout.height;
-        setHeroRowHeight(prev => (prev === h ? prev : h));
-      }}
-    >
-      <View
-        onLayout={e => {
-          const w = e.nativeEvent.layout.width;
-          setPillWidth(prev => (prev === w ? prev : w));
-        }}
-      >
-        <CategoryPill
-          categories={['Trending', 'Popular', 'New']}
-          onCategoryChange={handleCategoryChange}
-          width={160}
-          accentColor={GAME_ACCENT}
-        />
-      </View>
-      <Text style={styles.gamesText}>GAMES</Text>
-    </View>
-  ), [handleCategoryChange]);
+  // heroRow is a fixed View (no longer a scrollable ListHeader)
+  const renderListHeader = null;
 
   const renderListEmpty = useMemo(() => {
     if (isLoading) {
@@ -489,6 +467,31 @@ const GameHome = ({ navigation }) => {
               </Canvas>
             ) : null}
 
+            {/* Fixed hero row — CategoryPill + GAMES title, does NOT scroll */}
+            <View
+              style={styles.heroRow}
+              onLayout={e => {
+                const h = e.nativeEvent.layout.height;
+                setHeroRowHeight(prev => (prev === h ? prev : h));
+              }}
+            >
+              <View
+                onLayout={e => {
+                  const w = e.nativeEvent.layout.width;
+                  setPillWidth(prev => (prev === w ? prev : w));
+                }}
+              >
+                <CategoryPill
+                  categories={['Trending', 'Popular', 'New']}
+                  onCategoryChange={handleCategoryChange}
+                  width={160}
+                  accentColor={GAME_ACCENT}
+                />
+              </View>
+              <Text style={styles.gamesText}>GAMES</Text>
+            </View>
+
+            {/* Scrollable cards only */}
             <FlashList
               data={games}
               renderItem={renderGameCard}
@@ -497,7 +500,6 @@ const GameHome = ({ navigation }) => {
               numColumns={2}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.flashListContent}
-              ListHeaderComponent={renderListHeader}
               ListEmptyComponent={renderListEmpty}
               ListFooterComponent={renderListFooter}
               removeClippedSubviews
