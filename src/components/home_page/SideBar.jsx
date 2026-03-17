@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import Haptics from '@mhpdev/react-native-haptics';
 import {
   View,
   Text,
@@ -89,6 +90,7 @@ const SideBar = ({
 
   const handleSectionPress = (sectionId) => {
     if (sectionId === activeSection) {
+      if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onClose?.();
       return;
     }
@@ -96,9 +98,14 @@ const SideBar = ({
     const newMediaType = SECTION_MEDIA_MAP[sectionId];
     if (!newMediaType) return;
 
-    setMediaType(newMediaType);
-    navigation.navigate('MainTabs', { screen: 'Home' });
-    setTimeout(() => onClose?.(), 100);
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    // Close first so the exit animation plays fully (150ms),
+    // then switch media type and navigate after it completes.
+    onClose?.();
+    setTimeout(() => {
+      setMediaType(newMediaType);
+      navigation.navigate('MainTabs', { screen: 'Home' });
+    }, 200);
   };
 
   // Pill blur container

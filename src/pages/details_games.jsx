@@ -66,55 +66,88 @@ const CARD_BG = "#1A1A3E";
 const BLOB1 = "#7C3AED";
 const BLOB2 = "#4F46E5";
 const BLOB3 = "#06B6D4";
+const UI_FONT = "Agdasima";
+const UI_FONT_BOLD = "Agdasima-Bold";
+const DISPLAY_FONT = "Genjiro";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUB-COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Pill showing a platform abbreviation */
-const PlatformPill = ({ name, abbreviation }) => (
-  <View style={styles.platformPill}>
-    <Text style={styles.platformPillText}>{abbreviation || name}</Text>
-  </View>
-);
+const PlatformPill = ({ name, abbreviation }) => {
+  const label = abbreviation || name || "Unknown";
+  return (
+    <View style={styles.platformPill}>
+      <Text
+        style={styles.platformPillText}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+};
 
 /** Pill for game modes (Single-player, Multiplayer…) */
-const ModePill = ({ mode }) => (
-  <View style={styles.modePill}>
-    <Text style={styles.modePillText}>{mode}</Text>
-  </View>
-);
+const ModePill = ({ mode }) => {
+  const label = mode || "Unknown";
+  return (
+    <View style={styles.modePill}>
+      <Text
+        style={styles.modePillText}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+};
 
 /** Developer / publisher row */
-const CompanyRow = ({ name, role }) => (
-  <View style={styles.companyRow}>
-    <View style={styles.companyAvatar}>
-      <Ionicons name="business-outline" size={16} color={ACCENT} />
+const CompanyRow = ({ name, role }) => {
+  const companyName = name || "Unknown studio";
+  const companyRole = role || "Contributor";
+  return (
+    <View style={styles.companyRow}>
+      <View style={styles.companyAvatar}>
+        <Ionicons name="business-outline" size={16} color={ACCENT} />
+      </View>
+      <View style={styles.companyTextWrap}>
+        <Text style={styles.companyName} numberOfLines={1} ellipsizeMode="tail">
+          {companyName}
+        </Text>
+        <Text style={styles.companyRole} numberOfLines={1} ellipsizeMode="tail">
+          {companyRole}
+        </Text>
+      </View>
     </View>
-    <View>
-      <Text style={styles.companyName}>{name}</Text>
-      <Text style={styles.companyRole}>{role}</Text>
-    </View>
-  </View>
-);
+  );
+};
 
 /** Trailer thumbnail card */
 const TrailerCard = memo(({ trailer }) => {
+  const trailerName = trailer?.name || "Untitled trailer";
   const handlePress = useCallback(
-    () => Linking.openURL(trailer.url),
-    [trailer.url],
+    () => {
+      if (trailer?.url) Linking.openURL(trailer.url);
+    },
+    [trailer?.url],
   );
   return (
     <Pressable
       style={styles.trailerCard}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={`Play trailer: ${trailer.name}`}
+      accessibilityLabel={`Play trailer: ${trailerName}`}
     >
       <Image
         source={{ uri: trailer.thumbnail }}
         style={styles.trailerThumb}
         contentFit="cover"
+        cachePolicy="memory-disk"
         recyclingKey={trailer.url}
       />
       <View style={styles.trailerOverlay}>
@@ -122,8 +155,8 @@ const TrailerCard = memo(({ trailer }) => {
           <Ionicons name="play" size={20} color="#fff" />
         </View>
       </View>
-      <Text style={styles.trailerName} numberOfLines={1}>
-        {trailer.name}
+      <Text style={styles.trailerName} numberOfLines={1} ellipsizeMode="tail">
+        {trailerName}
       </Text>
     </Pressable>
   );
@@ -131,12 +164,20 @@ const TrailerCard = memo(({ trailer }) => {
 TrailerCard.displayName = "TrailerCard";
 
 /** Age rating badge */
-const AgeRatingBadge = ({ system, rating }) => (
-  <View style={styles.ageBadge}>
-    <Text style={styles.ageBadgeSystem}>{system}</Text>
-    <Text style={styles.ageBadgeRating}>{rating}</Text>
-  </View>
-);
+const AgeRatingBadge = ({ system, rating }) => {
+  const safeSystem = system || "Rating";
+  const safeRating = rating || "NR";
+  return (
+    <View style={styles.ageBadge}>
+      <Text style={styles.ageBadgeSystem} numberOfLines={1} ellipsizeMode="tail">
+        {safeSystem}
+      </Text>
+      <Text style={styles.ageBadgeRating} numberOfLines={1} ellipsizeMode="tail">
+        {safeRating}
+      </Text>
+    </View>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
@@ -284,32 +325,44 @@ const GameDetail = ({ route, navigation }) => {
   );
 
   const renderSimilarGame = useCallback(
-    ({ item }) => (
-      <Pressable
-        style={styles.relatedCard}
-        onPress={() =>
-          navigation?.push("DetailsGames", {
-            gameId: item.id,
-            gameName: item.name,
-            coverImage: item.coverImage,
-          })
-        }
-        accessibilityRole="button"
-        accessibilityLabel={`View similar game: ${item.name}`}
-      >
-        <Image
-          source={{ uri: item.coverImage }}
-          style={styles.relatedCardImage}
-          contentFit="cover"
-          recyclingKey={`sim-${item.id}`}
-        />
-        <View style={styles.relatedCardOverlay}>
-          <Text style={styles.relatedCardTitle} numberOfLines={2}>
-            {item.name}
-          </Text>
-        </View>
-      </Pressable>
-    ),
+    ({ item }) => {
+      const similarName = item?.name || "Untitled Game";
+      const similarCover = item?.coverImage;
+      return (
+        <Pressable
+          style={styles.relatedCard}
+          onPress={() => {
+            if (!item?.id) return;
+            navigation?.push("DetailsGames", {
+              gameId: item.id,
+              gameName: similarName,
+              coverImage: similarCover,
+            });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={`View similar game: ${similarName}`}
+        >
+          {similarCover ? (
+            <Image
+              source={{ uri: similarCover }}
+              style={styles.relatedCardImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={`sim-${item?.id || "unknown"}`}
+            />
+          ) : (
+            <View style={styles.relatedCardPlaceholder}>
+              <Ionicons name="game-controller-outline" size={20} color="#fff" />
+            </View>
+          )}
+          <View style={styles.relatedCardOverlay}>
+            <Text style={styles.relatedCardTitle} numberOfLines={2} ellipsizeMode="tail">
+              {similarName}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    },
     [navigation],
   );
 
@@ -321,6 +374,7 @@ const GameDetail = ({ route, navigation }) => {
   // ── Derived data (from IGDB + route param fallbacks while loading) ──────────
 
   const name = igdbData?.name || gameName || "Loading…";
+  const safeName = name?.trim() || "Unknown Game";
   const summary = igdbData?.summary || "";
   const storyline = igdbData?.storyline || "";
   const cover = igdbData?.coverImage || coverImage;
@@ -447,8 +501,8 @@ const GameDetail = ({ route, navigation }) => {
               onPress={handleGoBack}
               size={24}
             />
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {name}
+            <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+              {safeName}
             </Text>
           </View>
         </Animated.View>
@@ -468,13 +522,20 @@ const GameDetail = ({ route, navigation }) => {
 
         {/* ── Hero / Cover ── */}
         <View style={styles.heroSection}>
-          <Image
-            source={{ uri: cover }}
-            style={styles.backdropImage}
-            contentFit="cover"
-            recyclingKey={`game-hero-${gameId}`}
-            transition={200}
-          />
+          {cover ? (
+            <Image
+              source={{ uri: cover }}
+              style={styles.backdropImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey={`game-hero-${gameId}`}
+              transition={200}
+            />
+          ) : (
+            <View style={styles.heroFallback}>
+              <Ionicons name="game-controller-outline" size={42} color="#fff" />
+            </View>
+          )}
           {/* Gradient overlay */}
           <View style={styles.heroGradient} />
         </View>
@@ -489,12 +550,18 @@ const GameDetail = ({ route, navigation }) => {
               );
             }}
           >
-            <Text style={styles.mainTitle}>{name}</Text>
-            <Text style={styles.releaseYear}>{releaseDate}</Text>
+            <Text style={styles.mainTitle} numberOfLines={2} ellipsizeMode="tail">
+              {safeName}
+            </Text>
+            <Text style={styles.releaseYear} numberOfLines={1} ellipsizeMode="tail">
+              {releaseDate || "—"}
+            </Text>
           </View>
 
           {franchise ? (
-            <Text style={styles.franchiseText}>📦 {franchise}</Text>
+            <Text style={styles.franchiseText} numberOfLines={2} ellipsizeMode="tail">
+              📦 {franchise}
+            </Text>
           ) : null}
 
           {/* Summary */}
@@ -504,7 +571,7 @@ const GameDetail = ({ route, navigation }) => {
           >
             {summary || "No description available."}
           </Text>
-          {summary.length > 200 && (
+          {summary?.length > 200 && (
             <Pressable
               onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
             >
@@ -648,6 +715,10 @@ const GameDetail = ({ route, navigation }) => {
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id}
               renderItem={renderTrailer}
+              initialNumToRender={3}
+              maxToRenderPerBatch={4}
+              windowSize={5}
+              removeClippedSubviews
             />
           </View>
         )}
@@ -670,6 +741,10 @@ const GameDetail = ({ route, navigation }) => {
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item, i) => `ss-${i}`}
               renderItem={renderScreenshot}
+              initialNumToRender={3}
+              maxToRenderPerBatch={4}
+              windowSize={5}
+              removeClippedSubviews
             />
           </View>
         )}
@@ -810,6 +885,10 @@ const GameDetail = ({ route, navigation }) => {
               contentContainerStyle={styles.horizontalList}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderSimilarGame}
+              initialNumToRender={4}
+              maxToRenderPerBatch={6}
+              windowSize={5}
+              removeClippedSubviews
             />
           </View>
         )}
@@ -857,7 +936,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 18,
-    fontFamily: "Genjiro",
+    fontFamily: UI_FONT_BOLD,
     color: "#fff",
     letterSpacing: 0.5,
   },
@@ -933,6 +1012,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#000",
   },
+  heroFallback: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#15152e",
+  },
   backdropImage: { width: "100%", height: "100%" },
   heroGradient: {
     position: "absolute",
@@ -981,14 +1067,19 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 20,
-    fontFamily: "Genjiro",
+    fontFamily: DISPLAY_FONT,
     color: "#fff",
     flex: 1,
     marginRight: 12,
     letterSpacing: 0.5,
   },
-  releaseYear: { fontSize: 14, color: ACCENT, flexShrink: 0 },
-  franchiseText: { fontSize: 13, color: "#aaa", marginBottom: 10 },
+  releaseYear: { fontSize: 14, color: ACCENT, flexShrink: 0, fontFamily: UI_FONT },
+  franchiseText: {
+    fontSize: 13,
+    color: "#aaa",
+    marginBottom: 10,
+    fontFamily: UI_FONT,
+  },
 
   // ── Meta chips ──
   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
@@ -1002,15 +1093,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ACCENT2,
   },
-  metaChipText: { fontSize: 11, color: ACCENT2, fontWeight: "600" },
+  metaChipText: {
+    fontSize: 11,
+    color: ACCENT2,
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
 
   // ── Description ──
-  description: { fontSize: 14, color: "#ddd", lineHeight: 22, marginBottom: 8 },
+  description: {
+    fontSize: 14,
+    color: "#ddd",
+    lineHeight: 22,
+    marginBottom: 8,
+    fontFamily: UI_FONT,
+  },
   expandText: {
     fontSize: 13,
     color: ACCENT,
     fontWeight: "600",
     marginBottom: 12,
+    fontFamily: UI_FONT_BOLD,
   },
 
   // ── Storyline ──
@@ -1026,8 +1129,14 @@ const styles = StyleSheet.create({
     color: ACCENT,
     fontWeight: "700",
     marginBottom: 8,
+    fontFamily: UI_FONT_BOLD,
   },
-  storylineText: { fontSize: 13, color: "#ccc", lineHeight: 20 },
+  storylineText: {
+    fontSize: 13,
+    color: "#ccc",
+    lineHeight: 20,
+    fontFamily: UI_FONT,
+  },
 
   // ── Stats ──
   statsSection: {
@@ -1046,6 +1155,7 @@ const styles = StyleSheet.create({
     color: "#999",
     fontWeight: "600",
     marginBottom: 12,
+    fontFamily: UI_FONT_BOLD,
   },
 
   // ── Section label ──
@@ -1055,6 +1165,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: ACCENT,
     marginBottom: 12,
+    fontFamily: UI_FONT_BOLD,
   },
 
   // ── Pill rows ──
@@ -1069,7 +1180,12 @@ const styles = StyleSheet.create({
     borderColor: ACCENT2,
     backgroundColor: "rgba(34,211,238,0.08)",
   },
-  platformPillText: { fontSize: 12, color: ACCENT2, fontWeight: "600" },
+  platformPillText: {
+    fontSize: 12,
+    color: ACCENT2,
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
 
   // ── Mode pill ──
   modePill: {
@@ -1080,11 +1196,17 @@ const styles = StyleSheet.create({
     borderColor: "#34D399",
     backgroundColor: "rgba(52,211,153,0.08)",
   },
-  modePillText: { fontSize: 12, color: "#34D399", fontWeight: "600" },
+  modePillText: {
+    fontSize: 12,
+    color: "#34D399",
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
 
   // ── Company ──
   companyList: { gap: 12 },
   companyRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  companyTextWrap: { flexShrink: 1, minWidth: 0 },
   companyAvatar: {
     width: 36,
     height: 36,
@@ -1094,8 +1216,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  companyName: { fontSize: 14, color: "#fff", fontWeight: "600" },
-  companyRole: { fontSize: 12, color: "#888", marginTop: 2 },
+  companyName: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
+  companyRole: { fontSize: 12, color: "#888", marginTop: 2, fontFamily: UI_FONT },
 
   // ── Age rating ──
   ageBadge: {
@@ -1112,12 +1239,14 @@ const styles = StyleSheet.create({
     color: ACCENT,
     fontWeight: "700",
     letterSpacing: 1,
+    fontFamily: UI_FONT_BOLD,
   },
   ageBadgeRating: {
     fontSize: 18,
     color: "#fff",
     fontWeight: "800",
     marginTop: 2,
+    fontFamily: UI_FONT_BOLD,
   },
 
   // ── Horizontal sections ──
@@ -1152,7 +1281,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  trailerName: { fontSize: 12, color: "#ccc", marginTop: 6 },
+  trailerName: { fontSize: 12, color: "#ccc", marginTop: 6, fontFamily: UI_FONT },
 
   // ── Screenshots ──
   screenshot: {
@@ -1171,6 +1300,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#252525",
   },
   relatedCardImage: { width: "100%", height: "100%" },
+  relatedCardPlaceholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#2b2b2b",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   relatedCardOverlay: {
     position: "absolute",
     bottom: 0,
@@ -1179,7 +1315,12 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: "rgba(0,0,0,0.7)",
   },
-  relatedCardTitle: { fontSize: 11, color: "#fff", fontWeight: "600" },
+  relatedCardTitle: {
+    fontSize: 11,
+    color: "#fff",
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
 
   // ── Reviews ──
   reviewsHeader: {
@@ -1202,6 +1343,7 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     paddingVertical: 20,
+    fontFamily: UI_FONT,
   },
 
   // ── Pagination ──
@@ -1227,9 +1369,19 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.1)",
     opacity: 0.5,
   },
-  paginationButtonText: { fontSize: 14, color: "#fff", fontWeight: "500" },
+  paginationButtonText: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "500",
+    fontFamily: UI_FONT_BOLD,
+  },
   paginationButtonTextDisabled: { color: "#666" },
-  pageIndicator: { fontSize: 14, color: "#fff", fontWeight: "500" },
+  pageIndicator: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "500",
+    fontFamily: UI_FONT,
+  },
 
   // ── Error ──
   errorContainer: {
@@ -1243,6 +1395,7 @@ const styles = StyleSheet.create({
     color: "#ff6b6b",
     textAlign: "center",
     marginBottom: 20,
+    fontFamily: UI_FONT,
   },
   retryButton: {
     backgroundColor: ACCENT,
@@ -1251,7 +1404,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderCurve: "continuous",
   },
-  retryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  retryText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: UI_FONT_BOLD,
+  },
   // ── No credentials screen ──────────────────────────────────────────────────
   noCredSafeArea: {
     flex: 1,
@@ -1278,7 +1436,7 @@ const styles = StyleSheet.create({
   },
   noCredTitle: {
     fontSize: 22,
-    fontFamily: "Genjiro",
+    fontFamily: DISPLAY_FONT,
     color: "#fff",
     letterSpacing: 0.5,
     textAlign: "center",
@@ -1290,6 +1448,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: "center",
     marginBottom: 32,
+    fontFamily: UI_FONT,
   },
   noCredPrimaryButton: {
     flexDirection: "row",
@@ -1307,6 +1466,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+    fontFamily: UI_FONT_BOLD,
   },
   noCredSecondaryButton: {
     paddingHorizontal: 28,
@@ -1322,6 +1482,7 @@ const styles = StyleSheet.create({
     color: "#888",
     fontSize: 15,
     fontWeight: "500",
+    fontFamily: UI_FONT,
   },
 });
 

@@ -20,6 +20,7 @@
     "@shopify/react-native-skia": "2.2.12",
     "@supabase/supabase-js": "^2.93.3",
     "axios": "^1.13.5",
+    "@mhpdev/react-native-haptics": "^1.1.0",
     "expo": "^54.0.33",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",

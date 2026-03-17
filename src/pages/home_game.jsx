@@ -322,7 +322,7 @@ const GameHome = ({ navigation }) => {
   // heroRow is a fixed View (no longer a scrollable ListHeader)
   const renderListHeader = null;
 
-  const renderListEmpty = useMemo(() => {
+  const renderListEmpty = useCallback(() => {
     if (isLoading) {
       return <SkeletonLoader cardHeight={cardHeight} count={6} />;
     }
@@ -344,7 +344,7 @@ const GameHome = ({ navigation }) => {
     return null;
   }, [isLoading, error, cardHeight, fetchGames, selectedCategory]);
 
-  const renderListFooter = useMemo(() => {
+  const renderListFooter = useCallback(() => {
     if (!(currentPage > 1 || hasMore)) return null;
     return (
       <View style={styles.paginationContainer}>
