@@ -50,7 +50,7 @@ ShimmerBlock.displayName = 'ShimmerBlock';
 
 const styles = StyleSheet.create({
   block: {
-    backgroundColor: '#333',
+    backgroundColor: '#1D2030',
     borderRadius: 8,
     borderCurve: 'continuous',
   },

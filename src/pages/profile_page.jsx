@@ -15,6 +15,7 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { updateAnonymousMode, updateProfile } from '../services/profile';
@@ -175,7 +176,13 @@ const ProfilePage = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="light-content" backgroundColor="#0B0B10" />
+      <LinearGradient
+        colors={['#0B0B10', '#141421', '#0B0B10']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.bgGlowOne} />
+      <View style={styles.bgGlowTwo} />
       
       <ScrollView 
         style={styles.scrollView}
@@ -203,7 +210,7 @@ const ProfilePage = ({ navigation }) => {
                 </View>
               </View>
               
-              <Text style={styles.loginPromptTitle}>Who Goes There? 🕵️</Text>
+              <Text style={styles.loginPromptTitle}>Who Goes There?</Text>
               <Text style={styles.loginPromptSubtitle}>
                 Sign in to unlock your profile, stats & library
               </Text>
@@ -223,7 +230,7 @@ const ProfilePage = ({ navigation }) => {
               {/* Anime Toggle */}
               <View style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Text style={styles.mediaIcon}>🎌</Text>
+                  <Ionicons name="sparkles-outline" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Anime</Text>
@@ -244,7 +251,7 @@ const ProfilePage = ({ navigation }) => {
               {/* Movies Toggle */}
               <View style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Text style={styles.mediaIcon}>🎬</Text>
+                  <Ionicons name="film-outline" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Movies</Text>
@@ -265,7 +272,7 @@ const ProfilePage = ({ navigation }) => {
               {/* Games Toggle */}
               <View style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Text style={styles.mediaIcon}>🎮</Text>
+                  <Ionicons name="game-controller-outline" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Games</Text>
@@ -286,7 +293,7 @@ const ProfilePage = ({ navigation }) => {
               {/* Comics Toggle */}
               <View style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Text style={styles.mediaIcon}>📚</Text>
+                  <Ionicons name="book-outline" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Comics</Text>
@@ -307,7 +314,7 @@ const ProfilePage = ({ navigation }) => {
               {/* Manga Toggle */}
               <View style={styles.menuItem}>
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Text style={styles.mediaIcon}>📖</Text>
+                  <Ionicons name="albums-outline" size={20} color={theme.accent} />
                 </View>
                 <View style={styles.menuTextContainer}>
                   <Text style={styles.menuTitle}>Manga</Text>
@@ -716,27 +723,55 @@ const ProfilePage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
+    backgroundColor: '#0B0B10',
+  },
+  bgGlowOne: {
+    position: 'absolute',
+    top: -120,
+    right: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#A78BFA',
+    opacity: 0.14,
+  },
+  bgGlowTwo: {
+    position: 'absolute',
+    bottom: -140,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: '#4ADE80',
+    opacity: 0.08,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   backButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Genjiro',
     color: '#FFFFFF',
+    letterSpacing: 2,
   },
   emptyState: {
     flex: 1,
@@ -746,18 +781,20 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   loginPromptCard: {
-    backgroundColor: '#252525',
-    borderRadius: 16,
+    backgroundColor: '#151521',
+    borderRadius: 20,
     borderCurve: 'continuous',
     padding: 24,
-    marginHorizontal: 16,
-    marginVertical: 16,
+    marginHorizontal: 8,
+    marginVertical: 14,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.25)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 6,
   },
   emptyStateIconContainer: {
     position: 'relative',
@@ -777,7 +814,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: '#252525',
+    borderColor: '#151521',
   },
   questionMarkText: {
     color: '#fff',
@@ -786,17 +823,18 @@ const styles = StyleSheet.create({
   },
   loginPromptTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     marginBottom: 8,
     textAlign: 'center',
   },
   loginPromptSubtitle: {
     fontSize: 14,
-    color: '#999',
+    color: '#9AA0B4',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 20,
+    fontFamily: 'Agdasima',
   },
   emptyStateTitle: {
     fontSize: 26,
@@ -822,15 +860,16 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
   },
   signInButtonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
+    letterSpacing: 1,
   },
   emptyStateFooter: {
     fontSize: 14,
@@ -887,14 +926,14 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
+    color: '#9AA0B4',
+    fontFamily: 'Agdasima',
   },
   statsRow: {
     flexDirection: 'row',
@@ -916,18 +955,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     marginBottom: 12,
     marginTop: 8,
+    letterSpacing: 2,
   },
   menuCard: {
-    backgroundColor: '#252525',
-    borderRadius: 16,
+    backgroundColor: '#151521',
+    borderRadius: 18,
     borderCurve: 'continuous',
     marginBottom: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.18)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -937,7 +979,7 @@ const styles = StyleSheet.create({
   menuIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 14,
     borderCurve: 'continuous',
     justifyContent: 'center',
     alignItems: 'center',
@@ -956,17 +998,18 @@ const styles = StyleSheet.create({
   },
   menuTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
   },
   menuSubtitle: {
     fontSize: 13,
-    color: '#999',
+    color: '#9AA0B4',
     marginTop: 2,
+    fontFamily: 'Agdasima',
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     marginLeft: 70,
   },
   newBadge: {
@@ -995,8 +1038,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   igdbModalCard: {
-    backgroundColor: '#1A1A2E',
-    borderRadius: 20,
+    backgroundColor: '#151521',
+    borderRadius: 18,
     borderCurve: 'continuous',
     padding: 20,
     width: '100%',
@@ -1011,7 +1054,7 @@ const styles = StyleSheet.create({
   igdbModalTitle: {
     flex: 1,
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
   },
   igdbModalClose: {
@@ -1028,24 +1071,26 @@ const styles = StyleSheet.create({
   igdbInfoText: {
     flex: 1,
     fontSize: 12,
-    color: '#bbb',
+    color: '#B7BED0',
     lineHeight: 18,
+    fontFamily: 'Agdasima',
   },
   igdbFieldLabel: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#ccc',
+    fontFamily: 'Agdasima-Bold',
+    color: '#D4D8E5',
     marginBottom: 6,
     marginTop: 2,
   },
   igdbInput: {
-    backgroundColor: '#0D0D0D',
+    backgroundColor: '#0F111A',
     borderRadius: 10,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#24273A',
     color: '#FFFFFF',
     fontSize: 14,
+    fontFamily: 'Agdasima',
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 14,

@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import Haptics from '@mhpdev/react-native-haptics';
 import {
   View,
   Text,
@@ -12,6 +11,14 @@ import { BlurView } from '@react-native-community/blur';
 import { useNavigation } from '@react-navigation/native';
 import { getSettings } from '../../services/settings';
 import { useMediaType } from '../../context/MediaTypeContext';
+
+let HapticsModule = null;
+try {
+  const mod = require('@mhpdev/react-native-haptics');
+  HapticsModule = mod?.default ?? mod;
+} catch {
+  HapticsModule = null;
+}
 
 /**
  * SideBar - Floating pill buttons with full-screen blur background.
@@ -88,9 +95,20 @@ const SideBar = ({
     }
   }, [isVisible]);
 
+  const triggerImpact = (style) => {
+    if (Platform.OS === 'web') return;
+    if (!HapticsModule?.impact) return;
+    try {
+      const maybePromise = HapticsModule.impact(style);
+      if (maybePromise?.catch) maybePromise.catch(() => {});
+    } catch {
+      // No-op if native module isn't available (e.g. Expo Go).
+    }
+  };
+
   const handleSectionPress = (sectionId) => {
     if (sectionId === activeSection) {
-      if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      triggerImpact('light');
       onClose?.();
       return;
     }
@@ -98,7 +116,7 @@ const SideBar = ({
     const newMediaType = SECTION_MEDIA_MAP[sectionId];
     if (!newMediaType) return;
 
-    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerImpact('medium');
     // Close first so the exit animation plays fully (150ms),
     // then switch media type and navigate after it completes.
     onClose?.();

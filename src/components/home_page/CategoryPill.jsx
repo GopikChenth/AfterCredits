@@ -5,7 +5,16 @@ import {
   StyleSheet, 
   Animated,
   PanResponder,
+  Platform,
 } from 'react-native';
+
+let HapticsModule = null;
+try {
+  const mod = require('@mhpdev/react-native-haptics');
+  HapticsModule = mod?.default ?? mod;
+} catch {
+  HapticsModule = null;
+}
 
 // Exported so home_game.jsx can read the same value for its Skia corner radius.
 export const PILL_BORDER_RADIUS = 20;
@@ -23,6 +32,7 @@ const CategoryPill = ({
   const hintAnim = useRef(new Animated.Value(0)).current;
   const hasInteracted = useRef(false); // Stop hinting once user swipes
   const hintLoopRef = useRef(null);
+  const hasDragHaptic = useRef(false);
 
   // Fire once on mount after 600ms, then loop every 5s until user swipes
   useEffect(() => {
@@ -107,6 +117,17 @@ const CategoryPill = ({
     ]).start();
   };
 
+  const triggerDragStart = () => {
+    if (Platform.OS !== 'android') return;
+    if (!HapticsModule?.androidHaptics) return;
+    try {
+      const maybePromise = HapticsModule.androidHaptics('drag-start');
+      if (maybePromise?.catch) maybePromise.catch(() => {});
+    } catch {
+      // No-op if native module isn't available.
+    }
+  };
+
   // Swipe gesture handler
   const panResponder = useRef(
     PanResponder.create({
@@ -119,6 +140,12 @@ const CategoryPill = ({
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
         return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
+      onPanResponderGrant: () => {
+        if (!hasDragHaptic.current) {
+          hasDragHaptic.current = true;
+          triggerDragStart();
+        }
+      },
       onPanResponderRelease: (evt, gestureState) => {
         const swipeThreshold = 20;
         const velocityThreshold = 0.3;
@@ -130,6 +157,10 @@ const CategoryPill = ({
           // Swiped left -> next category
           changeCategory(1);
         }
+        hasDragHaptic.current = false;
+      },
+      onPanResponderTerminate: () => {
+        hasDragHaptic.current = false;
       },
     })
   ).current;

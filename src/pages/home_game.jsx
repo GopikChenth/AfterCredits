@@ -93,7 +93,6 @@ const buildPanelPath = (w, h, stepX, stepY) => {
 
 // ─── Game card ─────────────────────────────────────────────────────────────
 const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
-  const score = game.metacritic ?? Math.round((game.rating || 0) * 20);
 
   return (
     <Pressable
@@ -120,23 +119,14 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
       )}
 
       <LinearGradient
-        colors={['transparent', '#0F0F0F']}
+        colors={['transparent', GAME_BG]}
         style={styles.cardOverlay}
       />
+      <LinearGradient
+        colors={[GAME_BG, 'transparent']}
+        style={styles.cardTopFade}
+      />
 
-      {score > 0 && (
-        <View
-          style={[
-            styles.scoreBadge,
-            {
-              backgroundColor:
-                score >= 75 ? '#337418' : score >= 50 ? '#FFBE0B' : '#EF4444',
-            },
-          ]}
-        >
-          <Text style={styles.scoreText}>{score}</Text>
-        </View>
-      )}
 
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>
@@ -708,6 +698,13 @@ const styles = StyleSheet.create({
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
+  },
+  cardTopFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 20,
   },
   scoreBadge: {
     position: 'absolute',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 /**
@@ -22,6 +23,13 @@ const MenuDivider = () => <View style={styles.menuDivider} />;
 
 const SkeletonProfile = () => (
   <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <LinearGradient
+      colors={['#0B0B10', '#141421', '#0B0B10']}
+      style={StyleSheet.absoluteFill}
+    />
+    <View style={styles.bgGlowOne} />
+    <View style={styles.bgGlowTwo} />
+
     {/* Header */}
     <View style={styles.header}>
       <ShimmerBlock style={{ width: 24, height: 24, borderRadius: 4 }} />
@@ -69,26 +77,48 @@ const SkeletonProfile = () => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
+    backgroundColor: '#0B0B10',
     paddingHorizontal: 16,
+  },
+  bgGlowOne: {
+    position: 'absolute',
+    top: -120,
+    right: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#A78BFA',
+    opacity: 0.14,
+  },
+  bgGlowTwo: {
+    position: 'absolute',
+    bottom: -140,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: '#4ADE80',
+    opacity: 0.08,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   avatarSection: {
     alignItems: 'center',
     paddingVertical: 20,
   },
   menuCard: {
-    backgroundColor: '#252525',
-    borderRadius: 16,
+    backgroundColor: '#151521',
+    borderRadius: 18,
     borderCurve: 'continuous',
     marginBottom: 20,
     marginTop: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.18)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -97,7 +127,7 @@ const styles = StyleSheet.create({
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#333',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     marginLeft: 70,
   },
 });

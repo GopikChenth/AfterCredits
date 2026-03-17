@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { 
   signUp, 
@@ -126,7 +127,13 @@ const AuthPage = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar barStyle="light-content" backgroundColor="#0B0B10" />
+      <LinearGradient
+        colors={['#0B0B10', '#141421', '#0B0B10']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.bgGlowOne} />
+      <View style={styles.bgGlowTwo} />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -146,28 +153,29 @@ const AuthPage = ({ navigation }) => {
             <Text style={styles.tagline}>Track your entertainment journey</Text>
           </View>
 
-          {/* Toggle Tabs */}
-          <View style={styles.tabContainer}>
-            <Pressable 
-              style={[styles.tab, isLogin && [styles.activeTab, { borderBottomColor: theme.accent }]]}
-              onPress={() => setIsLogin(true)}
-            >
-              <Text style={[styles.tabText, isLogin && [styles.activeTabText, { color: theme.accent }]]}>
-                Login
-              </Text>
-            </Pressable>
-            <Pressable 
-              style={[styles.tab, !isLogin && [styles.activeTab, { borderBottomColor: theme.accent }]]}
-              onPress={() => setIsLogin(false)}
-            >
-              <Text style={[styles.tabText, !isLogin && [styles.activeTabText, { color: theme.accent }]]}>
-                Sign Up
-              </Text>
-            </Pressable>
-          </View>
+          <View style={styles.authCard}>
+            {/* Toggle Tabs */}
+            <View style={styles.tabContainer}>
+              <Pressable 
+                style={[styles.tab, isLogin && [styles.activeTab, { backgroundColor: theme.accent }]]}
+                onPress={() => setIsLogin(true)}
+              >
+                <Text style={[styles.tabText, isLogin && styles.activeTabText]}>
+                  Login
+                </Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.tab, !isLogin && [styles.activeTab, { backgroundColor: theme.accent }]]}
+                onPress={() => setIsLogin(false)}
+              >
+                <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>
+                  Sign Up
+                </Text>
+              </Pressable>
+            </View>
 
-          {/* Form */}
-          <View style={styles.form}>
+            {/* Form */}
+            <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
@@ -332,6 +340,7 @@ const AuthPage = ({ navigation }) => {
                 <Text style={[styles.link, { color: theme.accent }]}>Privacy Policy</Text>
               </Text>
             )}
+            </View>
           </View>
 
           {/* Bottom Spacing */}
@@ -345,7 +354,27 @@ const AuthPage = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D0D0D',
+    backgroundColor: '#0B0B10',
+  },
+  bgGlowOne: {
+    position: 'absolute',
+    top: -80,
+    right: -60,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: '#A78BFA',
+    opacity: 0.12,
+  },
+  bgGlowTwo: {
+    position: 'absolute',
+    bottom: -100,
+    left: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#6EE7B7',
+    opacity: 0.08,
   },
   scrollContent: {
     flexGrow: 1,
@@ -353,61 +382,86 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 32,
+    marginBottom: 24,
   },
   logo: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 34,
+    fontFamily: 'Genjiro',
     color: '#FFFFFF',
     marginBottom: 8,
+    letterSpacing: 2,
   },
   tagline: {
     fontSize: 14,
-    color: '#999',
+    color: '#9AA0B4',
+    fontFamily: 'Agdasima',
+  },
+  authCard: {
+    backgroundColor: 'rgba(20, 20, 33, 0.92)',
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.25)',
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 6,
   },
   tabContainer: {
     flexDirection: 'row',
-    marginBottom: 30,
+    backgroundColor: '#11131C',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    padding: 4,
+    marginBottom: 22,
   },
   tab: {
     flex: 1,
     paddingVertical: 12,
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: '#333',
+    borderRadius: 12,
+    borderCurve: 'continuous',
   },
   activeTab: {
-    borderBottomWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   tabText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#999',
+    fontSize: 14,
+    fontFamily: 'Agdasima',
+    letterSpacing: 1.5,
+    color: '#8D93A8',
   },
   activeTabText: {
-    fontWeight: '700',
+    color: '#0B0B10',
+    fontFamily: 'Agdasima-Bold',
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontFamily: 'Agdasima-Bold',
+    color: '#E6E8F0',
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#252525',
-    borderRadius: 12,
+    backgroundColor: '#11131C',
+    borderRadius: 14,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: '#24273A',
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
@@ -418,24 +472,25 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#FFFFFF',
+    fontFamily: 'Agdasima',
   },
   hintText: {
     fontSize: 12,
-    color: '#999',
+    color: '#8C91A8',
     marginTop: 6,
-    fontStyle: 'italic',
+    fontFamily: 'Agdasima',
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   forgotPasswordText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
   },
   submitButton: {
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     borderCurve: 'continuous',
     alignItems: 'center',
     marginBottom: 24,
@@ -443,7 +498,8 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Agdasima-Bold',
+    letterSpacing: 1,
   },
   divider: {
     flexDirection: 'row',
@@ -479,9 +535,10 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 12,
-    color: '#999',
+    color: '#8C91A8',
     textAlign: 'center',
     lineHeight: 18,
+    fontFamily: 'Agdasima',
   },
   link: {
     fontWeight: '600',

@@ -508,7 +508,7 @@ const HomeMovies = ({ navigation }) => {
 
               {/* ── True two-column masonry grid ── */}
               {loading ? (
-                <SkeletonLoader count={6} cardHeight={CARD_H_TALL} />
+                <SkeletonLoader count={6} cardHeight={CARD_H_TALL} variant="masonry" />
               ) : (
                 <View style={styles.masonryRow}>
                   {/* Left column */}
