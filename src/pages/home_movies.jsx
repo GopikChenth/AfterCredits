@@ -25,7 +25,6 @@ import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getMediaTheme } from '../utils/mediaThemes';
 
@@ -68,7 +67,7 @@ const buildHeaderPath = (w, h) => {
   const p = Skia.Path.Make();
   p.moveTo(0, 0);
   p.lineTo(w, 0);
-  p.lineTo(w, h - 24);
+  p.lineTo(w, h);
   p.lineTo(0, h);
   p.close();
   return p;
@@ -210,7 +209,7 @@ const MovieCard = React.memo(({ movie, onPress, cardHeight }) => (
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 const HomeMovies = ({ navigation }) => {
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
 
   const [selectedCategory, setSelectedCategory] = useState('trending');
   const [movies, setMovies]       = useState([]);

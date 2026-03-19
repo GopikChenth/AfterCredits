@@ -27,8 +27,8 @@
  */
 
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { runRequestWithPolicy } from './requestPolicy';
+import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
 
 // ===========================================
 // BASE CONFIGURATION
@@ -42,10 +42,15 @@ const CACHE_DURATION = {
   TRENDING: 6 * 60 * 60 * 1000,      // 6 hours
   POPULAR: 6 * 60 * 60 * 1000,       // 6 hours
   NEW_RELEASES: 6 * 60 * 60 * 1000,  // 6 hours
+  UPCOMING: 6 * 60 * 60 * 1000,      // 6 hours
   GAME_DETAILS: 24 * 60 * 60 * 1000, // 24 hours
+  SCREENSHOTS: 24 * 60 * 60 * 1000,  // 24 hours
+  ACHIEVEMENTS: 24 * 60 * 60 * 1000, // 24 hours
+  SERIES: 24 * 60 * 60 * 1000,       // 24 hours
   SEARCH: 1 * 60 * 60 * 1000,        // 1 hour
   GENRES: 7 * 24 * 60 * 60 * 1000,   // 7 days
   PLATFORMS: 7 * 24 * 60 * 60 * 1000, // 7 days
+  STORES: 7 * 24 * 60 * 60 * 1000,   // 7 days
 };
 
 // ===========================================
@@ -59,23 +64,13 @@ const CACHE_DURATION = {
  */
 const getCachedData = async (key) => {
   try {
-    const cached = await AsyncStorage.getItem(key);
-    if (!cached) return null;
-
-    const { data, timestamp } = JSON.parse(cached);
     const cacheKey = key.split(':')[0];
     const maxAge = CACHE_DURATION[cacheKey] || CACHE_DURATION.GAME_DETAILS;
-
-    // Check if cache is still valid
-    if (Date.now() - timestamp < maxAge) {
+    const data = await cacheGet(key, { ttl: maxAge });
+    if (data) {
       console.log(`✅ Cache hit: ${key}`);
-      return data;
     }
-
-    // Cache expired
-    console.log(`⏰ Cache expired: ${key}`);
-    await AsyncStorage.removeItem(key);
-    return null;
+    return data;
   } catch (error) {
     console.error('Cache read error:', error);
     return null;
@@ -89,11 +84,9 @@ const getCachedData = async (key) => {
  */
 const setCachedData = async (key, data) => {
   try {
-    const cacheObject = {
-      data,
-      timestamp: Date.now(),
-    };
-    await AsyncStorage.setItem(key, JSON.stringify(cacheObject));
+    const cacheKey = key.split(':')[0];
+    const ttl = CACHE_DURATION[cacheKey] || CACHE_DURATION.GAME_DETAILS;
+    await cacheSet(key, data, { ttl, namespace: 'RAWG' });
     console.log(`💾 Cached: ${key}`);
   } catch (error) {
     console.error('Cache write error:', error);
@@ -436,19 +429,22 @@ export const formatReleaseDate = (dateString) => {
  */
 export const clearGameCache = async () => {
   try {
-    const keys = await AsyncStorage.getAllKeys();
-    const gameCacheKeys = keys.filter(key => 
-      key.startsWith('TRENDING:') ||
-      key.startsWith('POPULAR:') ||
-      key.startsWith('NEW_RELEASES:') ||
-      key.startsWith('GAME_DETAILS:') ||
-      key.startsWith('SEARCH:') ||
-      key.startsWith('GENRES:') ||
-      key.startsWith('PLATFORMS:')
-    );
-    
-    await AsyncStorage.multiRemove(gameCacheKeys);
-    console.log(`🗑️ Cleared ${gameCacheKeys.length} cache entries`);
+    const removed = await clearCacheByPrefixes([
+      'RAWG_',
+      'TRENDING:',
+      'POPULAR:',
+      'NEW_RELEASES:',
+      'UPCOMING:',
+      'GAME_DETAILS:',
+      'SCREENSHOTS:',
+      'ACHIEVEMENTS:',
+      'SERIES:',
+      'SEARCH:',
+      'GENRES:',
+      'PLATFORMS:',
+      'STORES:',
+    ]);
+    console.log(`🗑️ Cleared ${removed} RAWG cache entries`);
   } catch (error) {
     console.error('Cache clear error:', error);
   }

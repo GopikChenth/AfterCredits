@@ -29,6 +29,9 @@ yarn-error.*
 # codex agents
 .agents/
 skills-lock.json
+.codex/
+.planing/
+ref/
 
 # macOS
 .DS_Store

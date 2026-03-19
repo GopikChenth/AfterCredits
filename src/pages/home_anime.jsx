@@ -29,12 +29,11 @@ import { searchMedia, debounce } from '../services/search';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
 
-const HomeAnime = ({ navigation }) => {
+const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
   const theme = getMediaTheme('anime');
-  const tabBarHeight = useBottomTabBarHeight();
+  const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
   // State for responsive dimensions
   const dimensions = getCardDimensions();
   const [cardWidth, setCardWidth] = useState(dimensions.cardWidth);
@@ -231,6 +230,20 @@ const HomeAnime = ({ navigation }) => {
     navigation?.navigate('DetailsAnime', { animeId });
   }, [navigation]);
 
+  const handleCategoryGestureStart = useCallback(() => {
+    setHomeTabSwipeEnabled?.(false);
+  }, [setHomeTabSwipeEnabled]);
+
+  const handleCategoryGestureEnd = useCallback(() => {
+    setHomeTabSwipeEnabled?.(true);
+  }, [setHomeTabSwipeEnabled]);
+
+  useEffect(() => {
+    return () => {
+      setHomeTabSwipeEnabled?.(true);
+    };
+  }, [setHomeTabSwipeEnabled]);
+
   // Memoized card width calculation
   const calculatedCardWidth = useMemo(() => {
     return (Dimensions.get('window').width - 56) / 2;
@@ -256,12 +269,19 @@ const HomeAnime = ({ navigation }) => {
             onCategoryChange={handleCategoryChange}
             width={160}
             accentColor={theme.accent}
+            onSwipeGestureStart={handleCategoryGestureStart}
+            onSwipeGestureEnd={handleCategoryGestureEnd}
           />
           <Text style={styles.animeText}>ANIME</Text>
         </View>
       </View>
     </View>
-  ), [handleCategoryChange, theme.accent]);
+  ), [
+    handleCategoryChange,
+    handleCategoryGestureEnd,
+    handleCategoryGestureStart,
+    theme.accent,
+  ]);
 
   const renderListEmpty = useMemo(() => {
     if (isLoading) {

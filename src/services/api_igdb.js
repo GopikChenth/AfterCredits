@@ -18,7 +18,7 @@
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
- * ║  SETUP — 3 steps                                                 ║
+ * ║  SETUP — 2 steps                                                 ║
  * ║  ─────────────────────────────────────────────────────────────  ║
  * ║                                                                  ║
  * ║  1. Register a Twitch app                                        ║
@@ -27,18 +27,15 @@
  * ║     → OAuth Redirect URL: http://localhost                       ║
  * ║     → Copy Client ID and generate a Client Secret               ║
  * ║                                                                  ║
- * ║  2. Deploy `supabase/functions/igdb-proxy` and set secrets:      ║
- * ║     IGDB_TWITCH_CLIENT_ID, IGDB_TWITCH_CLIENT_SECRET             ║
- * ║                                                                  ║
- * ║  3. Client calls Supabase Edge Function only.                    ║
- * ║     Twitch token + rotation stays server-side.                   ║
+ * ║  2. In app: Profile → IGDB API                                   ║
+ * ║     Paste Client ID + Access Token and save.                     ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { runRequestWithPolicy } from './requestPolicy';
 import { getIGDBCredentials } from './settings';
+import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -74,15 +71,11 @@ const CACHE_DURATION = {
 
 const getCached = async (key) => {
   try {
-    const raw = await AsyncStorage.getItem(key);
-    if (!raw) return null;
-    const { data, timestamp, ttl } = JSON.parse(raw);
-    if (Date.now() - timestamp < ttl) {
+    const data = await cacheGet(key);
+    if (data) {
       console.log(`✅ IGDB cache hit: ${key}`);
-      return data;
     }
-    await AsyncStorage.removeItem(key);
-    return null;
+    return data;
   } catch {
     return null;
   }
@@ -90,7 +83,7 @@ const getCached = async (key) => {
 
 const setCached = async (key, data, ttl) => {
   try {
-    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now(), ttl }));
+    await cacheSet(key, data, { ttl, namespace: 'IGDB' });
   } catch (e) {
     console.warn('IGDB cache write error:', e);
   }
@@ -165,8 +158,7 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
   if (!clientId || !accessToken) {
     console.warn(
       '⚠️  IGDB credentials missing.\n' +
-      '   Add them via Settings > IGDB API, or set EXPO_PUBLIC_IGDB_CLIENT_ID and\n' +
-      '   EXPO_PUBLIC_IGDB_ACCESS_TOKEN in your .env file.'
+      '   Add them via Settings > IGDB API in your profile.'
     );
     return [];
   }
@@ -524,10 +516,8 @@ export const formatIGDBData = (raw) => {
 /** Clear all IGDB cache entries from AsyncStorage */
 export const clearIGDBCache = async () => {
   try {
-    const keys = await AsyncStorage.getAllKeys();
-    const igdbKeys = keys.filter(k => k.startsWith('IGDB_'));
-    await AsyncStorage.multiRemove(igdbKeys);
-    console.log(`🗑️ Cleared ${igdbKeys.length} IGDB cache entries`);
+    const removed = await clearCacheByPrefixes(['IGDB_']);
+    console.log(`🗑️ Cleared ${removed} IGDB cache entries`);
   } catch (error) {
     console.error('IGDB cache clear error:', error);
   }

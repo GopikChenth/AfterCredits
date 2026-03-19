@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Animated,
-  PanResponder,
   Platform,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { usePagerSwipe } from '../../context/PagerSwipeContext';
 
 let HapticsModule = null;
 try {
@@ -24,15 +25,17 @@ const CategoryPill = ({
   onCategoryChange,
   width = 180,
   accentColor = '#FFB3C6',
+  onSwipeGestureStart,
+  onSwipeGestureEnd,
 }) => {
+  const { disableSwipe, enableSwipe } = usePagerSwipe();
   const [activeIndex, setActiveIndex] = useState(0);
-  const currentIndexRef = useRef(0); // Track actual current index
+  const currentIndexRef = useRef(0);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hintAnim = useRef(new Animated.Value(0)).current;
-  const hasInteracted = useRef(false); // Stop hinting once user swipes
+  const hasInteracted = useRef(false);
   const hintLoopRef = useRef(null);
-  const hasDragHaptic = useRef(false);
 
   // Fire once on mount after 600ms, then loop every 5s until user swipes
   useEffect(() => {
@@ -58,129 +61,112 @@ const CategoryPill = ({
     };
   }, [hintAnim]);
 
-  const changeCategory = (direction) => {
+  const changeCategory = useCallback((direction) => {
     const newIndex = currentIndexRef.current + direction;
-    
-    // Boundary check
     if (newIndex < 0 || newIndex >= categories.length) return;
 
-    // Stop hint animation loop after first interaction
     if (!hasInteracted.current) {
       hasInteracted.current = true;
       hintLoopRef.current?.stop();
       hintAnim.setValue(0);
     }
 
-    // Update ref immediately
     currentIndexRef.current = newIndex;
-    
-    // Update state
     setActiveIndex(newIndex);
     if (onCategoryChange) {
       onCategoryChange(categories[newIndex]);
     }
 
-    // Animate text change with whoosh effect
     Animated.sequence([
-      // Fade out and slide
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: direction > 0 ? -15 : 15,
-          duration: 100,
-          useNativeDriver: true,
-        }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: direction > 0 ? -15 : 15, duration: 100, useNativeDriver: true }),
       ]),
-      // Reset position
-      Animated.timing(slideAnim, {
-        toValue: direction > 0 ? 15 : -15,
-        duration: 0,
-        useNativeDriver: true,
-      }),
-      // Fade in and slide back
+      Animated.timing(slideAnim, { toValue: direction > 0 ? 15 : -15, duration: 0, useNativeDriver: true }),
       Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 100, useNativeDriver: true }),
       ]),
     ]).start();
-  };
+  }, [categories, onCategoryChange, fadeAnim, slideAnim, hintAnim]);
 
-  const triggerDragStart = () => {
+  const triggerDragStart = useCallback(() => {
     if (Platform.OS !== 'android') return;
     if (!HapticsModule?.androidHaptics) return;
     try {
       const maybePromise = HapticsModule.androidHaptics('drag-start');
       if (maybePromise?.catch) maybePromise.catch(() => {});
-    } catch {
-      // No-op if native module isn't available.
-    }
-  };
+    } catch { /* no-op */ }
+  }, []);
 
-  // Swipe gesture handler
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Only claim horizontal swipes
-        return Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-      },
-      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-      },
-      onPanResponderGrant: () => {
-        if (!hasDragHaptic.current) {
-          hasDragHaptic.current = true;
-          triggerDragStart();
-        }
-      },
-      onPanResponderRelease: (evt, gestureState) => {
+  const handleGestureStart = useCallback(() => {
+    disableSwipe();
+    onSwipeGestureStart?.();
+  }, [disableSwipe, onSwipeGestureStart]);
+
+  const handleGestureEnd = useCallback(() => {
+    enableSwipe();
+    onSwipeGestureEnd?.();
+  }, [enableSwipe, onSwipeGestureEnd]);
+
+  // RNGH Pan gesture for the category swipe
+  const changeCategoryRef = useRef(changeCategory);
+  changeCategoryRef.current = changeCategory;
+
+  const gesture = useMemo(() =>
+    Gesture.Pan()
+      .activeOffsetX([-10, 10])
+      .failOffsetY([-10, 10])
+      .onBegin(() => {
+        handleGestureStart();
+      })
+      .onStart(() => {
+        triggerDragStart();
+      })
+      .onEnd((e) => {
         const swipeThreshold = 20;
-        const velocityThreshold = 0.3;
-        
-        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
-          // Swiped right -> previous category
-          changeCategory(-1);
-        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
-          // Swiped left -> next category
-          changeCategory(1);
+        const velocityThreshold = 300;
+        if (e.translationX > swipeThreshold || e.velocityX > velocityThreshold) {
+          changeCategoryRef.current(-1);
+        } else if (e.translationX < -swipeThreshold || e.velocityX < -velocityThreshold) {
+          changeCategoryRef.current(1);
         }
-        hasDragHaptic.current = false;
-      },
-      onPanResponderTerminate: () => {
-        hasDragHaptic.current = false;
-      },
-    })
-  ).current;
+      })
+      .onFinalize(() => {
+        handleGestureEnd();
+      })
+      .runOnJS(true),
+  [handleGestureEnd, handleGestureStart, triggerDragStart]);
+
+  useEffect(() => () => handleGestureEnd(), [handleGestureEnd]);
 
   return (
     <View style={styles.container}>
-      <View 
-        style={[styles.pill, { width, backgroundColor: accentColor }]}
-        {...panResponder.panHandlers}
+      {/*
+        onTouchStart fires on Android ACTION_DOWN — BEFORE the pager's
+        onInterceptTouchEvent (ACTION_MOVE). Disabling swipe here ensures
+        the pager never gets a chance to intercept.
+        onTouchEnd re-enables it when the finger lifts.
+      */}
+      <View
+        onTouchStart={handleGestureStart}
+        onTouchEnd={handleGestureEnd}
+        onTouchCancel={handleGestureEnd}
       >
-        <Animated.View
-          style={{
-            opacity: fadeAnim,
-            transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
-          }}
-        >
-          <Text style={styles.categoryText}>
-            {categories[activeIndex]}
-          </Text>
-        </Animated.View>
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.pill, { width, backgroundColor: accentColor }]}>
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
+              }}
+            >
+              <Text style={styles.categoryText}>
+                {categories[activeIndex]}
+              </Text>
+            </Animated.View>
+          </Animated.View>
+        </GestureDetector>
       </View>
     </View>
   );

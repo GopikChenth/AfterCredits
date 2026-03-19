@@ -21,7 +21,9 @@ export const useProfileStore = create((set, get) => ({
   },
 
   fetchProfile: async ({ force = false } = {}) => {
-    if (!force && get().isFresh()) {
+    const currentProfile = get().profile;
+
+    if (!force && currentProfile && get().isFresh()) {
       return { success: true, profile: get().profile, fromCache: true };
     }
 
@@ -46,7 +48,8 @@ export const useProfileStore = create((set, get) => ({
           profile: null,
           loading: false,
           error: result.error || null,
-          lastFetchedAt: Date.now(),
+          // Keep this "stale" so post-login focus can fetch immediately.
+          lastFetchedAt: 0,
         });
       }
 
@@ -74,4 +77,3 @@ export const useProfileStore = create((set, get) => ({
       lastFetchedAt: 0,
     }),
 }));
-

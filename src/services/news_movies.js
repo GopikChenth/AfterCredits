@@ -9,7 +9,8 @@
  */
 
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseRssItems } from './rssParser';
+import { cacheGet, cacheSet } from './cacheManager';
 
 // ── Cache config ──────────────────────────────────────────────────────────────
 // Cache TTL: 30 minutes
@@ -42,121 +43,6 @@ const HTTP_CONFIG = {
 };
 
 
-// ── Parser ────────────────────────────────────────────────────────────────────
-
-/**
- * Parse RSS XML into a normalised array of movie news articles.
- * Handles both CDATA-wrapped and plain text fields, and attempts
- * multiple image extraction strategies.
- *
- * @param {string} xmlText       - Raw RSS XML string
- * @param {string} defaultAuthor - Fallback author label for this source
- * @returns {Array}
- */
-const parseMovieRSS = (xmlText, defaultAuthor = 'Film News') => {
-  try {
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const items = [];
-    let match;
-
-    while ((match = itemRegex.exec(xmlText)) !== null) {
-      const item = match[1];
-
-      // ── Title ──────────────────────────────────────────────────────────────
-      const title =
-        item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] ||
-        item.match(/<title>(.*?)<\/title>/)?.[1] ||
-        '';
-
-      // ── Link ───────────────────────────────────────────────────────────────
-      const link =
-        item.match(/<link>(.*?)<\/link>/)?.[1] ||
-        item.match(/<guid[^>]*>(.*?)<\/guid>/)?.[1] ||
-        '';
-
-      // ── Author ─────────────────────────────────────────────────────────────
-      const author =
-        item.match(/<dc:creator><!\[CDATA\[(.*?)\]\]><\/dc:creator>/)?.[1] ||
-        item.match(/<author>(.*?)<\/author>/)?.[1] ||
-        defaultAuthor;
-
-      // ── Pub date ───────────────────────────────────────────────────────────
-      const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
-
-      // ── Description (strip HTML tags & decode common entities) ────────────
-      const rawDesc =
-        item.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/)?.[1] ||
-        item.match(/<description>([\s\S]*?)<\/description>/)?.[1] ||
-        '';
-      const description = rawDesc
-        .replace(/<[^>]*>/g, '')
-        .replace(/&hellip;/g, '...')
-        .replace(/&amp;/g, '&')
-        .replace(/&#038;/g, '&')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&quot;/g, '"')
-        .trim();
-
-      // ── Categories ─────────────────────────────────────────────────────────
-      const categoryRegex = /<category><!\[CDATA\[(.*?)\]\]><\/category>/g;
-      const categories = [];
-      let catMatch;
-      while ((catMatch = categoryRegex.exec(item)) !== null) {
-        categories.push(catMatch[1]);
-      }
-
-      // ── Image (multiple strategies) ────────────────────────────────────────
-      let image = null;
-
-      // 1. media:content url attribute
-      if (!image) {
-        const m = item.match(/<media:content[^>]+url=["']([^"'>]+)["']/);
-        if (m) image = m[1];
-      }
-
-      // 2. media:thumbnail url attribute
-      if (!image) {
-        const m = item.match(/<media:thumbnail[^>]+url=["']([^"'>]+)["']/);
-        if (m) image = m[1];
-      }
-
-      // 3. First <img src> inside content:encoded
-      if (!image) {
-        const encoded =
-          item.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/)?.[1] || '';
-        const m = encoded.match(/<img[^>]+src=["']([^"'>]+)["']/);
-        if (m) image = m[1];
-      }
-
-      // 4. enclosure tag
-      if (!image) {
-        const m = item.match(/<enclosure[^>]+url=["']([^"'>]+)["']/);
-        if (m) image = m[1];
-      }
-
-      // Skip empty items
-      if (!title.trim()) continue;
-
-      items.push({
-        id: link || title,
-        title: title.trim(),
-        link: link.trim(),
-        author: author.trim(),
-        publishedAt: pubDate ? new Date(pubDate) : new Date(),
-        description,
-        categories,
-        image,
-      });
-    }
-
-    return items;
-  } catch (error) {
-    console.error('[news_movies] Parse error:', error);
-    return [];
-  }
-};
-
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -168,12 +54,9 @@ const parseMovieRSS = (xmlText, defaultAuthor = 'Film News') => {
 export const getMovieNews = async (limit = 10) => {
   // Check cache first
   try {
-    const cached = await AsyncStorage.getItem(MOVIES_NEWS_CACHE_KEY);
+    const cached = await cacheGet(MOVIES_NEWS_CACHE_KEY, { ttl: NEWS_CACHE_TTL });
     if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < NEWS_CACHE_TTL) {
-        return data.slice(0, limit);
-      }
+      return cached.slice(0, limit);
     }
   } catch (_) {
     // Ignore cache read errors; fall through to network
@@ -184,17 +67,17 @@ export const getMovieNews = async (limit = 10) => {
   for (const source of MOVIE_RSS_SOURCES) {
     try {
       const response = await axios.get(source.url, HTTP_CONFIG);
-      const articles = parseMovieRSS(response.data, source.defaultAuthor);
+      const articles = parseRssItems(response.data, { defaultAuthor: source.defaultAuthor });
 
       if (articles.length > 0) {
         const sorted = articles.sort((a, b) => b.publishedAt - a.publishedAt);
 
         // Persist to cache
         try {
-          await AsyncStorage.setItem(
-            MOVIES_NEWS_CACHE_KEY,
-            JSON.stringify({ data: sorted, timestamp: Date.now() })
-          );
+          await cacheSet(MOVIES_NEWS_CACHE_KEY, sorted, {
+            ttl: NEWS_CACHE_TTL,
+            namespace: 'NEWS',
+          });
         } catch (_) {
           // Non-fatal cache write failure
         }

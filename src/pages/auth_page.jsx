@@ -24,6 +24,7 @@ import {
   signInWithFacebook,
   checkUsernameAvailability 
 } from '../services/auth';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const AuthPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -35,6 +36,7 @@ const AuthPage = ({ navigation }) => {
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   // Handle Login
   const handleLogin = async () => {
@@ -48,6 +50,7 @@ const AuthPage = ({ navigation }) => {
     setLoading(false);
 
     if (result.success) {
+      await fetchProfile({ force: true });
       Alert.alert('Success', 'Logged in successfully!');
       navigation.goBack();
     } else {
@@ -118,6 +121,7 @@ const AuthPage = ({ navigation }) => {
     setLoading(false);
 
     if (result.success) {
+      await fetchProfile({ force: true });
       Alert.alert('Success', `Logged in with ${provider}!`);
       navigation.goBack();
     } else {

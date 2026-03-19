@@ -1,84 +1,12 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { parseRssItems } from './rssParser';
+import { cacheGet, cacheSet } from './cacheManager';
 
 const RSS_FEED_URL = 'https://animecorner.me/feed/';
 
 // Cache TTL: 30 minutes
 const NEWS_CACHE_TTL = 30 * 60 * 1000;
 const ANIME_NEWS_CACHE_KEY = 'NEWS_CACHE:anime';
-
-/**
- * Parse RSS XML to extract news articles
- * @param {string} xmlText - RSS XML content
- * @returns {Array} - Array of news articles
- */
-const parseRSSFeed = (xmlText) => {
-  try {
-    // Extract all <item> elements
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    const items = [];
-    let match;
-
-    while ((match = itemRegex.exec(xmlText)) !== null) {
-      const itemContent = match[1];
-      
-      // Extract fields from each item
-      const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || 
-                    itemContent.match(/<title>(.*?)<\/title>/)?.[1] || '';
-      
-      const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || '';
-      
-      const creator = itemContent.match(/<dc:creator><!\[CDATA\[(.*?)\]\]><\/dc:creator>/)?.[1] || 
-                      'Anime Corner';
-      
-      const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || '';
-      
-      const description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] || '';
-      
-      // Extract categories
-      const categoryRegex = /<category><!\[CDATA\[(.*?)\]\]><\/category>/g;
-      const categories = [];
-      let categoryMatch;
-      while ((categoryMatch = categoryRegex.exec(itemContent)) !== null) {
-        categories.push(categoryMatch[1]);
-      }
-
-      // Extract image from content:encoded or media:content
-      const contentEncoded = itemContent.match(/<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/)?.[1] || '';
-      let image = null;
-      
-      // Try to find image in content:encoded
-      const imgMatch = contentEncoded.match(/<img[^>]+src=["']([^"'>]+)["']/);
-      if (imgMatch) {
-        image = imgMatch[1];
-      }
-      
-      // Fallback to media:content if no image found
-      if (!image) {
-        const mediaMatch = itemContent.match(/<media:content[^>]+url=["']([^"'>]+)["']/);
-        if (mediaMatch) {
-          image = mediaMatch[1];
-        }
-      }
-
-      items.push({
-        id: link,
-        title: title.trim(),
-        link: link.trim(),
-        author: creator.trim(),
-        publishedAt: pubDate ? new Date(pubDate) : new Date(),
-        description: description.trim().replace(/&hellip;/g, '...').replace(/&#038;/g, '&'),
-        categories,
-        image,
-      });
-    }
-
-    return items;
-  } catch (error) {
-    console.error('Error parsing RSS feed:', error);
-    return [];
-  }
-};
 
 /**
  * Fetch Open Graph image from article page
@@ -121,12 +49,9 @@ export const fetchArticleImage = async (url) => {
 export const getAnimeNews = async (limit = 20) => {
   try {
     // Check cache first
-    const cached = await AsyncStorage.getItem(ANIME_NEWS_CACHE_KEY);
+    const cached = await cacheGet(ANIME_NEWS_CACHE_KEY, { ttl: NEWS_CACHE_TTL });
     if (cached) {
-      const { data, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < NEWS_CACHE_TTL) {
-        return data.slice(0, limit);
-      }
+      return cached.slice(0, limit);
     }
 
     const response = await axios.get(RSS_FEED_URL, {
@@ -136,16 +61,16 @@ export const getAnimeNews = async (limit = 20) => {
       timeout: 10000,
     });
 
-    const articles = parseRSSFeed(response.data);
+    const articles = parseRssItems(response.data, { defaultAuthor: 'Anime Corner' });
     
     // Sort by date (newest first)
     const sorted = articles.sort((a, b) => b.publishedAt - a.publishedAt);
 
     // Persist to cache (store all articles, slice on read)
-    await AsyncStorage.setItem(
-      ANIME_NEWS_CACHE_KEY,
-      JSON.stringify({ data: sorted, timestamp: Date.now() })
-    );
+    await cacheSet(ANIME_NEWS_CACHE_KEY, sorted, {
+      ttl: NEWS_CACHE_TTL,
+      namespace: 'NEWS',
+    });
 
     return sorted.slice(0, limit);
   } catch (error) {

@@ -24,8 +24,8 @@
  */
 
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { runRequestWithPolicy } from './requestPolicy';
+import { cacheGet, cacheSet } from './cacheManager';
 
 // ===========================================
 // BASE CONFIGURATION
@@ -59,16 +59,9 @@ const CACHE_DURATION = {
 
 const getCachedData = async (key) => {
   try {
-    const cached = await AsyncStorage.getItem(key);
-    if (!cached) return null;
-    const { data, timestamp } = JSON.parse(cached);
     const prefix = key.split(':')[0];
     const maxAge = CACHE_DURATION[prefix] || CACHE_DURATION.TMDB_DETAILS;
-    if (Date.now() - timestamp < maxAge) {
-      return data;
-    }
-    await AsyncStorage.removeItem(key);
-    return null;
+    return cacheGet(key, { ttl: maxAge });
   } catch (e) {
     console.error('TMDB cache read error:', e);
     return null;
@@ -77,7 +70,9 @@ const getCachedData = async (key) => {
 
 const setCachedData = async (key, data) => {
   try {
-    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+    const prefix = key.split(':')[0];
+    const ttl = CACHE_DURATION[prefix] || CACHE_DURATION.TMDB_DETAILS;
+    await cacheSet(key, data, { ttl, namespace: 'TMDB' });
   } catch (e) {
     console.error('TMDB cache write error:', e);
   }
