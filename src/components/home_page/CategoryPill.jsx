@@ -1,12 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  Pressable, 
   StyleSheet, 
   Animated,
   PanResponder,
 } from 'react-native';
+
+// Exported so home_game.jsx can read the same value for its Skia corner radius.
+const PILL_HEIGHT = 56;
+export const PILL_BORDER_RADIUS = PILL_HEIGHT / 2;
 
 const CategoryPill = ({ 
   categories = ['Trending', 'Popular', 'New'],
@@ -18,17 +21,46 @@ const CategoryPill = ({
   const currentIndexRef = useRef(0); // Track actual current index
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
+  const hintAnim = useRef(new Animated.Value(0)).current;
+  const hasInteracted = useRef(false); // Stop hinting once user swipes
+  const hintLoopRef = useRef(null);
+
+  // Fire once on mount after 600ms, then loop every 5s until user swipes
+  useEffect(() => {
+    const sequence = Animated.sequence([
+      Animated.timing(hintAnim, { toValue: -8, duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 8,  duration: 200, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: -5, duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 5,  duration: 150, useNativeDriver: true }),
+      Animated.timing(hintAnim, { toValue: 0,  duration: 120, useNativeDriver: true }),
+      Animated.delay(5000),
+    ]);
+
+    hintLoopRef.current = Animated.loop(sequence, { resetBeforeIteration: true });
+    const initial = setTimeout(() => {
+      if (!hasInteracted.current) {
+        hintLoopRef.current?.start();
+      }
+    }, 600);
+
+    return () => {
+      clearTimeout(initial);
+      hintLoopRef.current?.stop();
+    };
+  }, [hintAnim]);
 
   const changeCategory = (direction) => {
     const newIndex = currentIndexRef.current + direction;
     
     // Boundary check
-    if (newIndex < 0 || newIndex >= categories.length) {
-      console.log('Boundary reached:', newIndex, 'current:', currentIndexRef.current);
-      return;
-    }
+    if (newIndex < 0 || newIndex >= categories.length) return;
 
-    console.log('Changing from', currentIndexRef.current, 'to', newIndex, 'direction:', direction);
+    // Stop hint animation loop after first interaction
+    if (!hasInteracted.current) {
+      hasInteracted.current = true;
+      hintLoopRef.current?.stop();
+      hintAnim.setValue(0);
+    }
 
     // Update ref immediately
     currentIndexRef.current = newIndex;
@@ -79,33 +111,26 @@ const CategoryPill = ({
   // Swipe gesture handler
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Detect horizontal swipe (more than 5px)
-        return Math.abs(gestureState.dx) > 5;
+        // Only claim horizontal swipes
+        return Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-        // Capture horizontal swipes before parent ScrollView
-        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-      },
-      onPanResponderGrant: () => {
-        // User started touching
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onPanResponderRelease: (evt, gestureState) => {
-        // Lower threshold for better mobile responsiveness
-        const swipeThreshold = 30;
+        const swipeThreshold = 20;
+        const velocityThreshold = 0.3;
         
-        if (gestureState.dx > swipeThreshold) {
+        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
           // Swiped right -> previous category
           changeCategory(-1);
-        } else if (gestureState.dx < -swipeThreshold) {
+        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
           // Swiped left -> next category
           changeCategory(1);
         }
-      },
-      onPanResponderTerminate: () => {
-        // Gesture was interrupted
       },
     })
   ).current;
@@ -119,7 +144,7 @@ const CategoryPill = ({
         <Animated.View
           style={{
             opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
+            transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
           }}
         >
           <Text style={styles.categoryText}>
@@ -137,9 +162,10 @@ const styles = StyleSheet.create({
   },
   pill: {
     backgroundColor: '#FFB3C6',
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    height: PILL_HEIGHT,
+    borderRadius: PILL_BORDER_RADIUS,
+    borderCurve: 'continuous',
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

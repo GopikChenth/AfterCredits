@@ -41,6 +41,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 4,
     borderRadius: 8,
+    borderCurve: 'continuous',
   },
   pressed: {
     backgroundColor: 'rgba(255, 179, 198, 0.1)',
@@ -49,6 +50,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginRight: 10,
   },
   info: {
@@ -71,6 +73,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginLeft: 10,
   },
   chevron: {

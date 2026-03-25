@@ -3,13 +3,13 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Dimensions,
   StatusBar,
-  Image,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,8 +22,8 @@ import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
-import { getUserProfile } from '../services/profile';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 48) / 2;
@@ -42,8 +42,9 @@ const HomeMovies = ({ navigation }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
-  const [activeSection, setActiveSection] = useState('movie');
-  const [userProfile, setUserProfile] = useState(null);
+  const [activeSection, setActiveSection] = useState('movies');
+  const userProfile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
   // ── Search state ──
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,14 +54,10 @@ const HomeMovies = ({ navigation }) => {
 
   // ── Profile ──
   useEffect(() => {
-    const loadProfile = async () => {
-      const result = await getUserProfile();
-      setUserProfile(result.success && result.profile ? result.profile : null);
-    };
-    loadProfile();
-    const unsubscribe = navigation.addListener('focus', () => loadProfile());
+    fetchProfile();
+    const unsubscribe = navigation.addListener('focus', () => fetchProfile());
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, fetchProfile]);
 
   // ── Data fetching ──
   const loadMovies = useCallback(async (category = selectedCategory, page = 1) => {
@@ -125,7 +122,7 @@ const HomeMovies = ({ navigation }) => {
       }
       setIsSearching(true);
       try {
-        const results = await searchMedia(query, 'movie', 3);
+        const results = await searchMedia(query, 'movies', 3);
         setSearchResults(results);
       } catch (error) {
         console.error('Movie suggestion search error:', error);
@@ -154,7 +151,7 @@ const HomeMovies = ({ navigation }) => {
     Keyboard.dismiss();
     setIsSearching(true);
     try {
-      const results = await searchMedia(searchQuery, 'movie', 50);
+      const results = await searchMedia(searchQuery, 'movies', 50);
       setSearchResults(results);
     } catch (error) {
       console.error('Movie search error:', error);
@@ -171,14 +168,94 @@ const HomeMovies = ({ navigation }) => {
     setIsSearchSubmitted(false);
   }, []);
 
-  const handleSearchResultPress = (item) => {
+  const handleSearchResultPress = useCallback((item) => {
     navigation.navigate('DetailsMovies', {
       movieId: item.id,
       movieTitle: item.title,
       coverImage: item.coverImage,
     });
     handleSearchCancel();
-  };
+  }, [navigation, handleSearchCancel]);
+
+  // Memoized FlashList callbacks
+  const renderMovieCard = useCallback(({ item: movie }) => (
+    <Pressable
+      style={({ pressed }) => [styles.movieCard, pressed && styles.movieCardPressed]}
+      onPress={() => navigation.navigate('DetailsMovies', {
+        movieId: movie.id,
+        movieTitle: movie.title,
+        coverImage: movie.coverImage,
+      })}
+      accessibilityRole="button"
+      accessibilityLabel={`View movie: ${movie.title}`}
+    >
+      {movie.coverImage ? (
+        <Image source={{ uri: movie.coverImage }} style={styles.cardImage} contentFit="cover" recyclingKey={`mov-${movie.id}`} />
+      ) : (
+        <View style={[styles.cardImage, styles.cardPlaceholder]}>
+          <Ionicons name="film-outline" size={32} color="rgba(255,107,53,0.3)" />
+        </View>
+      )}
+      <LinearGradient
+        colors={['transparent', 'rgba(14,10,7,0.82)', 'rgba(14,10,7,0.97)']}
+        style={styles.cardOverlay}
+      />
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>{movie.title}</Text>
+        {movie.year ? <Text style={styles.cardYear}>{movie.year}</Text> : null}
+      </View>
+    </Pressable>
+  ), [navigation]);
+
+  const movieKeyExtractor = useCallback((item) => item.id.toString(), []);
+
+  const renderListEmpty = useCallback(() => {
+    if (loading && movies.length === 0) {
+      return <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />;
+    }
+    return null;
+  }, [loading, movies.length]);
+
+  const renderListFooter = useCallback(() => {
+    if (!(currentPage > 1 || hasMore)) return null;
+    return (
+      <View style={styles.paginationContainer}>
+        {currentPage > 1 ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handlePrevPage}
+            accessibilityRole="button"
+            accessibilityLabel="Previous page"
+            disabled={isLoadingMore}
+          >
+            <Ionicons name="chevron-back" size={16} color={ACCENT} />
+            <Text style={styles.pageButtonText}>Prev</Text>
+          </Pressable>
+        ) : <View style={styles.pageButtonPlaceholder} />}
+
+        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
+
+        {hasMore ? (
+          <Pressable
+            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
+            onPress={handleLoadMore}
+            accessibilityRole="button"
+            accessibilityLabel="Next page"
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color={ACCENT} />
+            ) : (
+              <>
+                <Text style={styles.pageButtonText}>Next</Text>
+                <Ionicons name="chevron-forward" size={16} color={ACCENT} />
+              </>
+            )}
+          </Pressable>
+        ) : <View style={styles.pageButtonPlaceholder} />}
+      </View>
+    );
+  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
 
   // ── Render ──
   return (
@@ -192,7 +269,7 @@ const HomeMovies = ({ navigation }) => {
 
         {/* Header */}
         <View style={styles.header}>
-          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)}>
+          <Pressable style={styles.menuButton} onPress={() => setIsSidebarVisible(!isSidebarVisible)} accessibilityRole="button" accessibilityLabel="Open sidebar menu" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <LinearGradient colors={['#FF6B35', '#FF9F1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.headerBtn}>
               <Ionicons name="menu" size={22} color="#fff" />
             </LinearGradient>
@@ -201,7 +278,7 @@ const HomeMovies = ({ navigation }) => {
             <Text style={styles.title}>MOVIES</Text>
             <View style={styles.titleUnderline} />
           </View>
-          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')}>
+          <Pressable style={styles.profileButton} onPress={() => navigation.navigate('ProfilePage')} accessibilityRole="button" accessibilityLabel="Go to profile">
             {userProfile ? (
               <Image
                 source={{ uri: userProfile.avatar_url || `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}` }}
@@ -226,6 +303,8 @@ const HomeMovies = ({ navigation }) => {
                 selectedCategory === cat && styles.categoryPillActive,
                 pressed && styles.categoryPillPressed,
               ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter by ${cat === 'new' ? 'now playing' : cat}`}
             >
               <Text style={[styles.categoryText, selectedCategory === cat && styles.categoryTextActive]}>
                 {cat === 'new' ? 'NOW PLAYING' : cat.toUpperCase()}
@@ -244,69 +323,24 @@ const HomeMovies = ({ navigation }) => {
             onClearSearch={handleSearchCancel}
             theme={{ accent: ACCENT }}
           />
-        ) : loading || isLoadingMore ? (
-          <SkeletonLoader count={6} cardHeight={CARD_HEIGHT} />
         ) : (
           <View style={styles.listWrapper}>
             <FlashList
               data={movies}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={movieKeyExtractor}
               estimatedItemSize={CARD_HEIGHT + 12}
               numColumns={2}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.flashListContent}
-              renderItem={({ item: movie }) => (
-                <Pressable
-                  style={({ pressed }) => [styles.movieCard, pressed && styles.movieCardPressed]}
-                  onPress={() => navigation.navigate('DetailsMovies', {
-                    movieId: movie.id,
-                    movieTitle: movie.title,
-                    coverImage: movie.coverImage,
-                  })}
-                >
-                  {/* Poster */}
-                  {movie.coverImage ? (
-                    <Image source={{ uri: movie.coverImage }} style={styles.cardImage} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.cardImage, styles.cardPlaceholder]}>
-                      <Ionicons name="film-outline" size={32} color="rgba(255,107,53,0.3)" />
-                    </View>
-                  )}
-
-                  {/* Gradient overlay */}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(14,10,7,0.82)', 'rgba(14,10,7,0.97)']}
-                    style={styles.cardOverlay}
-                  />
-
-                  {/* Info */}
-                  <View style={styles.cardContent}>
-                    <Text style={styles.cardTitle} numberOfLines={2}>{movie.title}</Text>
-                    {movie.year && <Text style={styles.cardYear}>{movie.year}</Text>}
-                  </View>
-                </Pressable>
-              )}
-              ListFooterComponent={
-                (currentPage > 1 || hasMore) ? (
-                  <View style={styles.paginationContainer}>
-                    {currentPage > 1 ? (
-                      <Pressable style={styles.pageButton} onPress={handlePrevPage}>
-                        <Ionicons name="chevron-back" size={16} color={ACCENT} />
-                        <Text style={styles.pageButtonText}>Prev</Text>
-                      </Pressable>
-                    ) : <View style={styles.pageButtonPlaceholder} />}
-
-                    <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-                    {hasMore ? (
-                      <Pressable style={styles.pageButton} onPress={handleLoadMore}>
-                        <Text style={styles.pageButtonText}>Next</Text>
-                        <Ionicons name="chevron-forward" size={16} color={ACCENT} />
-                      </Pressable>
-                    ) : <View style={styles.pageButtonPlaceholder} />}
-                  </View>
-                ) : null
-              }
+              renderItem={renderMovieCard}
+              ListEmptyComponent={renderListEmpty}
+              ListFooterComponent={renderListFooter}
+              removeClippedSubviews
+              initialNumToRender={8}
+              maxToRenderPerBatch={8}
+              windowSize={6}
+              updateCellsBatchingPeriod={50}
+              drawDistance={200}
             />
           </View>
         )}
@@ -359,6 +393,7 @@ const styles = StyleSheet.create({
     width: 300,
     height: 300,
     borderRadius: 150,
+    borderCurve: 'continuous',
     backgroundColor: '#FF6B35',
     opacity: 0.06,
   },
@@ -380,6 +415,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 12,
+    borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -387,6 +423,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
+    borderCurve: 'continuous',
   },
   titleContainer: { alignItems: 'center' },
   title: {
@@ -399,6 +436,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 3,
     borderRadius: 2,
+    borderCurve: 'continuous',
     backgroundColor: ACCENT,
     marginTop: 4,
   },
@@ -414,6 +452,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 20,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(255,107,53,0.25)',
     backgroundColor: 'rgba(255,107,53,0.06)',
@@ -451,6 +490,7 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 14,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     margin: 6,
     backgroundColor: '#1A1209',
@@ -465,6 +505,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 14,
+    borderCurve: 'continuous',
   },
   cardPlaceholder: {
     backgroundColor: '#1A1209',
@@ -513,10 +554,14 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
+    borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: 'rgba(255,107,53,0.3)',
     minWidth: 90,
     justifyContent: 'center',
+  },
+  pageButtonDisabled: {
+    opacity: 0.6,
   },
   pageButtonPlaceholder: { minWidth: 90 },
   pageButtonText: {

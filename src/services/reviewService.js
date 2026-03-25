@@ -205,30 +205,72 @@ export const deleteReview = async (reviewId) => {
 /**
  * Toggle like on a review
  * @param {string} reviewId - Review ID
- * @returns {Object} Updated like count
+ * @param {boolean|null} desiredLiked - Optional explicit target state
+ * @returns {Object} Updated like state + count
  */
-export const toggleReviewLike = async (reviewId) => {
+export const toggleReviewLike = async (reviewId, desiredLiked = null) => {
   try {
-    // Get current review
-    const { data: review } = await supabase
-      .from('reviews')
-      .select('likes_count')
-      .eq('id', reviewId)
-      .single();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    const userId = userData?.user?.id;
+    if (!userId) throw new Error('User not authenticated');
 
-    if (!review) throw new Error('Review not found');
+    // Current like state for this user/review pair
+    const { data: existingLike, error: existingLikeError } = await supabase
+      .from('review_likes')
+      .select('id')
+      .eq('review_id', reviewId)
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    // Toggle like (increment)
-    const { data, error } = await supabase
-      .from('reviews')
-      .update({ likes_count: (review.likes_count || 0) + 1 })
-      .eq('id', reviewId)
-      .select()
-      .single();
+    if (existingLikeError) throw existingLikeError;
 
-    if (error) throw error;
+    const currentlyLiked = !!existingLike;
+    const nextLiked =
+      typeof desiredLiked === 'boolean' ? desiredLiked : !currentlyLiked;
 
-    return { success: true, likes: data.likes_count };
+    if (nextLiked !== currentlyLiked) {
+      if (nextLiked) {
+        const { error: insertError } = await supabase
+          .from('review_likes')
+          .insert({ review_id: reviewId, user_id: userId });
+
+        // 23505 = unique_violation (already liked in a race)
+        if (insertError && insertError.code !== '23505') throw insertError;
+      } else {
+        const { error: deleteError } = await supabase
+          .from('review_likes')
+          .delete()
+          .eq('review_id', reviewId)
+          .eq('user_id', userId);
+
+        if (deleteError) throw deleteError;
+      }
+    }
+
+    // Always return canonical count from source of truth.
+    const { count, error: countError } = await supabase
+      .from('review_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('review_id', reviewId);
+
+    if (countError) throw countError;
+
+    // Normalize final liked state after race windows.
+    const { data: likeState, error: likeStateError } = await supabase
+      .from('review_likes')
+      .select('id')
+      .eq('review_id', reviewId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (likeStateError) throw likeStateError;
+
+    return {
+      success: true,
+      liked: !!likeState,
+      likes: count || 0,
+    };
   } catch (error) {
     console.error('Error toggling like:', error);
     return { success: false, error: error.message };

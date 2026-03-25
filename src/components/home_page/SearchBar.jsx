@@ -9,7 +9,7 @@ import {
   Keyboard,
   Animated,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 
 /**
  * SearchBar - Floating search bar with frosted glass effect
@@ -115,9 +115,15 @@ const SearchBar = ({
 
   return (
     <View style={[styles.container, style]}>
-      <BlurView intensity={80} tint="dark" style={styles.blurContainerNative}>
+      <View style={styles.blurContainerNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={20}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+        />
         {renderInputContent()}
-      </BlurView>
+      </View>
     </View>
   );
 };
@@ -127,6 +133,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 56,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -146,6 +153,7 @@ const styles = StyleSheet.create({
   blurContainerWeb: {
     flex: 1,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     backdropFilter: 'blur(20px) saturate(180%)',
@@ -154,6 +162,7 @@ const styles = StyleSheet.create({
   blurContainerNative: {
     flex: 1,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   searchWrapper: {
@@ -196,6 +205,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -222,12 +232,12 @@ export const KeyboardAwareSearchBar = ({
   tabBarHeight = 0,
   ...props 
 }) => {
-  const bottomAnim = useRef(new Animated.Value(defaultBottom)).current;
+  const translateAnim = useRef(new Animated.Value(0)).current;
   const keyboardListenersRef = useRef({ show: null, hide: null });
 
   useEffect(() => {
     // Reset position on mount/hot reload
-    bottomAnim.setValue(defaultBottom);
+    translateAnim.setValue(0);
     
     const keyboardShowEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const keyboardHideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -236,20 +246,21 @@ export const KeyboardAwareSearchBar = ({
     const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
       const targetPosition = keyboardHeight - tabBarHeight + keyboardOffset;
+      const translateY = -(targetPosition - defaultBottom);
       
-      Animated.timing(bottomAnim, {
-        toValue: targetPosition,
+      Animated.timing(translateAnim, {
+        toValue: translateY,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
     // Keyboard hide handler
     const handleKeyboardHide = () => {
-      Animated.timing(bottomAnim, {
-        toValue: defaultBottom,
+      Animated.timing(translateAnim, {
+        toValue: 0,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
@@ -262,10 +273,15 @@ export const KeyboardAwareSearchBar = ({
       keyboardListenersRef.current.show?.remove();
       keyboardListenersRef.current.hide?.remove();
     };
-  }, [defaultBottom, keyboardOffset, bottomAnim]);
+  }, [defaultBottom, keyboardOffset, tabBarHeight, translateAnim]);
 
   return (
-    <Animated.View style={[styles.keyboardAwareContainer, { bottom: bottomAnim }]}>
+    <Animated.View
+      style={[
+        styles.keyboardAwareContainer,
+        { bottom: defaultBottom, transform: [{ translateY: translateAnim }] },
+      ]}
+    >
       <SearchBar {...props} />
     </Animated.View>
   );

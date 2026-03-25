@@ -7,6 +7,7 @@
  */
 
 import axios from 'axios';
+import { runRequestWithPolicy } from './requestPolicy';
 
 // ===========================================
 // BASE CONFIGURATION
@@ -31,13 +32,20 @@ const defaultHeaders = {
  * @returns {Promise<object>} - API response data
  */
 const executeQuery = async (query, variables = {}) => {
+  const requestKey = `anilist:${query}:${JSON.stringify(variables)}`;
+
   try {
-    const response = await axios.post(
-      ANILIST_API_URL,
-      { query, variables },
-      { headers: defaultHeaders }
-    );
-    return response.data;
+    return await runRequestWithPolicy({
+      dedupeKey: requestKey,
+      requestFn: async () => {
+        const response = await axios.post(
+          ANILIST_API_URL,
+          { query, variables },
+          { headers: defaultHeaders }
+        );
+        return response.data;
+      },
+    });
   } catch (error) {
     console.error('AniList API Error:', error.response?.data || error.message);
     throw error;

@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(30, 30, 30, 0.6)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 16,
     gap: 10,
   },
@@ -110,11 +111,13 @@ const styles = StyleSheet.create({
     height: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 10,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   bar: {
     height: '100%',
     borderRadius: 10,
+    borderCurve: 'continuous',
   },
   barFirst: {
     backgroundColor: '#FFD700', // Gold

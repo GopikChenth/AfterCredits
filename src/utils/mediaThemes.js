@@ -10,6 +10,8 @@ import { useEffect } from 'react';
 const FONT_MAP = {
   'Agdasima': require('../../assets/font/Agdasima-Regular.ttf'),
   'Agdasima-Bold': require('../../assets/font/Agdasima-Bold.ttf'),
+  'Genjiro': require('../../assets/font/Genjiro.ttf'),
+  'NinjaNaruto': require('../../assets/font/NinjaNaruto-YOn4.ttf'),
 };
 
 /**
@@ -89,10 +91,17 @@ export const MEDIA_THEMES = {
  * @param {string} mediaType - Type of media (anime, movie, game, comic, manga)
  * @returns {object} Theme configuration object with font utilities
  */
+// Module-level cache so the returned object (including font functions) is stable
+// across repeated calls with the same mediaType — avoids re-creating functions
+// on every render for callers that can't useMemo.
+const _themeCache = {};
+
 export const getMediaTheme = (mediaType = 'anime') => {
+  if (_themeCache[mediaType]) return _themeCache[mediaType];
+
   const theme = MEDIA_THEMES[mediaType] || MEDIA_THEMES.anime;
   
-  return {
+  const result = {
     ...theme,
     fonts: {
       heading: (weight = 'normal') => {
@@ -117,6 +126,9 @@ export const getMediaTheme = (mediaType = 'anime') => {
       },
     }
   };
+
+  _themeCache[mediaType] = result;
+  return result;
 };
 
 /**

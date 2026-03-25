@@ -2,27 +2,28 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
-  Image,
   Pressable,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlashList } from '@shopify/flash-list';
 
 import ListPost from '../components/Post_page/ListPost';
 import PostSkeleton from '../components/skeletons/SkeletonPost';
-import { getUserProfile } from '../services/profile';
 import { getPosts } from '../services/postService';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getPostPageStyles, getPostPageTheme } from '../stylehandler/postPageStyles';
+import { useProfileStore } from '../stores/useProfileStore';
 
 const PostPage = ({ navigation }) => {
   const { mediaType } = useMediaType();
   const styles = getPostPageStyles(mediaType);
   const theme = getPostPageTheme(mediaType);
 
-  const [userProfile, setUserProfile] = useState(null);
+  const userProfile = useProfileStore((state) => state.profile);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -39,19 +40,33 @@ const PostPage = ({ navigation }) => {
     setIsLoading(false);
   }, [mediaType]);
 
+  const renderPost = useCallback(
+    ({ item }) => (
+      <ListPost
+        username={item.username}
+        avatarUrl={item.avatarUrl}
+        date={item.date}
+        title={item.title}
+        description={item.description}
+        animeCovers={item.mediaCovers}
+        accent={theme.accent}
+        onPress={() => navigation.navigate(theme.detailRoute, { post: item })}
+      />
+    ),
+    [navigation, theme.accent, theme.detailRoute]
+  );
+
+  const keyExtractor = useCallback((item) => String(item.id), []);
+
   useEffect(() => {
-    const loadProfile = async () => {
-      const result = await getUserProfile();
-      setUserProfile(result.success && result.profile ? result.profile : null);
-    };
-    loadProfile();
+    fetchProfile();
     fetchPosts();
     const unsubscribe = navigation.addListener('focus', () => {
-      loadProfile();
+      fetchProfile();
       fetchPosts();
     });
     return unsubscribe;
-  }, [navigation, fetchPosts]);
+  }, [navigation, fetchPosts, fetchProfile]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -61,7 +76,7 @@ const PostPage = ({ navigation }) => {
         {/* Header */}
         <View style={styles.headerContainer}>
           <View>
-            <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
+            <Text style={[styles.headerTitle, { fontFamily: 'Genjiro' }]}>{theme.headerTitle}</Text>
             <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
           </View>
           <Pressable
@@ -82,39 +97,30 @@ const PostPage = ({ navigation }) => {
         </View>
 
         {/* Feed */}
-        <ScrollView
-          style={styles.feed}
-          contentContainerStyle={styles.feedContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {isLoading ? (
+        {isLoading ? (
+          <View style={styles.feed}>
             <PostSkeleton count={3} />
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <Pressable style={styles.retryButton} onPress={fetchPosts}>
-                <Text style={styles.retryText}>Retry</Text>
-              </Pressable>
-            </View>
-          ) : (
-            posts.map((post) => (
-              <ListPost
-                key={post.id}
-                username={post.username}
-                avatarUrl={post.avatarUrl}
-                date={post.date}
-                title={post.title}
-                description={post.description}
-                animeCovers={post.mediaCovers}
-                accent={theme.accent}
-                onPress={() => navigation.navigate(theme.detailRoute, { post })}
-              />
-            ))
-          )}
-          
-          {/* Bottom spacer for NavBar */}
-          <View style={{ height: 20 }} />
-        </ScrollView>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Pressable style={styles.retryButton} onPress={fetchPosts}>
+              <Text style={styles.retryText}>Retry</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <FlashList
+            data={posts}
+            renderItem={renderPost}
+            keyExtractor={keyExtractor}
+            style={styles.feed}
+            contentContainerStyle={styles.feedContent}
+            estimatedItemSize={280}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews
+            ListFooterComponent={<View style={{ height: 20 }} />}
+          />
+        )}
       </View>
 
     </SafeAreaView>

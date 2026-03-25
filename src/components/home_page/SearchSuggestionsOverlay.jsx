@@ -4,33 +4,33 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   Image,
   Platform,
   Keyboard,
   Animated,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 
 /**
  * SearchSuggestionsOverlay - Compact suggestions dropdown
- * 
+ *
  * Features:
  * - Shows above keyboard
  * - Max 3 suggestions
  * - Keyboard-aware positioning
  * - Backdrop for clearing search
  */
-const SearchSuggestionsOverlay = ({ 
-  results = [], 
+const SearchSuggestionsOverlay = ({
+  results = [],
   isLoading = false,
   searchQuery = '',
   onResultPress,
   onClose,
   theme = { accent: '#FFB3C6' }
 }) => {
-  const bottomAnim = useRef(new Animated.Value(157)).current;
+  const translateAnim = useRef(new Animated.Value(0)).current;
   const keyboardListenersRef = useRef({ show: null, hide: null });
 
   // Constants
@@ -55,48 +55,43 @@ const SearchSuggestionsOverlay = ({
     const handleKeyboardShow = (event) => {
       const keyboardHeight = event.endCoordinates.height;
       const bottomPosition = calculateKeyboardPosition(keyboardHeight);
-      
-      Animated.timing(bottomAnim, {
-        toValue: bottomPosition,
+      const translateY = -(bottomPosition - CONSTANTS.DEFAULT_BOTTOM);
+      Animated.timing(translateAnim, {
+        toValue: translateY,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
     const handleKeyboardHide = () => {
-      Animated.timing(bottomAnim, {
-        toValue: CONSTANTS.DEFAULT_BOTTOM,
+      Animated.timing(translateAnim, {
+        toValue: 0,
         duration: Platform.OS === 'ios' ? 250 : 100,
-        useNativeDriver: false,
+        useNativeDriver: true,
       }).start();
     };
 
     // Check if keyboard is ALREADY open when component mounts
-    // This fixes the timing issue where component mounts after keyboard is visible
     const checkCurrentKeyboard = async () => {
       try {
-        // On Android, we can use Keyboard.metrics() to check current state
         if (Platform.OS === 'android') {
           const metrics = await Keyboard.metrics();
           if (metrics && metrics.height > 0) {
             const bottomPosition = calculateKeyboardPosition(metrics.height);
-            bottomAnim.setValue(bottomPosition); // Set immediately, no animation
+            translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
           }
         } else {
-          // On iOS, assume keyboard is open since we're in search mode
-          // Use a typical iOS keyboard height as fallback
           const typicalIOSKeyboardHeight = 336;
           const bottomPosition = calculateKeyboardPosition(typicalIOSKeyboardHeight);
-          bottomAnim.setValue(bottomPosition);
+          translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
         }
       } catch (e) {
-        // Fallback: assume keyboard is open with typical height
         const typicalKeyboardHeight = 300;
         const bottomPosition = calculateKeyboardPosition(typicalKeyboardHeight);
-        bottomAnim.setValue(bottomPosition);
+        translateAnim.setValue(-(bottomPosition - CONSTANTS.DEFAULT_BOTTOM));
       }
     };
-    
+
     checkCurrentKeyboard();
 
     keyboardListenersRef.current.show = Keyboard.addListener(keyboardShowEvent, handleKeyboardShow);
@@ -106,26 +101,18 @@ const SearchSuggestionsOverlay = ({
       keyboardListenersRef.current.show?.remove();
       keyboardListenersRef.current.hide?.remove();
     };
-  }, [bottomAnim, CONSTANTS, calculateKeyboardPosition]);
+  }, [translateAnim, CONSTANTS, calculateKeyboardPosition]);
 
-  // Handle result press
   const handleResultPress = useCallback((item) => {
-    if (onResultPress) {
-      onResultPress(item);
-    }
+    if (onResultPress) onResultPress(item);
   }, [onResultPress]);
 
-  // Handle backdrop press
   const handleBackdropPress = useCallback(() => {
-    if (onClose) {
-      onClose();
-    }
+    if (onClose) onClose();
   }, [onClose]);
 
   // Don't render if no query
-  if (!searchQuery || searchQuery.length < 2) {
-    return null;
-  }
+  if (!searchQuery || searchQuery.length < 2) return null;
 
   // Render content based on state
   const renderContent = () => {
@@ -146,28 +133,25 @@ const SearchSuggestionsOverlay = ({
       );
     }
 
-    // Show max 3 results
     const visibleResults = results.slice(0, 3);
 
     return (
-      <ScrollView 
+      <FlatList
+        data={visibleResults}
         style={styles.scrollView}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={true}
         keyboardShouldPersistTaps="handled"
-      >
-        {visibleResults.map((item, index) => (
+        renderItem={({ item }) => (
           <Pressable
-            key={`${item.id}-${index}`}
             style={styles.resultItem}
             onPress={() => handleResultPress(item)}
           >
-            <Image 
+            <Image
               source={{ uri: item.coverImage }}
               style={styles.thumbnail}
               resizeMode="cover"
             />
-            
             <View style={styles.resultInfo}>
               <Text style={styles.resultTitle} numberOfLines={1}>
                 {item.title}
@@ -187,58 +171,53 @@ const SearchSuggestionsOverlay = ({
                 )}
               </View>
             </View>
-
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-        ))}
-        
-        {results.length > 3 && (
-          <View style={styles.moreResults}>
-            <Text style={styles.moreResultsText}>
-              +{results.length - 3} more results
-            </Text>
-            <Text style={styles.pressEnterText}>Press Enter to see all</Text>
-          </View>
         )}
-      </ScrollView>
-    );
-  };
-
-  // Render blur container
-  const renderBlurContainer = (children) => {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={styles.overlayContainerWeb}>
-          {children}
-        </View>
-      );
-    }
-
-    return (
-      <BlurView intensity={80} tint="dark" style={styles.overlayContainerNative}>
-        {children}
-      </BlurView>
+        ListFooterComponent={
+          results.length > 3 ? (
+            <View style={styles.moreResults}>
+              <Text style={styles.moreResultsText}>
+                +{results.length - 3} more results
+              </Text>
+              <Text style={styles.pressEnterText}>Press Enter to see all</Text>
+            </View>
+          ) : null
+        }
+      />
     );
   };
 
   return (
     <>
       {/* Backdrop */}
-      <Pressable 
+      <Pressable
         style={styles.backdrop}
         onPress={handleBackdropPress}
       />
-      
+
       {/* Suggestions Overlay */}
-      <Animated.View 
-        style={[styles.container, { bottom: bottomAnim }]}
+    <Animated.View
+        style={[
+          styles.container,
+          {
+            bottom: CONSTANTS.DEFAULT_BOTTOM,
+            transform: [{ translateY: translateAnim }],
+          },
+        ]}
         pointerEvents="box-none"
       >
-        {renderBlurContainer(
+        <View style={styles.overlayContainerNative}>
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            blurType="dark"
+            blurAmount={20}
+            reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+          />
           <View style={styles.content}>
             {renderContent()}
           </View>
-        )}
+        </View>
       </Animated.View>
     </>
   );
@@ -248,15 +227,16 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 50, // Below search bar (100)
+    zIndex: 50,
   },
   container: {
     position: 'absolute',
     left: 16,
     right: 16,
-    maxHeight: 310, // Fits 3 full suggestions (each ~94px + padding)
-    zIndex: 60, // Below search bar (100) but above backdrop (50)
+    maxHeight: 310,
+    zIndex: 60,
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
@@ -270,13 +250,7 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  overlayContainerWeb: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    backdropFilter: 'blur(20px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  },
-  overlayContainerNative: {
+  overlayContainer: {
     flex: 1,
   },
   content: {
@@ -316,6 +290,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 70,
     borderRadius: 8,
+    borderCurve: 'continuous',
     backgroundColor: '#333',
   },
   resultInfo: {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_PADDING = 16;
@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 4,
+    borderCurve: 'continuous',
     marginHorizontal: 16,
     marginVertical: 12,
   },
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+    borderCurve: 'continuous',
   },
   divider: {
     height: 1,
@@ -90,7 +92,9 @@ const styles = StyleSheet.create({
     width: COVER_WIDTH,
     height: COVER_HEIGHT,
     borderRadius: 6,
+    borderCurve: 'continuous',
   },
 });
 
-export default SkeletonPostDetail;
+const WrappedSkeletonPostDetail = () => (<ShimmerProvider><SkeletonPostDetail /></ShimmerProvider>);
+export default WrappedSkeletonPostDetail;

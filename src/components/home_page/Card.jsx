@@ -41,6 +41,7 @@ const MediaCard = ({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
+    borderCurve: 'continuous',
     overflow: 'hidden',
     backgroundColor: '#000',
     elevation: 8,
@@ -54,11 +55,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 16,
+    borderCurve: 'continuous',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     borderRadius: 16,
+    borderCurve: 'continuous',
   },
   content: {
     position: 'absolute',
@@ -79,6 +82,7 @@ const styles = StyleSheet.create({
   },
   year: {
     fontSize: 11,
+    fontFamily: 'Agdasima',
     color: '#fff',
     opacity: 0.9,
     textShadowColor: 'rgba(0, 0, 0, 0.8)',

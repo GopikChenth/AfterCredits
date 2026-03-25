@@ -14,6 +14,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     borderRadius: 25,
+    borderCurve: 'continuous',
     paddingVertical: 12,
     paddingHorizontal: 16,
     alignItems: 'center',

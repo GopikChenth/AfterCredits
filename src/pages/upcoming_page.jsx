@@ -3,10 +3,11 @@ import {
   View,
   Text,
   StatusBar,
-  Image,
+  Image as RNImage,
   Pressable,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { Ionicons } from '@expo/vector-icons';
@@ -255,12 +256,12 @@ const UpcomingPage = ({ navigation }) => {
                 </View>
               )}
 
-              {item.studio && (
+              {item.studio ? (
                 <View style={styles.infoRow}>
                   <Ionicons name="business-outline" size={14} color={theme.accent} />
                   <Text style={styles.infoText}>{item.studio}</Text>
                 </View>
-              )}
+              ) : null}
 
               <View style={styles.actionButtonsRow}>
                 <Pressable

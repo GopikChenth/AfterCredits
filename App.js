@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 
@@ -35,7 +35,7 @@ import { MediaTypeProvider } from './src/context/MediaTypeContext';
 initializeFonts();
 
 const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Stack = createNativeStackNavigator();
 
 /**
  * Main Tab Navigator
@@ -47,7 +47,7 @@ function MainTabs() {
       tabBar={(props) => <NavBar {...props} />}
       screenOptions={{
         headerShown: false,
-        lazy: false,
+        lazy: true,
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
@@ -74,7 +74,7 @@ export default function App() {
             screenOptions={{
               headerShown: false,
               gestureEnabled: false,
-              animationEnabled: false,
+              animation: 'none',
             }}
           >
             {/* Tab Navigator */}

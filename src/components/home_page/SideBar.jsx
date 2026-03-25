@@ -7,7 +7,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView } from '@react-native-community/blur';
 import { useNavigation } from '@react-navigation/native';
 import { getSettings } from '../../services/settings';
 import { useMediaType } from '../../context/MediaTypeContext';
@@ -21,20 +21,29 @@ import { useMediaType } from '../../context/MediaTypeContext';
 // Sidebar section ID → context mediaType value
 const SECTION_MEDIA_MAP = {
   anime: 'anime',
-  game:  'games',
-  movie: 'movies',
-  comic: 'comics',
+  games: 'games',
+  movies: 'movies',
+  comics: 'comics',
   manga: 'manga',
 };
 
 // Reverse map: context mediaType → sidebar section ID
 const MEDIA_TO_SECTION = {
   anime: 'anime',
-  games: 'game',
-  movies: 'movie',
-  comics: 'comic',
+  games: 'games',
+  movies: 'movies',
+  comics: 'comics',
   manga: 'manga',
 };
+
+// Defined at module level — recreating this array on every render is wasteful.
+const ALL_SECTIONS = [
+  { id: 'anime',  label: 'Anime',  icon: '🎌', settingKey: 'showAnime' },
+  { id: 'movies', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
+  { id: 'games',  label: 'Games',  icon: '🎮', settingKey: 'showGames' },
+  { id: 'comics', label: 'Comics', icon: '📚', settingKey: 'showComics' },
+  { id: 'manga',  label: 'Manga',  icon: '📖', settingKey: 'showManga' },
+];
 
 const SideBar = ({
   isVisible = false,
@@ -50,13 +59,7 @@ const SideBar = ({
   const slideAnim = useRef(new Animated.Value(-50)).current;
   const [visibleSections, setVisibleSections] = React.useState([]);
 
-  const allSections = [
-    { id: 'anime', label: 'Anime', icon: '🎌', settingKey: 'showAnime' },
-    { id: 'movie', label: 'Movies', icon: '🎬', settingKey: 'showMovies' },
-    { id: 'game', label: 'Games', icon: '🎮', settingKey: 'showGames' },
-    { id: 'comic', label: 'Comics', icon: '📚', settingKey: 'showComics' },
-    { id: 'manga', label: 'Manga', icon: '📖', settingKey: 'showManga' },
-  ];
+  // allSections is defined at module level to avoid recreation on every render
 
   // Load settings and filter sections when sidebar becomes visible
   useEffect(() => {
@@ -65,7 +68,7 @@ const SideBar = ({
 
   const loadVisibleSections = async () => {
     const settings = await getSettings();
-    const filtered = allSections.filter(s => settings[s.settingKey]);
+    const filtered = ALL_SECTIONS.filter(s => settings[s.settingKey]);
     setVisibleSections(filtered);
   };
 
@@ -93,17 +96,10 @@ const SideBar = ({
     const newMediaType = SECTION_MEDIA_MAP[sectionId];
     if (!newMediaType) return;
 
-    // 1. Set global media type — HomeScreen will auto-swap to the right page
     setMediaType(newMediaType);
-
-    // 2. Navigate to Home tab so the user sees the change
     navigation.navigate('MainTabs', { screen: 'Home' });
-
-    // 3. Close sidebar
     setTimeout(() => onClose?.(), 100);
   };
-
-
 
   // Pill blur container
   const PillBlur = ({ children, isActive }) => {
@@ -115,13 +111,15 @@ const SideBar = ({
       );
     }
     return (
-      <BlurView
-        intensity={isActive ? 60 : 80}
-        tint="dark"
-        style={styles.pillNative}
-      >
+      <View style={styles.pillNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={isActive ? 15 : 20}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.8)"
+        />
         {children}
-      </BlurView>
+      </View>
     );
   };
 
@@ -131,7 +129,14 @@ const SideBar = ({
       return <View style={styles.backgroundBlurWeb} />;
     }
     return (
-      <BlurView intensity={20} tint="dark" style={styles.backgroundBlurNative} />
+      <View style={styles.backgroundBlurNative}>
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType="dark"
+          blurAmount={5}
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.5)"
+        />
+      </View>
     );
   };
 
@@ -139,16 +144,10 @@ const SideBar = ({
     <>
       {/* Full screen blur background */}
       <Animated.View
-        style={[
-          styles.backgroundOverlay,
-          { opacity: fadeAnim },
-        ]}
+        style={[styles.backgroundOverlay, { opacity: fadeAnim }]}
         pointerEvents={isVisible ? 'auto' : 'none'}
       >
-        <Pressable 
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-        >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
           <BackgroundBlur />
         </Pressable>
       </Animated.View>
@@ -157,10 +156,7 @@ const SideBar = ({
       <Animated.View
         style={[
           styles.container,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
+          { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
         ]}
         pointerEvents={isVisible ? 'auto' : 'none'}
       >
@@ -221,17 +217,18 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     left: 16,
-    top: 120, // Avoid status bar (increased from 100)
+    top: 120,
     zIndex: 999,
   },
   pillWrapper: {
     marginBottom: 12,
-    borderWidth: 0, // No borders
+    borderWidth: 0,
   },
   pill: {
     borderRadius: 20,
+    borderCurve: 'continuous',
     overflow: 'hidden',
-    borderWidth: 0, // Remove any borders
+    borderWidth: 0,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -244,7 +241,7 @@ const styles = StyleSheet.create({
       },
       web: {
         boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.3)',
-        outline: 'none', // Remove web focus outline
+        outline: 'none',
       },
     }),
   },
@@ -258,26 +255,26 @@ const styles = StyleSheet.create({
   },
   pillNative: {
     overflow: 'hidden',
-    borderWidth: 0, // No borders
+    borderWidth: 0,
   },
   pillContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12, // Increased from 10
-    paddingHorizontal: 20, // Increased from 16
-    paddingLeft: 16, // Increased from 14
-    minWidth: 120, // Minimum width for pills
-    borderWidth: 0, // No borders
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingLeft: 16,
+    minWidth: 120,
+    borderWidth: 0,
   },
   pillContentActive: {
     backgroundColor: 'rgba(175, 82, 222, 0.25)',
   },
   pillIcon: {
-    fontSize: 22, // Increased from 18
-    marginRight: 10, // Increased from 8
+    fontSize: 22,
+    marginRight: 10,
   },
   pillLabel: {
-    fontSize: 15, // Increased from 13
+    fontSize: 15,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },

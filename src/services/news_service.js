@@ -1,6 +1,11 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RSS_FEED_URL = 'https://animecorner.me/feed/';
+
+// Cache TTL: 30 minutes
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
+const ANIME_NEWS_CACHE_KEY = 'NEWS_CACHE:anime';
 
 /**
  * Parse RSS XML to extract news articles
@@ -115,6 +120,15 @@ export const fetchArticleImage = async (url) => {
  */
 export const getAnimeNews = async (limit = 20) => {
   try {
+    // Check cache first
+    const cached = await AsyncStorage.getItem(ANIME_NEWS_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < NEWS_CACHE_TTL) {
+        return data.slice(0, limit);
+      }
+    }
+
     const response = await axios.get(RSS_FEED_URL, {
       headers: {
         'Accept': 'application/rss+xml, application/xml, text/xml',
@@ -124,10 +138,16 @@ export const getAnimeNews = async (limit = 20) => {
 
     const articles = parseRSSFeed(response.data);
     
-    // Sort by date (newest first) and limit - NO pre-fetching images
-    return articles
-      .sort((a, b) => b.publishedAt - a.publishedAt)
-      .slice(0, limit);
+    // Sort by date (newest first)
+    const sorted = articles.sort((a, b) => b.publishedAt - a.publishedAt);
+
+    // Persist to cache (store all articles, slice on read)
+    await AsyncStorage.setItem(
+      ANIME_NEWS_CACHE_KEY,
+      JSON.stringify({ data: sorted, timestamp: Date.now() })
+    );
+
+    return sorted.slice(0, limit);
   } catch (error) {
     console.error('Error fetching anime news:', error);
     throw error;

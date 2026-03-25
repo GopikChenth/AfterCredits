@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
     flex: 1,
     margin: 8,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: '#252525',
     padding: 8,
     shadowColor: '#000',
@@ -39,6 +40,7 @@ const styles = StyleSheet.create({
   },
   cardInner: {
     borderRadius: 12,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
 });

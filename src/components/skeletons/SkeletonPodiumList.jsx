@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 56) / 2;
@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: 16,
+    borderCurve: 'continuous',
     backgroundColor: '#1A1A2E',
     overflow: 'hidden',
     marginBottom: 12,
@@ -81,6 +82,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+    borderCurve: 'continuous',
   },
   titleOverlay: {
     position: 'absolute',
@@ -93,4 +95,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SkeletonPodiumList;
+const WrappedSkeletonPodiumList = () => (<ShimmerProvider><SkeletonPodiumList /></ShimmerProvider>);
+export default WrappedSkeletonPodiumList;

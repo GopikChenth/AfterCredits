@@ -27,28 +27,18 @@
  * ║     → OAuth Redirect URL: http://localhost                       ║
  * ║     → Copy Client ID and generate a Client Secret               ║
  * ║                                                                  ║
- * ║  2. Get an access token (expires every ~60 days)                 ║
- * ║     Run this in your terminal:                                   ║
+ * ║  2. Deploy `supabase/functions/igdb-proxy` and set secrets:      ║
+ * ║     IGDB_TWITCH_CLIENT_ID, IGDB_TWITCH_CLIENT_SECRET             ║
  * ║                                                                  ║
- * ║     curl -X POST                                    \            ║
- * ║       "https://id.twitch.tv/oauth2/token"           \            ║
- * ║       -d "client_id=YOUR_CLIENT_ID"                 \            ║
- * ║       -d "client_secret=YOUR_CLIENT_SECRET"         \            ║
- * ║       -d "grant_type=client_credentials"                        ║
- * ║                                                                  ║
- * ║     Copy the "access_token" from the JSON response.             ║
- * ║                                                                  ║
- * ║  3. Add to your .env file:                                       ║
- * ║     EXPO_PUBLIC_IGDB_CLIENT_ID=your_client_id                   ║
- * ║     EXPO_PUBLIC_IGDB_ACCESS_TOKEN=your_access_token             ║
- * ║                                                                  ║
- * ║  ⚠  For production: move to a Supabase Edge Function so your    ║
- * ║     Client Secret is never exposed in the app bundle.           ║
+ * ║  3. Client calls Supabase Edge Function only.                    ║
+ * ║     Twitch token + rotation stays server-side.                   ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { runRequestWithPolicy } from './requestPolicy';
+import { getIGDBCredentials } from './settings';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -56,8 +46,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 
-const IGDB_CLIENT_ID     = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID     || '';
-const IGDB_ACCESS_TOKEN  = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN  || '';
+/**
+ * Resolve the user-supplied IGDB credentials from AsyncStorage.
+ * Returns { clientId, accessToken } — either or both may be empty strings
+ * if the user has not configured them yet.
+ * NOTE: env-var fallbacks are intentionally NOT used — only the user's own key is accepted.
+ */
+const resolveCredentials = async () => {
+  try {
+    const { clientId, accessToken } = await getIGDBCredentials();
+    return { clientId: clientId || '', accessToken: accessToken || '' };
+  } catch {
+    return { clientId: '', accessToken: '' };
+  }
+};
 
 /** Cache durations in milliseconds */
 const CACHE_DURATION = {
@@ -95,6 +97,57 @@ const setCached = async (key, data, ttl) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// HEALTH CHECK
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Ping IGDB with a minimal query to verify credentials are valid.
+ * @returns {Promise<{ ok: boolean, message: string, latencyMs: number }>}
+ */
+export const checkIGDBHealth = async () => {
+  const { clientId, accessToken } = await resolveCredentials();
+  if (!clientId || !accessToken) {
+    return { ok: false, message: 'No IGDB credentials — add them in Settings', latencyMs: 0 };
+  }
+
+  const start = Date.now();
+  try {
+    const response = await fetch(`${IGDB_BASE_URL}/games`, {
+      method: 'POST',
+      headers: {
+        'Client-ID': clientId,
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'text/plain',
+        'Accept': 'application/json',
+      },
+      body: 'fields name; limit 1;',
+    });
+
+    const latencyMs = Date.now() - start;
+
+    if (!response.ok) {
+      const text = await response.text();
+      if (response.status === 401) {
+        return { ok: false, message: 'Token expired — regenerate your access token', latencyMs };
+      }
+      if (response.status === 403) {
+        return { ok: false, message: 'Invalid Client ID or token', latencyMs };
+      }
+      return { ok: false, message: `IGDB ${response.status}: ${text}`, latencyMs };
+    }
+
+    const data = await response.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return { ok: true, message: `Connected — ${latencyMs}ms`, latencyMs };
+    }
+    return { ok: false, message: 'Unexpected empty response', latencyMs };
+  } catch (error) {
+    const latencyMs = Date.now() - start;
+    return { ok: false, message: error.message || 'Network error', latencyMs };
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CORE REQUEST
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -108,11 +161,12 @@ const setCached = async (key, data, ttl) => {
  * @param {number} [ttl]     - Cache TTL in ms
  */
 const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATION.IGDB_DETAILS) => {
-  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
+  const { clientId, accessToken } = await resolveCredentials();
+  if (!clientId || !accessToken) {
     console.warn(
       '⚠️  IGDB credentials missing.\n' +
-      '   Add EXPO_PUBLIC_IGDB_CLIENT_ID and EXPO_PUBLIC_IGDB_ACCESS_TOKEN to your .env file.\n' +
-      '   See the setup guide at the top of api_igdb.js.'
+      '   Add them via Settings > IGDB API, or set EXPO_PUBLIC_IGDB_CLIENT_ID and\n' +
+      '   EXPO_PUBLIC_IGDB_ACCESS_TOKEN in your .env file.'
     );
     return [];
   }
@@ -122,24 +176,33 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
     if (cached) return cached;
   }
 
+  const requestKey = `igdb:${endpoint}:${query}`;
+
   try {
-    const response = await fetch(`${IGDB_BASE_URL}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Client-ID': IGDB_CLIENT_ID,
-        'Authorization': `Bearer ${IGDB_ACCESS_TOKEN}`,
-        'Content-Type': 'text/plain',
-        'Accept': 'application/json',
+    const data = await runRequestWithPolicy({
+      dedupeKey: requestKey,
+      requestFn: async () => {
+        const response = await fetch(`${IGDB_BASE_URL}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Client-ID': clientId,
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'text/plain',
+            'Accept': 'application/json',
+          },
+          body: query,
+        });
+
+        if (!response.ok) {
+          const text = await response.text();
+          const igdbError = new Error(`IGDB ${response.status}: ${text}`);
+          igdbError.status = response.status;
+          throw igdbError;
+        }
+
+        return response.json();
       },
-      body: query,
     });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`IGDB ${response.status}: ${text}`);
-    }
-
-    const data = await response.json();
 
     if (cacheKey) await setCached(cacheKey, data, ttl);
     return data;
@@ -483,4 +546,5 @@ export default {
   formatIGDBData,
   igdbImageUrl,
   clearIGDBCache,
+  checkIGDBHealth,
 };

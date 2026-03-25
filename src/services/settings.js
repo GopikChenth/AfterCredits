@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SETTINGS_KEY = '@aftercredits_settings';
+const IGDB_CREDENTIALS_KEY = '@aftercredits_igdb_credentials';
 
 /**
  * Default settings for the app
@@ -75,9 +76,9 @@ export const getVisibleMediaTypes = async () => {
   const visibleTypes = [];
   
   if (settings.showAnime) visibleTypes.push('anime');
-  if (settings.showMovies) visibleTypes.push('movie');
-  if (settings.showGames) visibleTypes.push('game');
-  if (settings.showComics) visibleTypes.push('comic');
+  if (settings.showMovies) visibleTypes.push('movies');
+  if (settings.showGames) visibleTypes.push('games');
+  if (settings.showComics) visibleTypes.push('comics');
   if (settings.showManga) visibleTypes.push('manga');
   
   return visibleTypes;
@@ -95,4 +96,48 @@ export const resetSettings = async () => {
     console.error('Error resetting settings:', error);
     return { success: false, error: error.message };
   }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IGDB CREDENTIALS  (user-supplied Client ID + Access Token)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Get user-supplied IGDB credentials.
+ * Returns { clientId: string, accessToken: string } — both may be empty strings.
+ */
+export const getIGDBCredentials = async () => {
+  try {
+    const raw = await AsyncStorage.getItem(IGDB_CREDENTIALS_KEY);
+    if (raw) return JSON.parse(raw);
+    return { clientId: '', accessToken: '' };
+  } catch (error) {
+    console.error('Error loading IGDB credentials:', error);
+    return { clientId: '', accessToken: '' };
+  }
+};
+
+/**
+ * Save user-supplied IGDB credentials.
+ * @param {{ clientId: string, accessToken: string }} credentials
+ */
+export const saveIGDBCredentials = async ({ clientId, accessToken }) => {
+  try {
+    await AsyncStorage.setItem(
+      IGDB_CREDENTIALS_KEY,
+      JSON.stringify({ clientId: clientId.trim(), accessToken: accessToken.trim() })
+    );
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving IGDB credentials:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Returns true if the user has supplied non-empty IGDB credentials.
+ */
+export const hasIGDBCredentials = async () => {
+  const { clientId, accessToken } = await getIGDBCredentials();
+  return clientId.length > 0 && accessToken.length > 0;
 };

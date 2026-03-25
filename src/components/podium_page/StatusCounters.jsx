@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 12,
+    borderCurve: 'continuous',
     backgroundColor: 'rgba(255,255,255,0.04)',
     gap: 10,
   },
@@ -64,6 +65,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    borderCurve: 'continuous',
   },
   counterLabel: {
     flex: 1,

@@ -28,6 +28,7 @@
 
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { runRequestWithPolicy } from './requestPolicy';
 
 // ===========================================
 // BASE CONFIGURATION
@@ -117,20 +118,28 @@ const executeRequest = async (endpoint, params = {}, cacheKey = null) => {
     if (cached) return cached;
   }
 
+  const requestKey = `rawg:${endpoint}:${JSON.stringify(params)}`;
+
   try {
-    const response = await axios.get(`${RAWG_API_URL}${endpoint}`, {
-      params: {
-        key: RAWG_API_KEY,
-        ...params,
+    const data = await runRequestWithPolicy({
+      dedupeKey: requestKey,
+      requestFn: async () => {
+        const response = await axios.get(`${RAWG_API_URL}${endpoint}`, {
+          params: {
+            key: RAWG_API_KEY,
+            ...params,
+          },
+        });
+        return response.data;
       },
     });
 
     // Cache the response
     if (cacheKey) {
-      await setCachedData(cacheKey, response.data);
+      await setCachedData(cacheKey, data);
     }
 
-    return response.data;
+    return data;
   } catch (error) {
     console.error('RAWG API Error:', error.response?.data || error.message);
     throw error;

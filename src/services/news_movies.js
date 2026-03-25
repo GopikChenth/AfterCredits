@@ -9,6 +9,12 @@
  */
 
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ── Cache config ──────────────────────────────────────────────────────────────
+// Cache TTL: 30 minutes
+const NEWS_CACHE_TTL = 30 * 60 * 1000;
+const MOVIES_NEWS_CACHE_KEY = 'NEWS_CACHE:movies';
 
 // ── RSS sources (tried in order until one succeeds) ──────────────────────────
 const MOVIE_RSS_SOURCES = [
@@ -160,6 +166,19 @@ const parseMovieRSS = (xmlText, defaultAuthor = 'Film News') => {
  * @returns {Promise<Array>} Normalised article array
  */
 export const getMovieNews = async (limit = 10) => {
+  // Check cache first
+  try {
+    const cached = await AsyncStorage.getItem(MOVIES_NEWS_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < NEWS_CACHE_TTL) {
+        return data.slice(0, limit);
+      }
+    }
+  } catch (_) {
+    // Ignore cache read errors; fall through to network
+  }
+
   let lastError = null;
 
   for (const source of MOVIE_RSS_SOURCES) {
@@ -168,9 +187,19 @@ export const getMovieNews = async (limit = 10) => {
       const articles = parseMovieRSS(response.data, source.defaultAuthor);
 
       if (articles.length > 0) {
-        return articles
-          .sort((a, b) => b.publishedAt - a.publishedAt)
-          .slice(0, limit);
+        const sorted = articles.sort((a, b) => b.publishedAt - a.publishedAt);
+
+        // Persist to cache
+        try {
+          await AsyncStorage.setItem(
+            MOVIES_NEWS_CACHE_KEY,
+            JSON.stringify({ data: sorted, timestamp: Date.now() })
+          );
+        } catch (_) {
+          // Non-fatal cache write failure
+        }
+
+        return sorted.slice(0, limit);
       }
     } catch (error) {
       console.warn(`[news_movies] Failed to fetch from ${source.url}:`, error.message);

@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Image,
   ScrollView,
+  FlatList,
   StatusBar,
   Pressable,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -68,22 +69,26 @@ const PostDetailPage = ({ route, navigation }) => {
         <Text style={styles.title}>{post.title}</Text>
 
         {/* Description */}
-        {post.description && (
+        {post.description ? (
           <Text style={styles.description}>{post.description}</Text>
-        )}
+        ) : null}
 
         {/* Divider */}
         <View style={styles.divider} />
 
         {/* Grid - 4 columns */}
-        <View style={styles.grid}>
-          {(post.mediaCovers || []).map((cover, index) => {
+        <FlatList
+          data={post.mediaCovers || []}
+          numColumns={4}
+          scrollEnabled={false}
+          contentContainerStyle={{ paddingBottom: 0 }}
+          columnWrapperStyle={{ gap: 10, marginBottom: 10 }}
+          keyExtractor={(item, index) => item?.imageUrl || `${index}`}
+          renderItem={({ item: cover, index }) => {
             if (imageErrors[index]) return null;
-            // For anime: extract AniList ID from CDN URL. For others: use cover.mediaId if present.
             const animeId = getAnimeIdFromUrl(cover.imageUrl) || cover.mediaId || null;
             return (
               <Pressable
-                key={index}
                 onPress={() => animeId && navigation.navigate(theme.detailsRoute, { animeId })}
               >
                 <Image
@@ -93,8 +98,8 @@ const PostDetailPage = ({ route, navigation }) => {
                 />
               </Pressable>
             );
-          })}
-        </View>
+          }}
+        />
 
         {/* Bottom spacer */}
         <View style={{ height: 40 }} />

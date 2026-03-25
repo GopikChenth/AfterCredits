@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, Dimensions } from 'react-native';
-import ShimmerBlock from '../shared/ShimmerBlock';
+import ShimmerBlock, { ShimmerProvider } from '../shared/ShimmerBlock';
 
 const { width } = Dimensions.get('window');
 
@@ -9,6 +9,7 @@ const { width } = Dimensions.get('window');
  * Hero banner → Description box → Stats pills → Genre/Crew section → Reviews
  */
 const DetailsSkeleton = () => (
+  <ShimmerProvider>
   <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
     {/* Hero banner */}
     <ShimmerBlock style={styles.heroBanner} />
@@ -91,6 +92,7 @@ const DetailsSkeleton = () => (
 
     <View style={{ height: 40 }} />
   </ScrollView>
+  </ShimmerProvider>
 );
 
 const styles = StyleSheet.create({
@@ -102,12 +104,14 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 16 / 9,
     borderRadius: 0,
+    borderCurve: 'continuous',
     marginBottom: -60,
   },
   descriptionBox: {
     marginHorizontal: 20,
     backgroundColor: 'rgba(30,30,30,0.6)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 20,
     zIndex: 5,
@@ -127,6 +131,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: 25,
+    borderCurve: 'continuous',
   },
   statusSection: {
     marginHorizontal: 20,
@@ -141,11 +146,13 @@ const styles = StyleSheet.create({
     width: 70,
     height: 32,
     borderRadius: 16,
+    borderCurve: 'continuous',
   },
   genreCrewBox: {
     marginHorizontal: 20,
     backgroundColor: 'rgba(30,30,30,0.6)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 24,
   },
@@ -158,6 +165,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 28,
     borderRadius: 14,
+    borderCurve: 'continuous',
   },
   crewItem: {
     flexDirection: 'row',
@@ -168,12 +176,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderCurve: 'continuous',
     marginRight: 10,
   },
   reviewsBox: {
     marginHorizontal: 20,
     backgroundColor: 'rgba(30,30,30,0.6)',
     borderRadius: 12,
+    borderCurve: 'continuous',
     padding: 20,
     marginBottom: 24,
   },
@@ -181,6 +191,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
     backgroundColor: 'rgba(40,40,40,0.5)',
     borderRadius: 10,
+    borderCurve: 'continuous',
     padding: 14,
   },
   reviewHeader: {
