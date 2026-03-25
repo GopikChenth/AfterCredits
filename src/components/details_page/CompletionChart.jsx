@@ -13,10 +13,7 @@
  */
 
 import React, { useRef, useEffect } from "react";
-import { View, Text, StyleSheet, Animated, Dimensions } from "react-native";
-import GlassCard from "../shared/GlassCard";
-
-const { width } = Dimensions.get("window");
+import { View, Text, StyleSheet, Animated } from "react-native";
 
 const BARS = [
   { key: "mainStory", label: "Main Story", color: "#22D3EE" },
@@ -47,7 +44,7 @@ const CompletionChart = ({ data }) => {
   const maxVal = Math.max(...values, 1);
 
   return (
-    <GlassCard style={styles.card}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>HOW LONG TO BEAT</Text>
@@ -84,26 +81,13 @@ const CompletionChart = ({ data }) => {
           </View>
         );
       })}
-    </GlassCard>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: 20,
-    borderRadius: 12,
-    borderCurve: "continuous",
-    padding: 20,
-    marginBottom: 20,
-    overflow: "hidden",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.5)",
-    borderLeftWidth: 1,
-    borderLeftColor: "rgba(0,0,0,0.3)",
-    borderRightWidth: 1,
-    borderRightColor: "rgba(0,0,0,0.3)",
+  container: {
+    width: "100%",
   },
   header: {
     flexDirection: "row",
@@ -116,11 +100,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontWeight: "700",
     color: "#A78BFA", // matches games accent
-  },
-  source: {
-    fontSize: 10,
-    color: "#555",
-    letterSpacing: 0.5,
   },
   row: {
     flexDirection: "row",
