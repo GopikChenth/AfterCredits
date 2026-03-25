@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   Animated,
+  PanResponder,
   Platform,
 } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { usePagerSwipe } from '../../context/PagerSwipeContext';
 
 let HapticsModule = null;
@@ -109,34 +109,35 @@ const CategoryPill = ({
     onSwipeGestureEnd?.();
   }, [enableSwipe, onSwipeGestureEnd]);
 
-  // RNGH Pan gesture for the category swipe
   const changeCategoryRef = useRef(changeCategory);
   changeCategoryRef.current = changeCategory;
 
-  const gesture = useMemo(() =>
-    Gesture.Pan()
-      .activeOffsetX([-10, 10])
-      .failOffsetY([-10, 10])
-      .onBegin(() => {
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+      onPanResponderGrant: () => {
         handleGestureStart();
-      })
-      .onStart(() => {
         triggerDragStart();
-      })
-      .onEnd((e) => {
+      },
+      onPanResponderRelease: (_, gestureState) => {
         const swipeThreshold = 20;
-        const velocityThreshold = 300;
-        if (e.translationX > swipeThreshold || e.velocityX > velocityThreshold) {
+        const velocityThreshold = 0.3;
+
+        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
           changeCategoryRef.current(-1);
-        } else if (e.translationX < -swipeThreshold || e.velocityX < -velocityThreshold) {
+        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
           changeCategoryRef.current(1);
         }
-      })
-      .onFinalize(() => {
+
         handleGestureEnd();
-      })
-      .runOnJS(true),
-  [handleGestureEnd, handleGestureStart, triggerDragStart]);
+      },
+      onPanResponderTerminate: () => {
+        handleGestureEnd();
+      },
+    })
+  ).current;
 
   useEffect(() => () => handleGestureEnd(), [handleGestureEnd]);
 
@@ -153,20 +154,21 @@ const CategoryPill = ({
         onTouchEnd={handleGestureEnd}
         onTouchCancel={handleGestureEnd}
       >
-        <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.pill, { width, backgroundColor: accentColor }]}>
-            <Animated.View
-              style={{
-                opacity: fadeAnim,
-                transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
-              }}
-            >
-              <Text style={styles.categoryText}>
-                {categories[activeIndex]}
-              </Text>
-            </Animated.View>
+        <Animated.View
+          style={[styles.pill, { width, backgroundColor: accentColor }]}
+          {...panResponder.panHandlers}
+        >
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
+            }}
+          >
+            <Text style={styles.categoryText}>
+              {categories[activeIndex]}
+            </Text>
           </Animated.View>
-        </GestureDetector>
+        </Animated.View>
       </View>
     </View>
   );
