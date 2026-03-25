@@ -18,7 +18,8 @@ try {
 }
 
 // Exported so home_game.jsx can read the same value for its Skia corner radius.
-export const PILL_BORDER_RADIUS = 20;
+const PILL_HEIGHT = 56;
+export const PILL_BORDER_RADIUS = PILL_HEIGHT / 2;
 
 const CategoryPill = ({ 
   categories = ['Trending', 'Popular', 'New'],
@@ -180,10 +181,10 @@ const styles = StyleSheet.create({
   },
   pill: {
     backgroundColor: '#FFB3C6',
-    borderRadius: 20,
+    height: PILL_HEIGHT,
+    borderRadius: PILL_BORDER_RADIUS,
     borderCurve: 'continuous',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },

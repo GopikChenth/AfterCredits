@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getMediaTheme } from '../utils/mediaThemes';
@@ -33,13 +34,18 @@ import {
 } from '../services/api_rawg';
 import { searchMedia, debounce } from '../services/search';
 
-const GAME_ACCENT   = '#5DD62C';
-const GAME_ACCENT2  = '#337418';
+const GAME_ACCENT   = '#4DAFA4';
+const GAME_ACCENT2  = '#2F8E86';
 const GAME_BG       = '#0F0F0F';
 const GAME_CARD_BG  = '#202020';
 const GAME_TEXT     = '#F8F8F8';
 
-const GAME_THEME = getMediaTheme('game');
+const GAME_THEME = {
+  ...getMediaTheme('game'),
+  accent: GAME_ACCENT,
+  accentLight: '#8FCFC8',
+  accentGlow: 'rgba(47,142,134,0.35)',
+};
 
 // ── Inverted-L panel constants ──
 // R matches the pill's own borderRadius so the notch corners look identical.
@@ -49,6 +55,15 @@ const R = PILL_BORDER_RADIUS; // corner radius applied to every corner of the L
 
 const buildPanelPath = (w, h, stepX, stepY) => {
   const p = Skia.Path.Make();
+  // Align the notch corners to the actual pill radius so both shapes feel matched.
+  // yellow = normal convex curve (same radius as pill)
+  // red = larger inverted curve
+  // green = normal top curve (same radius as pill)
+  const outerRadius = Math.min(R, stepY * 0.46, stepX * 0.24);
+  const topRadius = Math.min(R, stepY * 0.46, stepX * 0.2);
+  const stemLen = Math.min(R * 0.6, stepY * 0.12);
+  const invCurveX = Math.min(R * 2.9, stepX * 0.36);
+  const invEndY = topRadius + stemLen;
 
   //  Corners (clockwise from top of the step):
   //
@@ -61,7 +76,7 @@ const buildPanelPath = (w, h, stepX, stepY) => {
   //  F───────────────E         E = (0, h)            — bottom-left
 
   // Move to just after corner A (top-left of narrow arm)
-  p.moveTo(stepX + R, 0);
+  p.moveTo(stepX + topRadius, 0);
   // Top edge → B
   p.lineTo(w - R, 0);
   // B: top-right corner (rounded)
@@ -74,25 +89,31 @@ const buildPanelPath = (w, h, stepX, stepY) => {
   p.lineTo(R, h);
   // E: bottom-left corner (rounded)
   p.quadTo(0, h, 0, h - R);
-  // Left edge up to just below G
-  p.lineTo(0, stepY + R);
-  // G: outer step corner — convex rounding going inward
-  p.quadTo(0, stepY, R, stepY);
-  // Step ledge → just before H
-  p.lineTo(stepX - R, stepY);
-  // H: inner step corner — concave, so control point is the corner itself
-  p.quadTo(stepX, stepY, stepX, stepY - R);
-  // Up to just below A
-  p.lineTo(stepX, R);
-  // A: top-left of narrow arm (rounded)
-  p.quadTo(stepX, 0, stepX + R, 0);
+  // Left edge up to below G
+  p.lineTo(0, stepY + outerRadius);
+  // Yellow-mark region: normal convex curve
+  p.quadTo(0, stepY, outerRadius, stepY);
+  // Horizontal ledge before inner notch
+  p.lineTo(stepX - invCurveX, stepY);
+  // Red-mark region: bigger inverted curve
+  p.cubicTo(
+    stepX - invCurveX * 0.28,
+    stepY,
+    stepX,
+    stepY - (stepY - invEndY) * 0.58,
+    stepX,
+    invEndY,
+  );
+  // Small vertical segment
+  p.lineTo(stepX, topRadius);
+  // Green-mark region: normal top curve
+  p.quadTo(stepX, 0, stepX + topRadius, 0);
   p.close();
   return p;
 };
 
 // ─── Game card ─────────────────────────────────────────────────────────────
 const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
-
   return (
     <Pressable
       style={({ pressed }) => [
@@ -113,19 +134,14 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
         />
       ) : (
         <View style={[styles.cardImage, styles.cardPlaceholder]}>
-          <Ionicons name="game-controller-outline" size={32} color="#337418" />
+          <Ionicons name="game-controller-outline" size={32} color={GAME_ACCENT2} />
         </View>
       )}
 
       <LinearGradient
-        colors={['transparent', GAME_BG]}
+        colors={['transparent', '#0F0F0F']}
         style={styles.cardOverlay}
       />
-      <LinearGradient
-        colors={[GAME_BG, 'transparent']}
-        style={styles.cardTopFade}
-      />
-
 
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle} numberOfLines={2}>
@@ -137,8 +153,8 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
 });
 
 // ─── Main screen ──────────────────────────────────────────────────────────
-const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
-  const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
+const GameHome = ({ navigation }) => {
+  const tabBarHeight   = useBottomTabBarHeight();
   const dimensions     = getCardDimensions();
   const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
 
@@ -276,20 +292,6 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
     });
   }, [navigation]);
 
-  const handleCategoryGestureStart = useCallback(() => {
-    setHomeTabSwipeEnabled?.(false);
-  }, [setHomeTabSwipeEnabled]);
-
-  const handleCategoryGestureEnd = useCallback(() => {
-    setHomeTabSwipeEnabled?.(true);
-  }, [setHomeTabSwipeEnabled]);
-
-  useEffect(() => {
-    return () => {
-      setHomeTabSwipeEnabled?.(true);
-    };
-  }, [setHomeTabSwipeEnabled]);
-
   const renderGameCard = useCallback(({ item }) => (
     <GameCardItem game={item} cardHeight={cardHeight} onPress={handleGamePress} />
   ), [cardHeight, handleGamePress]);
@@ -325,7 +327,7 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
   // heroRow is a fixed View (no longer a scrollable ListHeader)
   const renderListHeader = null;
 
-  const renderListEmpty = useCallback(() => {
+  const renderListEmpty = useMemo(() => {
     if (isLoading) {
       return <SkeletonLoader cardHeight={cardHeight} count={6} />;
     }
@@ -347,7 +349,7 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
     return null;
   }, [isLoading, error, cardHeight, fetchGames, selectedCategory]);
 
-  const renderListFooter = useCallback(() => {
+  const renderListFooter = useMemo(() => {
     if (!(currentPage > 1 || hasMore)) return null;
     return (
       <View style={styles.paginationContainer}>
@@ -405,7 +407,7 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
           accessibilityLabel="Open sidebar menu"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="menu" size={22} color="#E0FFD4" />
+          <Ionicons name="menu" size={22} color={GAME_ACCENT} />
         </Pressable>
 
         <Text style={styles.headerTitle}>AfterCredits</Text>
@@ -439,14 +441,16 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
         keyboardVerticalOffset={0}
       >
         {isSearchSubmitted ? (
-          <InlineSearchResults
-            results={searchResults}
-            isLoading={isSearching}
-            searchQuery={searchQuery}
-            onResultPress={handleSearchResultPress}
-            onClearSearch={handleSearchCancel}
-            theme={GAME_THEME}
-          />
+          <View style={styles.searchResultsWrapper}>
+            <InlineSearchResults
+              results={searchResults}
+              isLoading={isSearching}
+              searchQuery={searchQuery}
+              onResultPress={handleSearchResultPress}
+              onClearSearch={handleSearchCancel}
+              theme={GAME_THEME}
+            />
+          </View>
         ) : (
           <View
             style={styles.panelShell}
@@ -460,10 +464,10 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
             {/* Skia canvas — behind content */}
             {panelPath ? (
               <Canvas style={[StyleSheet.absoluteFill, { zIndex: -1 }]} pointerEvents="none">
-                <SkiaPath path={panelPath} color="#337418" />
+                <SkiaPath path={panelPath} color={GAME_ACCENT2} />
                 <SkiaPath
                   path={panelPath}
-                  color="#337418"
+                  color={GAME_ACCENT2}
                   style="stroke"
                   strokeWidth={1.5}
                 />
@@ -488,9 +492,7 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
                   categories={['Trending', 'Popular', 'New']}
                   onCategoryChange={handleCategoryChange}
                   width={160}
-                  accentColor={GAME_ACCENT}
-                  onSwipeGestureStart={handleCategoryGestureStart}
-                  onSwipeGestureEnd={handleCategoryGestureEnd}
+                  accentColor="#FFFFFF"
                 />
               </View>
               <Text style={styles.gamesText}>GAMES</Text>
@@ -503,6 +505,7 @@ const GameHome = ({ navigation, setHomeTabSwipeEnabled }) => {
               keyExtractor={keyExtractor}
               estimatedItemSize={cardHeight + 16}
               numColumns={2}
+              style={styles.flashList}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.flashListContent}
               ListEmptyComponent={renderListEmpty}
@@ -572,7 +575,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -48, right: -80,
     width: 304, height: 304,
-    backgroundColor: '#337418',
+    backgroundColor: GAME_ACCENT2,
     borderRadius: 152,
     borderCurve: 'continuous',
     opacity: 0.15,
@@ -582,7 +585,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 96, left: -96,
     width: 248, height: 248,
-    backgroundColor: '#337418',
+    backgroundColor: GAME_ACCENT2,
     borderRadius: 124,
     borderCurve: 'continuous',
     opacity: 0.10,
@@ -592,7 +595,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 200, right: 48,
     width: 200, height: 200,
-    backgroundColor: '#5DD62C',
+    backgroundColor: GAME_ACCENT,
     borderRadius: 100,
     borderCurve: 'continuous',
     opacity: 0.06,
@@ -611,7 +614,7 @@ const styles = StyleSheet.create({
     width: 48, height: 48,
     borderRadius: 24,
     borderCurve: 'continuous',
-    backgroundColor: '#337418',
+    backgroundColor: GAME_ACCENT2,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -620,7 +623,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     borderWidth: 1,
-    borderColor: '#337418',
+    borderColor: GAME_ACCENT2,
   },
   headerTitle: {
     fontSize: 18,
@@ -666,21 +669,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingLeft: 12,
     paddingRight: 12,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   gamesText: {
     fontSize: 36,
     fontFamily: 'Genjiro',
     color: GAME_TEXT,
     letterSpacing: 3,
-    textShadowColor: '#337418',
+    textShadowColor: GAME_ACCENT2,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
   flashListContent: {
+    paddingTop: 20,
     paddingBottom: 80,
     paddingHorizontal: 6,
+  },
+  flashList: {
+    marginTop: 8,
+  },
+  searchResultsWrapper: {
+    flex: 1,
+    paddingTop: 20,
   },
 
   // ── Game card ──
@@ -713,27 +724,6 @@ const styles = StyleSheet.create({
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
-  },
-  cardTopFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 20,
-  },
-  scoreBadge: {
-    position: 'absolute',
-    top: 8, right: 8,
-    minWidth: 30,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  scoreText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: GAME_TEXT,
   },
   cardContent: {
     position: 'absolute',
@@ -785,13 +775,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(93,214,44,0.12)',
+    backgroundColor: 'rgba(47,142,134,0.12)',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(93,214,44,0.28)',
+    borderColor: 'rgba(47,142,134,0.24)',
     minWidth: 90,
   },
   pageButtonDisabled: {
@@ -806,7 +796,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   pageIndicator: {
-    color: '#7A9B7A',
+    color: '#4A9E96',
     fontSize: 14,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
