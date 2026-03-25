@@ -17,7 +17,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getMediaTheme } from '../utils/mediaThemes';
@@ -154,7 +153,7 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
 
 // ─── Main screen ──────────────────────────────────────────────────────────
 const GameHome = ({ navigation }) => {
-  const tabBarHeight   = useBottomTabBarHeight();
+  const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
   const dimensions     = getCardDimensions();
   const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
 
