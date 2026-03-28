@@ -318,6 +318,7 @@ const styles = StyleSheet.create({
 
   // ── Sheet ──
   sheet: {
+    flex: 1,
     backgroundColor: BG,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
@@ -375,8 +376,8 @@ const styles = StyleSheet.create({
   },
 
   // ── Scroll ──
-  scroll: { flex: 1 },
-  scrollContent: { padding: 16, gap: 12 },
+  scroll: { flex: 1, flexShrink: 1 },
+  scrollContent: { padding: 16, paddingBottom: 24 },
 
   // ── Section card ──
   section: {
@@ -385,6 +386,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.07)',
     padding: 16,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
