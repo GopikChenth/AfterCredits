@@ -35,7 +35,7 @@ import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
 import CompletedGameSheet from "../components/details_page/CompletedGameSheet";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
-import { fetchIGDBByName } from "../services/api_igdb";
+import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
 import { getMediaReviews } from "../services/reviewService";
 import {
@@ -467,8 +467,11 @@ const HudFrame = () => (
 
 const GameDetail = ({ route, navigation }) => {
   const {
-    gameId, gameName, coverImage, genres: rawgGenres = [], playtime,
+    gameId: rawGameId, gameName, coverImage, genres: rawgGenres = [], playtime,
+    igdbId,  // present when navigated from IGDB home (skip name search)
   } = route?.params || {};
+  // If game came from IGDB, use its IGDB id as the stable identifier
+  const gameId = igdbId || rawGameId;
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const isLandscape = viewportWidth > viewportHeight;
   const isTablet = Math.min(viewportWidth, viewportHeight) >= 768;
@@ -571,7 +574,10 @@ const GameDetail = ({ route, navigation }) => {
   const fetchAll = async () => {
     setIsLoading(true);
     try {
-      const result = await fetchIGDBByName(gameName);
+      // If we have a direct IGDB id, skip name search for guaranteed match
+      const result = igdbId
+        ? await fetchIGDBById(igdbId)
+        : await fetchIGDBByName(gameName);
       if (!result) throw new Error("No IGDB data returned.");
       setIgdbData(result);
     } catch (err) {

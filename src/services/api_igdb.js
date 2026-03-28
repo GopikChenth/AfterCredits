@@ -416,6 +416,130 @@ export const fetchIGDBByName = async (gameName) => {
   }
 };
 
+/**
+ * Fetch full IGDB details by IGDB id directly — guaranteed match, no name search.
+ * Use this when the home page came from IGDB (igdbId param in route).
+ *
+ * @param {number} igdbId - IGDB game id
+ * @returns {Promise<object|null>} - Formatted IGDB game object or null
+ */
+export const fetchIGDBById = async (igdbId) => {
+  try {
+    const [details, ttb] = await Promise.all([
+      getGameDetailsIGDB(igdbId),
+      getTimeToBeat(igdbId),
+    ]);
+    if (!details || details.length === 0) return null;
+    const formatted = formatIGDBData(details[0]);
+    if (ttb) {
+      const toHours = (secs) => secs && secs > 0 ? Math.round((secs / 3600) * 10) / 10 : null;
+      formatted.timeToBeat = {
+        mainStory:     toHours(ttb.hastily),
+        mainExtra:     toHours(ttb.normally),
+        completionist: toHours(ttb.completely),
+      };
+    }
+    return formatted;
+  } catch (error) {
+    console.warn(`IGDB direct fetch failed for id ${igdbId}:`, error.message);
+    return null;
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOME PAGE LISTINGS  (return { results, next } to match RAWG's shape)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const IGDB_HOME_FIELDS = `
+  fields id, name,
+    cover.image_id, cover.url,
+    screenshots.image_id, screenshots.url,
+    total_rating, total_rating_count,
+    first_release_date, hypes, category;
+`;
+
+const mapIGDBHomeGame = (g) => {
+  const coverUrl = g.cover?.image_id
+    ? igdbImageUrl(g.cover.image_id, 'cover_big')
+    : g.cover?.url?.replace('t_thumb', 't_cover_big') || null;
+
+  // Prefer first screenshot (landscape) for the card background image
+  const screenshotUrl = g.screenshots?.[0]?.image_id
+    ? igdbImageUrl(g.screenshots[0].image_id, 'screenshot_big')
+    : g.screenshots?.[0]?.url?.replace('t_thumb', 't_screenshot_big') || null;
+
+  return {
+    id: g.id,
+    name: g.name,
+    background_image: screenshotUrl || coverUrl,  // same field GameCardItem reads
+    coverImage: coverUrl,
+    rating: g.total_rating ? Math.round(g.total_rating) / 10 : null,
+    _source: 'igdb',  // flag so details page knows to use direct ID lookup
+  };
+};
+
+/**
+ * IGDB trending games (sorted by hype score — upcoming / anticipated).
+ */
+export const getIGDBTrending = async (page = 1, limit = 20) => {
+  const offset = (page - 1) * limit;
+  const sixMonthsAgo = Math.floor(Date.now() / 1000) - (6 * 30 * 24 * 3600);
+  const cacheKey = `IGDB_TRENDING:${page}:${limit}`;
+  const raw = await igdbRequest(
+    'games',
+    `${IGDB_HOME_FIELDS}
+     where category = 0 & hypes > 0 & (first_release_date > ${sixMonthsAgo} | hypes > 10);
+     sort hypes desc;
+     limit ${limit};
+     offset ${offset};`,
+    cacheKey,
+    2 * 60 * 60 * 1000 // 2h cache
+  );
+  const results = (raw || []).map(mapIGDBHomeGame);
+  return { results, next: results.length === limit };
+};
+
+/**
+ * IGDB popular games (sorted by rating count — most reviewed).
+ */
+export const getIGDBPopular = async (page = 1, limit = 20) => {
+  const offset = (page - 1) * limit;
+  const cacheKey = `IGDB_POPULAR:${page}:${limit}`;
+  const raw = await igdbRequest(
+    'games',
+    `${IGDB_HOME_FIELDS}
+     where category = 0 & total_rating_count > 20 & total_rating > 60;
+     sort total_rating_count desc;
+     limit ${limit};
+     offset ${offset};`,
+    cacheKey,
+    4 * 60 * 60 * 1000 // 4h cache
+  );
+  const results = (raw || []).map(mapIGDBHomeGame);
+  return { results, next: results.length === limit };
+};
+
+/**
+ * IGDB new releases (most recently released main games).
+ */
+export const getIGDBNewReleases = async (page = 1, limit = 20) => {
+  const offset = (page - 1) * limit;
+  const now = Math.floor(Date.now() / 1000);
+  const cacheKey = `IGDB_NEW:${page}:${limit}`;
+  const raw = await igdbRequest(
+    'games',
+    `${IGDB_HOME_FIELDS}
+     where category = 0 & first_release_date <= ${now} & first_release_date > 0;
+     sort first_release_date desc;
+     limit ${limit};
+     offset ${offset};`,
+    cacheKey,
+    2 * 60 * 60 * 1000 // 2h cache
+  );
+  const results = (raw || []).map(mapIGDBHomeGame);
+  return { results, next: results.length === limit };
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DATA FORMATTERS
 // ─────────────────────────────────────────────────────────────────────────────

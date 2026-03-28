@@ -30,6 +30,12 @@ import {
   getPopularGames,
   getNewReleases,
 } from '../services/api_rawg';
+import {
+  getIGDBTrending,
+  getIGDBPopular,
+  getIGDBNewReleases,
+} from '../services/api_igdb';
+import { hasIGDBCredentials } from '../services/settings';
 import { searchMedia, debounce } from '../services/search';
 
 const GAME_THEME = getMediaTheme('game');
@@ -207,6 +213,7 @@ const GameHome = ({ navigation }) => {
   const [searchResults, setSearchResults]     = useState([]);
   const [isSearching, setIsSearching]         = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
+  const [useIGDB, setUseIGDB]                 = useState(false);
 
   const userProfile  = useProfileStore(s => s.profile);
   const fetchProfile = useProfileStore(s => s.fetchProfile);
@@ -218,19 +225,32 @@ const GameHome = ({ navigation }) => {
     return unsub;
   }, [navigation, fetchProfile]);
 
-  // Fetch games
+  // Check IGDB credentials once — determines which API to use for listings
+  useEffect(() => {
+    hasIGDBCredentials().then(has => setUseIGDB(!!has));
+  }, []);
+
+  // Fetch games — IGDB primary, RAWG fallback
   const fetchGames = useCallback(async (category, page = 1) => {
     setIsLoadingMore(page > 1);
     setIsLoading(page === 1);
     setError(null);
     try {
       let data;
-      switch (category) {
-        case 'Popular': data = await getPopularGames(page, 20);  break;
-        case 'New':     data = await getNewReleases(page, 20);   break;
-        default:        data = await getTrendingGames(page, 20); break;
+      if (useIGDB) {
+        switch (category) {
+          case 'Popular': data = await getIGDBPopular(page, 20);      break;
+          case 'New':     data = await getIGDBNewReleases(page, 20);  break;
+          default:        data = await getIGDBTrending(page, 20);     break;
+        }
+      } else {
+        switch (category) {
+          case 'Popular': data = await getPopularGames(page, 20);  break;
+          case 'New':     data = await getNewReleases(page, 20);   break;
+          default:        data = await getTrendingGames(page, 20); break;
+        }
       }
-      setGames(data.results || []);
+      setGames(page === 1 ? (data.results || []) : prev => [...prev, ...(data.results || [])]);
       setCurrentPage(page);
       setHasMore(Boolean(data.next));
     } catch (err) {
@@ -240,9 +260,9 @@ const GameHome = ({ navigation }) => {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, []);
+  }, [useIGDB]);
 
-  useEffect(() => { fetchGames(selectedCategory); }, []);
+  useEffect(() => { fetchGames(selectedCategory); }, [useIGDB]);
 
   const handleCategoryChange = useCallback((cat) => {
     setSelectedCategory(cat);
@@ -310,12 +330,15 @@ const GameHome = ({ navigation }) => {
     navigation.navigate('DetailsGames', {
       gameId: game.id,
       gameName: game.name,
-      coverImage: game.background_image,
-      rating: game.rating,
-      metacritic: game.metacritic,
-      genres: game.genres?.map(g => g.name) || [],
-      playtime: game.playtime,
-      esrbRating: game.esrb_rating?.name || 'Not Rated',
+      coverImage: game.coverImage || game.background_image,
+      // If from IGDB, pass igdbId so details page skips name-search
+      ...(game._source === 'igdb' ? { igdbId: game.id } : {
+        rating: game.rating,
+        metacritic: game.metacritic,
+        genres: game.genres?.map(g => g.name) || [],
+        playtime: game.playtime,
+        esrbRating: game.esrb_rating?.name || 'Not Rated',
+      }),
     });
   }, [navigation]);
 
