@@ -516,15 +516,16 @@ const mapIGDBHomeGame = (g) => {
 export const getIGDBTrending = async (page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
   const twoYearsAgo = Math.floor(Date.now() / 1000) - (2 * 365 * 24 * 3600);
-  const cacheKey = `IGDB_TRENDING:${page}:${limit}`;
+  const cacheKey = `IGDB_TRENDING_V2:${page}:${limit}`;
   const raw = await igdbRequest(
     'games',
-    `${IGDB_HOME_FIELDS} where cover != null & total_rating_count > 5 & first_release_date > ${twoYearsAgo}; sort total_rating_count desc; limit ${limit}; offset ${offset};`,
+    `${IGDB_HOME_FIELDS} where total_rating_count > 2 & first_release_date > ${twoYearsAgo}; sort total_rating_count desc; limit ${limit + 10}; offset ${offset};`,
     cacheKey,
     2 * 60 * 60 * 1000
   );
-  const results = (raw || []).map(mapIGDBHomeGame);
-  return { results, next: results.length === limit };
+  // Filter client-side: must have a cover or screenshot
+  const results = (raw || []).map(mapIGDBHomeGame).filter(g => g.background_image).slice(0, limit);
+  return { results, next: results.length >= limit };
 };
 
 /**
@@ -532,32 +533,32 @@ export const getIGDBTrending = async (page = 1, limit = 20) => {
  */
 export const getIGDBPopular = async (page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
-  const cacheKey = `IGDB_POPULAR:${page}:${limit}`;
+  const cacheKey = `IGDB_POPULAR_V2:${page}:${limit}`;
   const raw = await igdbRequest(
     'games',
-    `${IGDB_HOME_FIELDS} where cover != null & total_rating_count > 10 & total_rating > 70; sort total_rating desc; limit ${limit}; offset ${offset};`,
+    `${IGDB_HOME_FIELDS} where total_rating_count > 5 & total_rating > 70; sort total_rating desc; limit ${limit + 10}; offset ${offset};`,
     cacheKey,
     4 * 60 * 60 * 1000
   );
-  const results = (raw || []).map(mapIGDBHomeGame);
-  return { results, next: results.length === limit };
+  const results = (raw || []).map(mapIGDBHomeGame).filter(g => g.background_image).slice(0, limit);
+  return { results, next: results.length >= limit };
 };
 
 /**
- * IGDB new releases — most recently released games with covers.
+ * IGDB new releases — most recently released games.
  */
 export const getIGDBNewReleases = async (page = 1, limit = 20) => {
   const offset = (page - 1) * limit;
   const now = Math.floor(Date.now() / 1000);
-  const cacheKey = `IGDB_NEW:${page}:${limit}`;
+  const cacheKey = `IGDB_NEW_V2:${page}:${limit}`;
   const raw = await igdbRequest(
     'games',
-    `${IGDB_HOME_FIELDS} where cover != null & first_release_date <= ${now} & first_release_date > 0; sort first_release_date desc; limit ${limit}; offset ${offset};`,
+    `${IGDB_HOME_FIELDS} where first_release_date <= ${now} & first_release_date > 0; sort first_release_date desc; limit ${limit + 10}; offset ${offset};`,
     cacheKey,
     2 * 60 * 60 * 1000
   );
-  const results = (raw || []).map(mapIGDBHomeGame);
-  return { results, next: results.length === limit };
+  const results = (raw || []).map(mapIGDBHomeGame).filter(g => g.background_image).slice(0, limit);
+  return { results, next: results.length >= limit };
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
