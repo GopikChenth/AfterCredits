@@ -1,7 +1,7 @@
 /**
- * CompletedGameSheet
+ * CompletedWindow
  *
- * Bottom sheet that slides up when the user marks a game as Completed.
+ * Centered popup that appears when the user marks a game as Completed.
  * Shows:
  *   1. Playtime input — how many hours they spent
  *   2. DLC / Expansion checklist fetched from IGDB
@@ -21,10 +21,10 @@ import {
   Pressable,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,11 +32,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getGameDLCs } from '../../services/api_igdb';
 
 const ACCENT   = '#0FA3B1';
-const BG       = '#111111';
-const SURFACE  = '#1A1A1A';
-const BORDER   = 'rgba(15,163,177,0.22)';
+const BG       = '#131313';
+const SURFACE  = '#1C1C1C';
+const BORDER   = 'rgba(15,163,177,0.18)';
 const TEXT     = '#FFFFFF';
-const MUTED    = '#888888';
+const MUTED    = '#777777';
 const COMPLETE = '#4ADE80';
 
 // ── DLC row ───────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ const DlcRow = ({ dlc, checked, onToggle }) => (
       />
     ) : (
       <View style={[styles.dlcCover, styles.dlcCoverPlaceholder]}>
-        <Ionicons name="extension-puzzle-outline" size={16} color={ACCENT} />
+        <Ionicons name="extension-puzzle-outline" size={14} color={ACCENT} />
       </View>
     )}
 
@@ -70,42 +70,46 @@ const DlcRow = ({ dlc, checked, onToggle }) => (
     </View>
 
     <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-      {checked && <Ionicons name="checkmark" size={13} color="#000" />}
+      {checked && <Ionicons name="checkmark" size={12} color="#000" />}
     </View>
   </TouchableOpacity>
 );
 
-// ── Main sheet ────────────────────────────────────────────────────────────────
-const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
-  const slideAnim   = useRef(new Animated.Value(700)).current;
+// ── Main popup ────────────────────────────────────────────────────────────────
+const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
+  const scaleAnim    = useRef(new Animated.Value(0.85)).current;
+  const opacityAnim  = useRef(new Animated.Value(0)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+  const { width: vw } = useWindowDimensions();
 
-  const [hours, setHours]           = useState('');
-  const [dlcs, setDlcs]             = useState([]);
+  const [hours, setHours]             = useState('');
+  const [dlcs, setDlcs]               = useState([]);
   const [checkedDlcs, setCheckedDlcs] = useState({});
   const [isLoadingDlcs, setIsLoadingDlcs] = useState(false);
-  const [isSaving, setIsSaving]     = useState(false);
+  const [isSaving, setIsSaving]       = useState(false);
 
-  // ── Animate in + load data when opened ────────────────────────────────────
+  // ── Animate in + load data ────────────────────────────────────────────────
   useEffect(() => {
     if (!visible) return;
 
-    // Reset animation values then animate in
-    slideAnim.setValue(700);
+    scaleAnim.setValue(0.85);
+    opacityAnim.setValue(0);
     backdropAnim.setValue(0);
+
     Animated.parallel([
-      Animated.spring(slideAnim, {
-        toValue: 0, tension: 60, friction: 12, useNativeDriver: true,
+      Animated.spring(scaleAnim, {
+        toValue: 1, tension: 65, friction: 10, useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1, duration: 200, useNativeDriver: true,
       }),
       Animated.timing(backdropAnim, {
-        toValue: 1, duration: 250, useNativeDriver: true,
+        toValue: 1, duration: 220, useNativeDriver: true,
       }),
     ]).start();
 
     // Restore saved playtime
-    AsyncStorage.getItem(`game_playtime_${gameId}`).then(val => {
-      setHours(val || '');
-    });
+    AsyncStorage.getItem(`game_playtime_${gameId}`).then(val => setHours(val || ''));
 
     // Restore saved DLC checks
     AsyncStorage.getItem(`game_dlcs_${gameId}`).then(val => {
@@ -133,10 +137,11 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
   // ── Close animation ────────────────────────────────────────────────────────
   const handleClose = useCallback(() => {
     Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 700, duration: 260, useNativeDriver: true }),
-      Animated.timing(backdropAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 0.85, duration: 180, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(backdropAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
     ]).start(() => onClose?.());
-  }, [slideAnim, backdropAnim, onClose]);
+  }, [scaleAnim, opacityAnim, backdropAnim, onClose]);
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -163,6 +168,9 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
 
   const checkedCount = Object.keys(checkedDlcs).filter(k => checkedDlcs[k]).length;
 
+  // Popup width: 90% of screen, max 420px
+  const popupWidth = Math.min(vw * 0.9, 420);
+
   return (
     <Modal
       visible={visible}
@@ -171,26 +179,28 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        {/* Dimmed backdrop — tap to close */}
+      <View style={styles.overlay}>
+        {/* Backdrop */}
         <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
 
-        {/* Sheet card */}
-        <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
-
-          {/* Drag handle */}
-          <View style={styles.handle} />
-
+        {/* Popup card */}
+        <Animated.View
+          style={[
+            styles.popup,
+            { width: popupWidth },
+            {
+              opacity: opacityAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.completeIcon}>
-                <Ionicons name="checkmark-circle" size={22} color={COMPLETE} />
+                <Ionicons name="checkmark-circle" size={20} color={COMPLETE} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.headerTitle}>Game Completed!</Text>
@@ -198,7 +208,7 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
               </View>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.7}>
-              <Ionicons name="close" size={18} color={MUTED} />
+              <Ionicons name="close" size={16} color={MUTED} />
             </TouchableOpacity>
           </View>
 
@@ -209,11 +219,10 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-
             {/* ── Time Spent ── */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="time-outline" size={16} color={ACCENT} />
+                <Ionicons name="time-outline" size={15} color={ACCENT} />
                 <Text style={styles.sectionTitle}>Time Spent</Text>
               </View>
               <View style={styles.timeRow}>
@@ -235,33 +244,29 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
             {/* ── DLC / Expansions ── */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="extension-puzzle-outline" size={16} color={ACCENT} />
+                <Ionicons name="extension-puzzle-outline" size={15} color={ACCENT} />
                 <Text style={styles.sectionTitle}>DLC &amp; Expansions</Text>
                 {dlcs.length > 0 && (
                   <Text style={styles.dlcBadge}>{checkedCount}/{dlcs.length}</Text>
                 )}
               </View>
 
-              {/* Loading */}
               {isLoadingDlcs && (
                 <View style={styles.stateRow}>
                   <ActivityIndicator size="small" color={ACCENT} />
-                  <Text style={styles.stateText}>Searching IGDB for DLC…</Text>
+                  <Text style={styles.stateText}>Searching IGDB…</Text>
                 </View>
               )}
 
-              {/* No DLC found */}
               {!isLoadingDlcs && dlcs.length === 0 && (
                 <View style={styles.stateRow}>
-                  <Ionicons name="checkmark-done-outline" size={16} color={MUTED} />
-                  <Text style={styles.stateText}>No DLC found for this game</Text>
+                  <Ionicons name="checkmark-done-outline" size={14} color={MUTED} />
+                  <Text style={styles.stateText}>No DLC found</Text>
                 </View>
               )}
 
-              {/* DLC list */}
               {!isLoadingDlcs && dlcs.length > 0 && (
                 <>
-                  {/* Progress bar */}
                   <View style={styles.progressTrack}>
                     <View
                       style={[
@@ -270,7 +275,6 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
                       ]}
                     />
                   </View>
-
                   {dlcs.map(dlc => (
                     <DlcRow
                       key={dlc.id}
@@ -282,7 +286,6 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
                 </>
               )}
             </View>
-
           </ScrollView>
 
           {/* Save button */}
@@ -299,9 +302,8 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
               }
             </TouchableOpacity>
           </View>
-
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -309,150 +311,143 @@ const CompletedGameSheet = ({ visible, gameId, igdbId, gameName, onClose }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.75)',
+    backgroundColor: 'rgba(0,0,0,0.78)',
   },
 
-  // ── Sheet ──
-  sheet: {
-    flex: 1,
+  // ── Popup card ──
+  popup: {
     backgroundColor: BG,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    borderTopWidth: 1,
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
+    borderRadius: 18,
+    borderWidth: 1,
     borderColor: BORDER,
-    maxHeight: '88%',
-  },
-
-  handle: {
-    width: 38,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#2A2A2A',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 2,
+    maxHeight: '80%',
+    overflow: 'hidden',
+    // Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 20,
   },
 
   // ── Header ──
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     flex: 1,
   },
   completeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: 'rgba(74,222,128,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.3)',
+    borderColor: 'rgba(74,222,128,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: TEXT },
-  headerSub:   { fontSize: 12, color: MUTED, marginTop: 1 },
+  headerTitle: { fontSize: 15, fontWeight: '700', color: TEXT },
+  headerSub:   { fontSize: 11, color: MUTED, marginTop: 1 },
   closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   // ── Scroll ──
-  scroll: { flex: 1, flexShrink: 1 },
-  scrollContent: { padding: 16, paddingBottom: 24 },
+  scroll: { flexShrink: 1 },
+  scrollContent: { padding: 14 },
 
   // ── Section card ──
   section: {
     backgroundColor: SURFACE,
-    borderRadius: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
-    padding: 16,
-    marginBottom: 12,
+    borderColor: 'rgba(255,255,255,0.06)',
+    padding: 14,
+    marginBottom: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 14,
+    gap: 7,
+    marginBottom: 12,
   },
   sectionTitle: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: ACCENT,
-    letterSpacing: 1.8,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
   },
   dlcBadge: {
-    fontSize: 11,
+    fontSize: 10,
     color: COMPLETE,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
 
   // ── Time input ──
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
   },
   timeInput: {
-    width: 110,
+    width: 100,
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: '#0D0D0D',
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: TEXT,
     textAlign: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
   },
   timeUnit: {
-    fontSize: 16,
+    fontSize: 14,
     color: MUTED,
     fontWeight: '500',
   },
 
-  // ── States (loading / empty) ──
+  // ── States ──
   stateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 6,
+    gap: 8,
+    paddingVertical: 4,
   },
   stateText: {
-    fontSize: 13,
+    fontSize: 12,
     color: MUTED,
     fontStyle: 'italic',
   },
 
-  // ── DLC progress bar ──
+  // ── DLC progress ──
   progressTrack: {
     height: 3,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 2,
-    marginBottom: 12,
+    marginBottom: 10,
     overflow: 'hidden',
   },
   progressFill: {
@@ -465,15 +460,15 @@ const styles = StyleSheet.create({
   dlcRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
+    gap: 10,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.04)',
   },
-  dlcRowChecked: { opacity: 0.55 },
+  dlcRowChecked: { opacity: 0.5 },
   dlcCover: {
-    width: 34,
-    height: 46,
+    width: 30,
+    height: 40,
     borderRadius: 4,
     backgroundColor: '#222',
   },
@@ -484,18 +479,18 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
   },
   dlcInfo: { flex: 1 },
-  dlcName: { fontSize: 13, color: TEXT, fontWeight: '600', lineHeight: 18 },
-  dlcMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  dlcName: { fontSize: 12, color: TEXT, fontWeight: '600', lineHeight: 16 },
+  dlcMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   dlcTag: {
-    fontSize: 9, fontWeight: '800', color: ACCENT,
-    letterSpacing: 1.2, textTransform: 'uppercase',
+    fontSize: 8, fontWeight: '800', color: ACCENT,
+    letterSpacing: 1, textTransform: 'uppercase',
   },
-  dlcYear: { fontSize: 10, color: MUTED },
+  dlcYear: { fontSize: 9, color: MUTED },
   checkbox: {
-    width: 22, height: 22,
-    borderRadius: 6,
+    width: 20, height: 20,
+    borderRadius: 5,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -506,24 +501,23 @@ const styles = StyleSheet.create({
 
   // ── Footer ──
   footer: {
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    padding: 14,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.06)',
   },
   saveBtn: {
     backgroundColor: ACCENT,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 10,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   saveBtnDisabled: { opacity: 0.55 },
   saveBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
     color: '#000',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
 });
 
-export default CompletedGameSheet;
+export default CompletedWindow;

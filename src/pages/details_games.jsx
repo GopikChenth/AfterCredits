@@ -33,7 +33,7 @@ import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
 import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
-import CompletedGameSheet from "../components/details_page/CompletedGameSheet";
+import CompletedWindow from "../components/details_page/CompletedWindow";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
@@ -949,8 +949,8 @@ const GameDetail = ({ route, navigation }) => {
         )}
       </Animated.ScrollView>
 
-      {/* ── Completion Sheet (playtime + DLC tracker) ── */}
-      <CompletedGameSheet
+      {/* ── Completion popup (playtime + DLC tracker) ── */}
+      <CompletedWindow
         visible={showCompletionSheet}
         gameId={String(gameId)}
         igdbId={igdbData?.igdbId}
