@@ -313,6 +313,45 @@ export const getGameDetailsIGDB = async (igdbId) => {
 };
 
 /**
+ * Fetch DLCs / Expansions / Season Passes for a game.
+ * IGDB category codes: 1=DLC, 2=Expansion, 3=Bundle, 4=Standalone, 14=Season Pass
+ *
+ * @param {number} igdbId - Parent game IGDB id
+ * @returns {Promise<Array>} Array of { id, name, coverImage, category, releaseDate }
+ */
+export const getGameDLCs = async (igdbId) => {
+  if (!igdbId) return [];
+  try {
+    const cacheKey = `IGDB_DLCS:${igdbId}`;
+    const data = await igdbRequest(
+      'games',
+      `fields name, cover.image_id, cover.url, category, first_release_date;
+       where parent_game = ${igdbId} & category = (1,2,3,4,14);
+       sort first_release_date asc;
+       limit 30;`,
+      cacheKey,
+      CACHE_DURATION.IGDB_DETAILS
+    );
+    if (!data || data.length === 0) return [];
+    const CATEGORY_LABEL = { 1: 'DLC', 2: 'Expansion', 3: 'Bundle', 4: 'Standalone', 14: 'Season Pass' };
+    return data.map(d => ({
+      id: d.id,
+      name: d.name,
+      coverImage: d.cover?.image_id
+        ? igdbImageUrl(d.cover.image_id, 'cover_small')
+        : d.cover?.url?.replace('t_thumb', 't_cover_small') || null,
+      category: CATEGORY_LABEL[d.category] || 'DLC',
+      releaseDate: d.first_release_date
+        ? new Date(d.first_release_date * 1000).getFullYear()
+        : null,
+    }));
+  } catch (e) {
+    console.warn('getGameDLCs error:', e.message);
+    return [];
+  }
+};
+
+/**
  * Fetch time-to-beat data for a game from IGDB.
  *
  * @param {number} gameId - IGDB game id

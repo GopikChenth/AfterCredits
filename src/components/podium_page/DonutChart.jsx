@@ -4,10 +4,9 @@
  * Animated SVG donut chart for media status counts.
  *
  * Animations:
- *   • Each segment's stroke draws in from 0 (staggered by 120ms)
- *   • Center count ticks up from 0 → total (ease-out)
- *   • Subtle continuous rotation (very slow, 0.25rpm feel)
- *   • Hover/mount scale-in on the whole SVG
+ *   • Scale spring on mount (JS driver — wraps the SVG View)
+ *   • Each segment strokes in via strokeDashoffset (JS driver — required for SVG props)
+ *   • Center count ticks up from 0 → total
  */
 
 import React, { useMemo, useRef, useEffect, useState } from 'react';
@@ -20,29 +19,28 @@ const CHART_STATUSES = [
   { key: 'dropped',   label: 'Dropped',    color: '#F87171' },
 ];
 
-const DONUT_SIZE   = 160;
-const STROKE_WIDTH = 22;
-const DONUT_RADIUS = (DONUT_SIZE - STROKE_WIDTH) / 2;
+const DONUT_SIZE    = 160;
+const STROKE_WIDTH  = 22;
+const DONUT_RADIUS  = (DONUT_SIZE - STROKE_WIDTH) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
 
-// ── Animated SVG Circle wrapper ─────────────────────────────────────────────
-// We animate strokeDashoffset from CIRCUMFERENCE (hidden) → 0 (fully drawn)
+// AnimatedCircle — JS driver only (SVG props not supported by native driver)
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-// ── Count-up text ────────────────────────────────────────────────────────────
-const CountUp = ({ target, style, labelStyle }) => {
+// ── Count-up ─────────────────────────────────────────────────────────────────
+const CountUp = ({ target }) => {
   const [display, setDisplay] = useState(0);
   const rafRef = useRef(null);
 
   useEffect(() => {
     setDisplay(0);
     if (target === 0) return;
-    const duration = 1000;
+    const duration = 500;
     const start = Date.now();
     const tick = () => {
       const elapsed = Date.now() - start;
       const t = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
       setDisplay(Math.round(eased * target));
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
     };
@@ -52,8 +50,8 @@ const CountUp = ({ target, style, labelStyle }) => {
 
   return (
     <View style={styles.chartCenter}>
-      <Text style={[styles.chartTotal, style]}>{display}</Text>
-      <Text style={[styles.chartTotalLabel, labelStyle]}>Total</Text>
+      <Text style={styles.chartTotal}>{display}</Text>
+      <Text style={styles.chartTotalLabel}>Total</Text>
     </View>
   );
 };
@@ -78,60 +76,39 @@ const DonutChart = ({ counts }) => {
     }).filter(s => s.count > 0);
   }, [counts, chartTotal]);
 
-  // One Animated.Value per segment for draw-in
+  // Per-segment draw-in anims (JS driver — SVG props require this)
   const drawAnims = useRef(CHART_STATUSES.map(() => new Animated.Value(0))).current;
-  // Scale-in for the whole SVG
-  const scaleAnim = useRef(new Animated.Value(0.7)).current;
-  // Slow continuous rotation
-  const rotAnim = useRef(new Animated.Value(0)).current;
+  // Scale anim for the wrapper view (native driver OK here)
+  const scaleAnim = useRef(new Animated.Value(0.75)).current;
 
   useEffect(() => {
     drawAnims.forEach(a => a.setValue(0));
-    scaleAnim.setValue(0.7);
+    scaleAnim.setValue(0.85);
 
-    Animated.parallel([
-      // Scale in
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 60,
-        friction: 11,
-        useNativeDriver: true,
-      }),
-      // Draw segments in stagger
-      Animated.stagger(
-        120,
-        drawAnims.map(v =>
-          Animated.timing(v, {
-            toValue: 1,
-            duration: 900,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          })
-        )
-      ),
-      // Slow idle rotation (one full turn every 30s)
-      Animated.loop(
-        Animated.timing(rotAnim, {
+    // Scale spring (native driver on View transform)
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 120,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+
+    // Draw all segments simultaneously (no stagger) — feels instant
+    Animated.parallel(
+      drawAnims.map(v =>
+        Animated.timing(v, {
           toValue: 1,
-          duration: 30000,
-          easing: Easing.linear,
-          useNativeDriver: true,
+          duration: 320,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false, // MUST be false for SVG props
         })
-      ),
-    ]).start();
+      )
+    ).start();
   }, [counts]);
-
-  const svgRotate = rotAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   return (
     <Animated.View
-      style={[
-        styles.chartContainer,
-        { transform: [{ scale: scaleAnim }, { rotate: svgRotate }] },
-      ]}
+      style={[styles.chartContainer, { transform: [{ scale: scaleAnim }] }]}
     >
       <Svg width={DONUT_SIZE} height={DONUT_SIZE}>
         {/* Background track */}
@@ -141,16 +118,12 @@ const DonutChart = ({ counts }) => {
         />
         <G>
           {segments.map((seg, i) => {
-            // strokeDashoffset: CIRCUMFERENCE = hidden, 0 = fully drawn
-            // full arc length = seg.arcLen; gap = rest
             const dashArray = `${seg.arcLen} ${CIRCUMFERENCE - seg.arcLen}`;
-
             const dashOffset = drawAnims[i].interpolate({
               inputRange: [0, 1],
-              outputRange: [seg.arcLen, 0], // draws in from 0 → full
+              outputRange: [seg.arcLen, 0],
               extrapolate: 'clamp',
             });
-
             return (
               <AnimatedCircle
                 key={seg.key}
@@ -171,19 +144,10 @@ const DonutChart = ({ counts }) => {
         </G>
       </Svg>
 
-      {/* Counter in the hole — rendered outside the SVG to avoid rotation */}
-      <Animated.View
-        style={[
-          styles.centerWrap,
-          // Counter-rotate so the number stays upright while ring spins
-          { transform: [{ rotate: svgRotate.interpolate({
-              inputRange: ['0deg', '360deg'],
-              outputRange: ['0deg', '-360deg'],
-            }) }] },
-        ]}
-      >
+      {/* Center count — absolutely positioned over the hole */}
+      <View style={styles.centerWrap}>
         <CountUp target={chartTotal} />
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 };
@@ -211,7 +175,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
     fontFamily: 'Agdasima',
-    fontVariant: ['tabular-nums'],
   },
   chartTotalLabel: {
     fontSize: 12,

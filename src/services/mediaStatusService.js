@@ -234,3 +234,58 @@ export const getWishlist = async (mediaType = null) => {
     return { success: false, error: error.message };
   }
 };
+
+// ==========================================
+// GAME USER OVERVIEW STATS
+// ==========================================
+
+/**
+ * Fetch 4 overview stats for the current user's games library.
+ * Returns: { gamesPlayed, avgRating, wishlistCount }
+ * (completionistHours comes from IGDB — pass it separately from igdbData)
+ */
+export const getGameUserStats = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const uid = user.id;
+
+    const [playedRes, wishlistRes, ratingsRes] = await Promise.all([
+      // Total games with any status
+      supabase
+        .from('user_media_status')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', uid)
+        .eq('media_type', 'games')
+        .not('status', 'is', null),
+
+      // Wishlisted
+      supabase
+        .from('user_media_status')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', uid)
+        .eq('media_type', 'games')
+        .eq('is_wishlisted', true),
+
+      // User's own game ratings (for avg)
+      supabase
+        .from('reviews')
+        .select('overall_rating')
+        .eq('user_id', uid)
+        .eq('media_type', 'games'),
+    ]);
+
+    const gamesPlayed   = playedRes.count   ?? 0;
+    const wishlistCount = wishlistRes.count  ?? 0;
+    const ratings       = ratingsRes.data   || [];
+    const avgRating     = ratings.length > 0
+      ? Math.round((ratings.reduce((s, r) => s + r.overall_rating, 0) / ratings.length) * 10) / 10
+      : null;
+
+    return { gamesPlayed, avgRating, wishlistCount };
+  } catch (e) {
+    console.warn('getGameUserStats error:', e.message);
+    return null;
+  }
+};
