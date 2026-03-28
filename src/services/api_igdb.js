@@ -314,37 +314,75 @@ export const getGameDetailsIGDB = async (igdbId) => {
 
 /**
  * Fetch DLCs / Expansions / Season Passes for a game.
- * IGDB category codes: 1=DLC, 2=Expansion, 3=Bundle, 4=Standalone, 14=Season Pass
+ * Uses TWO strategies in parallel for accuracy:
+ *   1. Reverse lookup: games whose parent_game = this igdbId
+ *   2. Forward lookup: this game's own dlcs + expansions arrays
  *
  * @param {number} igdbId - Parent game IGDB id
  * @returns {Promise<Array>} Array of { id, name, coverImage, category, releaseDate }
  */
 export const getGameDLCs = async (igdbId) => {
   if (!igdbId) return [];
+
+  const CATEGORY_LABEL = { 1: 'DLC', 2: 'Expansion', 3: 'Bundle', 4: 'Standalone', 14: 'Season Pass' };
+  const DLC_FIELDS = 'fields id, name, cover.image_id, cover.url, category, first_release_date;';
+
   try {
-    const cacheKey = `IGDB_DLCS:${igdbId}`;
-    const data = await igdbRequest(
+    const cacheKey = `IGDB_DLCS_V2:${igdbId}`;
+    const cached = await getCached(cacheKey);
+    if (cached) return cached;
+
+    // Strategy 1: reverse lookup — DLCs that point back to this game
+    const reversePromise = igdbRequest(
       'games',
-      `fields name, cover.image_id, cover.url, category, first_release_date;
-       where parent_game = ${igdbId} & category = (1,2,3,4,14);
-       sort first_release_date asc;
-       limit 30;`,
-      cacheKey,
-      CACHE_DURATION.IGDB_DETAILS
+      `${DLC_FIELDS} where parent_game = ${igdbId} & category = (1,2,3,4,14); sort first_release_date asc; limit 50;`,
     );
-    if (!data || data.length === 0) return [];
-    const CATEGORY_LABEL = { 1: 'DLC', 2: 'Expansion', 3: 'Bundle', 4: 'Standalone', 14: 'Season Pass' };
-    return data.map(d => ({
-      id: d.id,
-      name: d.name,
-      coverImage: d.cover?.image_id
-        ? igdbImageUrl(d.cover.image_id, 'cover_small')
-        : d.cover?.url?.replace('t_thumb', 't_cover_small') || null,
-      category: CATEGORY_LABEL[d.category] || 'DLC',
-      releaseDate: d.first_release_date
-        ? new Date(d.first_release_date * 1000).getFullYear()
-        : null,
-    }));
+
+    // Strategy 2: forward lookup — get this game's dlcs + expansions IDs, then fetch them
+    const forwardPromise = (async () => {
+      const parentData = await igdbRequest(
+        'games',
+        `fields dlcs, expansions; where id = ${igdbId}; limit 1;`,
+      );
+      if (!parentData || parentData.length === 0) return [];
+      const parent = parentData[0];
+      const ids = [...(parent.dlcs || []), ...(parent.expansions || [])];
+      if (ids.length === 0) return [];
+      return igdbRequest(
+        'games',
+        `${DLC_FIELDS} where id = (${ids.join(',')}); sort first_release_date asc; limit 50;`,
+      );
+    })();
+
+    const [reverseResults, forwardResults] = await Promise.all([
+      reversePromise.catch(() => []),
+      forwardPromise.catch(() => []),
+    ]);
+
+    // Merge + deduplicate by id
+    const seen = new Set();
+    const merged = [];
+    for (const d of [...(reverseResults || []), ...(forwardResults || [])]) {
+      if (!d?.id || seen.has(d.id)) continue;
+      seen.add(d.id);
+      merged.push({
+        id: d.id,
+        name: d.name,
+        coverImage: d.cover?.image_id
+          ? igdbImageUrl(d.cover.image_id, 'cover_small')
+          : d.cover?.url?.replace('t_thumb', 't_cover_small') || null,
+        category: CATEGORY_LABEL[d.category] || 'DLC',
+        releaseDate: d.first_release_date
+          ? new Date(d.first_release_date * 1000).getFullYear()
+          : null,
+      });
+    }
+
+    // Sort by release date (nulls last)
+    merged.sort((a, b) => (a.releaseDate || 9999) - (b.releaseDate || 9999));
+
+    await setCached(cacheKey, merged, CACHE_DURATION.IGDB_DETAILS);
+    return merged;
   } catch (e) {
     console.warn('getGameDLCs error:', e.message);
     return [];
