@@ -237,19 +237,30 @@ const GameHome = ({ navigation }) => {
     setError(null);
     try {
       let data;
+
+      // Try IGDB first if credentials are present
       if (useIGDB) {
-        switch (category) {
-          case 'Popular': data = await getIGDBPopular(page, 20);      break;
-          case 'New':     data = await getIGDBNewReleases(page, 20);  break;
-          default:        data = await getIGDBTrending(page, 20);     break;
+        try {
+          switch (category) {
+            case 'Popular': data = await getIGDBPopular(page, 20);      break;
+            case 'New':     data = await getIGDBNewReleases(page, 20);  break;
+            default:        data = await getIGDBTrending(page, 20);     break;
+          }
+        } catch (igdbErr) {
+          console.warn('IGDB home fetch failed, falling back to RAWG:', igdbErr.message);
+          data = null;
         }
-      } else {
+      }
+
+      // Fallback to RAWG if IGDB failed or returned nothing
+      if (!data || !data.results || data.results.length === 0) {
         switch (category) {
           case 'Popular': data = await getPopularGames(page, 20);  break;
           case 'New':     data = await getNewReleases(page, 20);   break;
           default:        data = await getTrendingGames(page, 20); break;
         }
       }
+
       setGames(page === 1 ? (data.results || []) : prev => [...prev, ...(data.results || [])]);
       setCurrentPage(page);
       setHasMore(Boolean(data.next));
