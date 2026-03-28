@@ -33,7 +33,6 @@ import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
 import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
-import OverviewStats from "../components/podium_page/OverviewStats";
 import CompletedGameSheet from "../components/details_page/CompletedGameSheet";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName } from "../services/api_igdb";
@@ -43,7 +42,6 @@ import {
   getMediaStatus,
   setMediaStatus,
   setWishlist,
-  getGameUserStats,
 } from "../services/mediaStatusService";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
@@ -507,7 +505,6 @@ const GameDetail = ({ route, navigation }) => {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const [showDeferredSections, setShowDeferredSections] = useState(false);
-  const [userStats, setUserStats] = useState(null);
   const [showCompletionSheet, setShowCompletionSheet] = useState(false);
 
   // ── Scroll-driven animations ──
@@ -603,11 +600,6 @@ const GameDetail = ({ route, navigation }) => {
       if (r.success && r.data) { setUserStatus(r.data.status); setIsWishlisted(r.data.is_wishlisted); }
     });
   }, [gameId]);
-
-  // Fetch user-level game library stats (played count, avg rating, wishlist)
-  useEffect(() => {
-    getGameUserStats().then(stats => { if (stats) setUserStats(stats); });
-  }, []);
 
   // ── Handlers ──
   const handleStatusChange = async (ns) => {
@@ -799,46 +791,6 @@ const GameDetail = ({ route, navigation }) => {
         scrollEventThrottle={16}>
 
 
-        {/* §— Overview (user stats for this game) */}
-        {igdbData && (
-          <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>
-            <HudFrame />
-            <OverviewStats
-              title="Overview"
-              accentColor={ACCENT}
-              stats={[
-                {
-                  icon: 'game-controller-outline',
-                  value: userStats?.gamesPlayed ?? 'N/A',
-                  label: 'Games',
-                  color: ACCENT,
-                },
-                {
-                  icon: 'time-outline',
-                  value: igdbData.timeToBeat?.completionist != null
-                    ? `${igdbData.timeToBeat.completionist}h`
-                    : 'N/A',
-                  label: '100%',
-                  color: '#F4C542',
-                },
-                {
-                  icon: 'star-outline',
-                  value: userStats?.avgRating != null
-                    ? userStats.avgRating
-                    : 'N/A',
-                  label: 'Avg Rating',
-                  color: '#A78BFA',
-                },
-                {
-                  icon: 'heart-outline',
-                  value: userStats?.wishlistCount ?? 'N/A',
-                  label: 'Wishlist',
-                  color: '#F87171',
-                },
-              ]}
-            />
-          </Animated.View>
-        )}
 
         {/* §0 — Description */}
         <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>

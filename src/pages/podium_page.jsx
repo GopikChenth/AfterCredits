@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
+import { getUserReviews } from '../services/reviewService';
+import OverviewStats from '../components/podium_page/OverviewStats';
 
 import { useMediaType } from '../context/MediaTypeContext';
 import { getPodiumPageStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
@@ -46,6 +48,7 @@ const PodiumPage = ({ navigation }) => {
   const [genreStats, setGenreStats] = useState({});
   const [secondaryStats, setSecondaryStats] = useState({});
   const [loading, setLoading] = useState(true);
+  const [avgRating, setAvgRating] = useState(null);
   const userProfile = useProfileStore((state) => state.profile);
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
@@ -57,6 +60,18 @@ const PodiumPage = ({ navigation }) => {
     const unsubscribe = navigation.addListener('focus', () => fetchProfile());
     return unsubscribe;
   }, [navigation, fetchProfile]);
+
+  // Fetch avg rating for current media type
+  useEffect(() => {
+    getUserReviews().then(res => {
+      if (!res.success || !res.reviews?.length) { setAvgRating(null); return; }
+      const mt = theme.statusMediaType;
+      const filtered = res.reviews.filter(r => r.media_type === mt && r.overall_rating != null);
+      if (filtered.length === 0) { setAvgRating(null); return; }
+      const avg = filtered.reduce((s, r) => s + r.overall_rating, 0) / filtered.length;
+      setAvgRating(Math.round(avg * 10) / 10);
+    });
+  }, [theme.statusMediaType]);
 
   // ─── Aggregate genres + secondary from detail objects ────
   const fetchGenresAndSecondary = useCallback(async (items) => {
@@ -202,6 +217,40 @@ const PodiumPage = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Overview stats */}
+        <View style={styles.statsSection}>
+          <OverviewStats
+            title="Overview"
+            accentColor={theme.accent}
+            stats={[
+              {
+                icon: 'checkmark-circle-outline',
+                value: counts.watched,
+                label: 'Completed',
+                color: theme.accent,
+              },
+              {
+                icon: 'play-circle-outline',
+                value: counts.watching,
+                label: theme.statusLabels.watching,
+                color: theme.accentSecondary,
+              },
+              {
+                icon: 'star-outline',
+                value: avgRating ?? 'N/A',
+                label: 'Avg Rating',
+                color: '#F4C542',
+              },
+              {
+                icon: 'heart-outline',
+                value: counts.wishlist,
+                label: 'Wishlist',
+                color: '#F87171',
+              },
+            ]}
+          />
+        </View>
+
         {/* Donut + Counters */}
         <View style={styles.mainSection}>
           <Text style={styles.sectionTitle}>Status Distribution</Text>
