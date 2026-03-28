@@ -423,7 +423,8 @@ const HomeMovies = ({ navigation }) => {
                 <View style={styles.titleOrangeBar} />
                 <Text style={styles.titleText}>MOVIES</Text>
               </View>
-              <Text style={styles.titleSub}>AfterCredits</Text>
+
+
             </View>
 
             {/* Profile */}

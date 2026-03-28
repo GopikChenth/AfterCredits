@@ -373,8 +373,8 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
           <Text style={styles.menuIcon}>☰</Text>
         </Pressable>
         
-        <Text style={styles.headerTitle}>AfterCredits</Text>
-        
+
+
         <Pressable 
           style={styles.profileButton}
           onPress={() => navigation.navigate('ProfilePage')}

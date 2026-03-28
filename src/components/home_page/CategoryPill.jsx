@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { usePagerSwipe } from '../../context/PagerSwipeContext';
+import { getMediaTheme } from '../../utils/mediaThemes';
 
 let HapticsModule = null;
 try {
@@ -20,12 +21,14 @@ try {
 // Exported so home_game.jsx can read the same value for its Skia corner radius.
 const PILL_HEIGHT = 56;
 export const PILL_BORDER_RADIUS = PILL_HEIGHT / 2;
+const DEFAULT_THEME = getMediaTheme('anime');
 
 const CategoryPill = ({ 
   categories = ['Trending', 'Popular', 'New'],
   onCategoryChange,
   width = 180,
-  accentColor = '#FFB3C6',
+  accentColor = DEFAULT_THEME.accent,
+  textColor = '#101010',
   onSwipeGestureStart,
   onSwipeGestureEnd,
 }) => {
@@ -36,9 +39,8 @@ const CategoryPill = ({
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const hintAnim = useRef(new Animated.Value(0)).current;
   const hasInteracted = useRef(false);
-  const hintLoopRef = useRef(null);
 
-  // Fire once on mount after 600ms, then loop every 5s until user swipes
+  // Gentle one-shot hint on mount (avoid continuous loop to reduce idle CPU/GPU work).
   useEffect(() => {
     const sequence = Animated.sequence([
       Animated.timing(hintAnim, { toValue: -8, duration: 150, useNativeDriver: true }),
@@ -46,19 +48,17 @@ const CategoryPill = ({
       Animated.timing(hintAnim, { toValue: -5, duration: 150, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: 5,  duration: 150, useNativeDriver: true }),
       Animated.timing(hintAnim, { toValue: 0,  duration: 120, useNativeDriver: true }),
-      Animated.delay(5000),
     ]);
 
-    hintLoopRef.current = Animated.loop(sequence, { resetBeforeIteration: true });
     const initial = setTimeout(() => {
       if (!hasInteracted.current) {
-        hintLoopRef.current?.start();
+        sequence.start();
       }
     }, 600);
 
     return () => {
       clearTimeout(initial);
-      hintLoopRef.current?.stop();
+      hintAnim.stopAnimation();
     };
   }, [hintAnim]);
 
@@ -68,7 +68,7 @@ const CategoryPill = ({
 
     if (!hasInteracted.current) {
       hasInteracted.current = true;
-      hintLoopRef.current?.stop();
+      hintAnim.stopAnimation();
       hintAnim.setValue(0);
     }
 
@@ -110,26 +110,27 @@ const CategoryPill = ({
     onSwipeGestureEnd?.();
   }, [enableSwipe, onSwipeGestureEnd]);
 
-  const changeCategoryRef = useRef(changeCategory);
-  changeCategoryRef.current = changeCategory;
-
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dx) > 8 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+        Math.abs(gestureState.dx) > 6 &&
+        Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
+      onMoveShouldSetPanResponderCapture: (_, gestureState) =>
+        Math.abs(gestureState.dx) > 6 &&
+        Math.abs(gestureState.dx) > Math.abs(gestureState.dy),
       onPanResponderGrant: () => {
         handleGestureStart();
         triggerDragStart();
       },
       onPanResponderRelease: (_, gestureState) => {
-        const swipeThreshold = 20;
-        const velocityThreshold = 0.3;
+        const swipeThreshold = 30;
 
-        if (gestureState.dx > swipeThreshold || gestureState.vx > velocityThreshold) {
-          changeCategoryRef.current(-1);
-        } else if (gestureState.dx < -swipeThreshold || gestureState.vx < -velocityThreshold) {
-          changeCategoryRef.current(1);
+        if (gestureState.dx > swipeThreshold) {
+          changeCategory(-1);
+        } else if (gestureState.dx < -swipeThreshold) {
+          changeCategory(1);
         }
 
         handleGestureEnd();
@@ -137,6 +138,8 @@ const CategoryPill = ({
       onPanResponderTerminate: () => {
         handleGestureEnd();
       },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
@@ -144,33 +147,21 @@ const CategoryPill = ({
 
   return (
     <View style={styles.container}>
-      {/*
-        onTouchStart fires on Android ACTION_DOWN — BEFORE the pager's
-        onInterceptTouchEvent (ACTION_MOVE). Disabling swipe here ensures
-        the pager never gets a chance to intercept.
-        onTouchEnd re-enables it when the finger lifts.
-      */}
-      <View
-        onTouchStart={handleGestureStart}
-        onTouchEnd={handleGestureEnd}
-        onTouchCancel={handleGestureEnd}
+      <Animated.View
+        style={[styles.pill, { width, backgroundColor: accentColor }]}
+        {...panResponder.panHandlers}
       >
         <Animated.View
-          style={[styles.pill, { width, backgroundColor: accentColor }]}
-          {...panResponder.panHandlers}
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
+          }}
         >
-          <Animated.View
-            style={{
-              opacity: fadeAnim,
-              transform: [{ translateX: Animated.add(slideAnim, hintAnim) }],
-            }}
-          >
-            <Text style={styles.categoryText}>
-              {categories[activeIndex]}
-            </Text>
-          </Animated.View>
+          <Text style={[styles.categoryText, { color: textColor }]}>
+            {categories[activeIndex]}
+          </Text>
         </Animated.View>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -180,7 +171,7 @@ const styles = StyleSheet.create({
     // No margin - parent controls spacing
   },
   pill: {
-    backgroundColor: '#FFB3C6',
+    backgroundColor: DEFAULT_THEME.accent,
     height: PILL_HEIGHT,
     borderRadius: PILL_BORDER_RADIUS,
     borderCurve: 'continuous',
@@ -190,9 +181,9 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
-    letterSpacing: 1.5,
+    fontFamily: 'Agdasima-Bold',
+    color: '#101010',
+    letterSpacing: 1.2,
   },
 });
 

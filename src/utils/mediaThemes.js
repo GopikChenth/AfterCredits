@@ -12,6 +12,7 @@ const FONT_MAP = {
   'Agdasima-Bold': require('../../assets/font/Agdasima-Bold.ttf'),
   'Genjiro': require('../../assets/font/Genjiro.ttf'),
   'NinjaNaruto': require('../../assets/font/NinjaNaruto-YOn4.ttf'),
+  'Blackbots': require('../../assets/font/Blackbots.ttf'),
 };
 
 /**
@@ -65,7 +66,7 @@ export const MEDIA_THEMES = {
     accent: '#4ADE80',      // Emerald Green
     accentLight: '#86EFAC', // Light Green
     accentGlow: 'rgba(74, 222, 128, 0.6)',
-    headingFont: 'Arial',
+    headingFont: 'Blackbots',
     contentFont: 'Arial',
   },
   comic: {

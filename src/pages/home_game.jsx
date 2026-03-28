@@ -4,12 +4,12 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  Dimensions,
   StatusBar,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
@@ -18,7 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfileStore } from '../stores/useProfileStore';
-import { getCardDimensions } from '../utils/responsiveCard';
 import { getMediaTheme } from '../utils/mediaThemes';
 import CategoryPill, { PILL_BORDER_RADIUS } from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
@@ -33,18 +32,16 @@ import {
 } from '../services/api_rawg';
 import { searchMedia, debounce } from '../services/search';
 
-const GAME_ACCENT   = '#4DAFA4';
-const GAME_ACCENT2  = '#2F8E86';
-const GAME_BG       = '#0F0F0F';
-const GAME_CARD_BG  = '#202020';
-const GAME_TEXT     = '#F8F8F8';
-
-const GAME_THEME = {
-  ...getMediaTheme('game'),
-  accent: GAME_ACCENT,
-  accentLight: '#8FCFC8',
-  accentGlow: 'rgba(47,142,134,0.35)',
-};
+const GAME_THEME = getMediaTheme('game');
+const GAME_ACCENT = '#4DAFA4';
+const GAME_ACCENT_LIGHT = '#8FCFC8';
+const GAME_ACCENT2 = '#2F8E86';
+const GAME_BG = '#0F0F0F';
+const GAME_CARD_BG = '#202020';
+const GAME_TEXT = '#F8F8F8';
+const GAME_TEXT_MUTED = '#8FB5AE';
+const GAME_BORDER = '#2A2A2A';
+const GAME_DANGER = '#FF6B6B';
 
 // ── Inverted-L panel constants ──
 // R matches the pill's own borderRadius so the notch corners look identical.
@@ -133,12 +130,12 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
         />
       ) : (
         <View style={[styles.cardImage, styles.cardPlaceholder]}>
-          <Ionicons name="game-controller-outline" size={32} color={GAME_ACCENT2} />
+          <Ionicons name="game-controller-outline" size={32} color={GAME_ACCENT} />
         </View>
       )}
 
       <LinearGradient
-        colors={['transparent', '#0F0F0F']}
+        colors={['transparent', GAME_BG]}
         style={styles.cardOverlay}
       />
 
@@ -154,8 +151,47 @@ const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
 // ─── Main screen ──────────────────────────────────────────────────────────
 const GameHome = ({ navigation }) => {
   const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
-  const dimensions     = getCardDimensions();
-  const [cardHeight, setCardHeight] = useState(dimensions.cardHeight);
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const isLandscape = viewportWidth > viewportHeight;
+  const isTablet = Math.min(viewportWidth, viewportHeight) >= 768;
+  const isCompactPhone = viewportWidth <= 360;
+  const gridColumns = isTablet ? (isLandscape ? 4 : 3) : 2;
+
+  const cardHeight = useMemo(() => {
+    const panelHorizontalMargins = 24; // panelShell marginHorizontal * 2
+    const listHorizontalPadding = (isTablet ? 10 : 6) * 2;
+    const cardHorizontalMargins = gridColumns * 12; // each card has margin: 6
+    const availableWidth = Math.max(
+      260,
+      viewportWidth - panelHorizontalMargins - listHorizontalPadding - cardHorizontalMargins,
+    );
+    const cardWidth = availableWidth / gridColumns;
+    return Math.round(cardWidth * 1.44);
+  }, [gridColumns, isTablet, viewportWidth]);
+
+  const categoryPillWidth = useMemo(() => {
+    if (isTablet) return isLandscape ? 220 : 200;
+    if (isCompactPhone) return 136;
+    if (viewportWidth <= 400) return 148;
+    return 160;
+  }, [isCompactPhone, isLandscape, isTablet, viewportWidth]);
+
+  const gamesTitleDynamicStyle = useMemo(() => ({
+    fontSize: isTablet ? (isLandscape ? 42 : 38) : (isCompactPhone ? 28 : 36),
+    letterSpacing: isTablet ? 4 : (isCompactPhone ? 2 : 3),
+  }), [isCompactPhone, isLandscape, isTablet]);
+
+  const heroRowDynamicStyle = useMemo(() => ({
+    gap: isCompactPhone ? 6 : 10,
+    paddingTop: isTablet ? 20 : 16,
+    paddingBottom: isTablet ? 18 : 16,
+  }), [isCompactPhone, isTablet]);
+
+  const flashListContentStyle = useMemo(() => ({
+    paddingTop: isTablet ? 24 : 20,
+    paddingBottom: isTablet ? 96 : 80,
+    paddingHorizontal: isTablet ? 10 : 6,
+  }), [isTablet]);
 
   const [selectedCategory, setSelectedCategory] = useState('Trending');
   const [isSidebarVisible, setIsSidebarVisible]  = useState(false);
@@ -174,14 +210,6 @@ const GameHome = ({ navigation }) => {
 
   const userProfile  = useProfileStore(s => s.profile);
   const fetchProfile = useProfileStore(s => s.fetchProfile);
-
-  // Responsive card sizing
-  useEffect(() => {
-    const sub = Dimensions.addEventListener('change', () => {
-      setCardHeight(getCardDimensions().cardHeight);
-    });
-    return () => sub?.remove();
-  }, []);
 
   // Profile
   useEffect(() => {
@@ -351,7 +379,7 @@ const GameHome = ({ navigation }) => {
   const renderListFooter = useMemo(() => {
     if (!(currentPage > 1 || hasMore)) return null;
     return (
-      <View style={styles.paginationContainer}>
+      <View style={[styles.paginationContainer, isTablet && styles.paginationContainerTablet]}>
         {currentPage > 1 ? (
           <Pressable
             style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
@@ -391,7 +419,7 @@ const GameHome = ({ navigation }) => {
         )}
       </View>
     );
-  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore, isTablet]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -409,7 +437,7 @@ const GameHome = ({ navigation }) => {
           <Ionicons name="menu" size={22} color={GAME_ACCENT} />
         </Pressable>
 
-        <Text style={styles.headerTitle}>AfterCredits</Text>
+        <Text style={styles.headerTitle}>{GAME_THEME.name.toUpperCase()}</Text>
 
         <Pressable
           style={styles.profileButton}
@@ -452,7 +480,7 @@ const GameHome = ({ navigation }) => {
           </View>
         ) : (
           <View
-            style={styles.panelShell}
+            style={[styles.panelShell, isTablet && styles.panelShellTablet]}
             onLayout={e => {
               const { width, height } = e.nativeEvent.layout;
               setPanelSize(p =>
@@ -475,7 +503,7 @@ const GameHome = ({ navigation }) => {
 
             {/* Fixed hero row — CategoryPill + GAMES title, does NOT scroll */}
             <View
-              style={styles.heroRow}
+              style={[styles.heroRow, heroRowDynamicStyle]}
               onLayout={e => {
                 const h = e.nativeEvent.layout.height;
                 setHeroRowHeight(prev => (prev === h ? prev : h));
@@ -490,23 +518,26 @@ const GameHome = ({ navigation }) => {
                 <CategoryPill
                   categories={['Trending', 'Popular', 'New']}
                   onCategoryChange={handleCategoryChange}
-                  width={160}
-                  accentColor="#FFFFFF"
+                  width={categoryPillWidth}
+                  accentColor={GAME_ACCENT}
                 />
               </View>
-              <Text style={styles.gamesText}>GAMES</Text>
+              <Text style={[styles.gamesText, gamesTitleDynamicStyle]} numberOfLines={1}>
+                GAMES
+              </Text>
             </View>
 
             {/* Scrollable cards only */}
             <FlashList
+              key={`games-grid-${gridColumns}`}
               data={games}
               renderItem={renderGameCard}
               keyExtractor={keyExtractor}
               estimatedItemSize={cardHeight + 16}
-              numColumns={2}
+              numColumns={gridColumns}
               style={styles.flashList}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.flashListContent}
+              contentContainerStyle={flashListContentStyle}
               ListEmptyComponent={renderListEmpty}
               ListFooterComponent={renderListFooter}
               removeClippedSubviews
@@ -622,12 +653,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     borderWidth: 1,
-    borderColor: GAME_ACCENT2,
+    borderColor: GAME_ACCENT_LIGHT,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: GAME_TEXT,
+    fontFamily: GAME_THEME.contentFont,
     letterSpacing: 0.5,
   },
   profileButton: {
@@ -662,6 +694,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     overflow: 'hidden',
   },
+  panelShellTablet: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 1180,
+  },
   heroRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -673,17 +710,12 @@ const styles = StyleSheet.create({
   },
   gamesText: {
     fontSize: 36,
-    fontFamily: 'Genjiro',
+    fontFamily: GAME_THEME.headingFont,
     color: GAME_TEXT,
     letterSpacing: 3,
-    textShadowColor: GAME_ACCENT2,
+    textShadowColor: GAME_ACCENT_LIGHT,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
-  },
-  flashListContent: {
-    paddingTop: 20,
-    paddingBottom: 80,
-    paddingHorizontal: 6,
   },
   flashList: {
     marginTop: 8,
@@ -702,7 +734,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: GAME_CARD_BG,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: GAME_BORDER,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
@@ -719,7 +751,7 @@ const styles = StyleSheet.create({
   cardPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1A1A1A',
+    backgroundColor: GAME_BG,
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -731,6 +763,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: GAME_TEXT,
     fontSize: 13,
+    fontFamily: 'Blackbots',
     fontWeight: '800',
     lineHeight: 18,
   },
@@ -744,7 +777,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#ff6b6b',
+    color: GAME_DANGER,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -769,6 +802,11 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 8,
   },
+  paginationContainerTablet: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 760,
+  },
   pageButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -791,13 +829,13 @@ const styles = StyleSheet.create({
     color: GAME_ACCENT,
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Agdasima',
+    fontFamily: GAME_THEME.contentFont,
     letterSpacing: 0.5,
   },
   pageIndicator: {
-    color: '#4A9E96',
+    color: GAME_TEXT_MUTED,
     fontSize: 14,
-    fontFamily: 'Agdasima',
+    fontFamily: GAME_THEME.contentFont,
     letterSpacing: 0.5,
   },
 });

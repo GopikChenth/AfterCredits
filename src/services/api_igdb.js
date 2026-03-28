@@ -44,10 +44,10 @@ import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
 const IGDB_BASE_URL = 'https://api.igdb.com/v4';
 
 /**
- * Resolve the user-supplied IGDB credentials from AsyncStorage.
+ * Resolve the IGDB credentials.
+ * Priority: user-saved credentials in AsyncStorage → environment variables.
  * Returns { clientId, accessToken } — either or both may be empty strings
- * if the user has not configured them yet.
- * NOTE: env-var fallbacks are intentionally NOT used — only the user's own key is accepted.
+ * if neither source provides them.
  */
 const resolveCredentials = async () => {
   try {
@@ -236,13 +236,12 @@ export const searchGameIGDB = async (name) => {
  * @returns {Promise<Array>} - Array of { id, title, coverImage, year, genres, popularity }
  */
 export const searchGamesIGDB = async (query, limit = 20) => {
-  const cacheKey = `IGDB_GAME_SEARCH_MG:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
+  const cacheKey = `IGDB_SEARCH_V2:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
   const raw = await igdbRequest(
     'games',
     `search "${query}";
      fields id, name, cover.url, cover.image_id, first_release_date,
             genres.name, total_rating, total_rating_count, category;
-     where category = 0;
      limit ${limit};`,
     cacheKey,
     CACHE_DURATION.IGDB_SEARCH

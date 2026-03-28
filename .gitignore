@@ -50,3 +50,15 @@ ref/
 
 # project documentation (local only)
 *.md
+ANIME_PROGRESS.md
+DATABASE_SCHEMA.md
+OAUTH_SETUP.md
+SUPABASE_SETUP.md
+WISHLIST.md
+
+# local planning & config
+.planning
+.vscode/
+reference/
+supabase/
+consistency.txt

@@ -1,12 +1,11 @@
-﻿/**
- * â•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—
- * â•‘              DETAILS GAMES PAGE                                  â•‘
- * â•‘                                                                  â•‘
- * â•‘  Data source: IGDB (Twitch API)                                  â•‘
- * â•‘    â€¢ Game is searched by name, full rich detail is fetched.      â•‘
- * â•‘    â€¢ If IGDB is unavailable an alert is shown and user goes back.â•‘
- * â•‘    â€¢ Route params supply instant cover/title during load.        â•‘
- * â•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/**
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║              DETAILS GAMES PAGE                                  ║
+ * ║                                                                  ║
+ * ║  Hero: fullscreen banner → collapses to top-right corner         ║
+ * ║  Sections: game-UI HUD style with staggered pop-in               ║
+ * ║  Data: IGDB (Twitch API) for rich game details                   ║
+ * ╚══════════════════════════════════════════════════════════════════╝
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
@@ -15,248 +14,555 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   Pressable,
   ActivityIndicator,
   Alert,
-  Platform,
   Animated,
+  InteractionManager,
   StatusBar,
   FlatList,
   Linking,
+  useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import GenrePill from "../components/details_page/GenrePill";
 import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
-import {
-  ScreenshotCard,
-} from "../components/details_page/SharedListItems";
+import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
-import { getCardDimensions } from "../utils/responsiveCard";
-import {
-  getMediaReviews,
-} from "../services/reviewService";
+import { getMediaReviews } from "../services/reviewService";
 import {
   getMediaStatus,
   setMediaStatus,
   setWishlist,
 } from "../services/mediaStatusService";
 
-const { width, height } = Dimensions.get("window");
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ACCENT COLOURS  (purple / cyan â€” games palette)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Theme ───────────────────────────────────────────────────────────────────
 const ACCENT = "#0FA3B1";
 const ACCENT2 = "#0B7285";
 const BG = "#000000";
-const BLOB1 = "#083344";
-const BLOB2 = "#0E7490";
-const BLOB3 = "#155E75";
+const SURFACE_BG = "#101010";
+const SURFACE_SUBTLE = "#181818";
+const TEXT_PRIMARY = "#FFFFFF";
+const TEXT_SECONDARY = "#D3D3D3";
+const TEXT_MUTED = "#999999";
+const TEXT_DISABLED = "#666666";
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// SUB-COMPONENTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const hexToRgba = (hex, alpha) => {
+  const normalized = hex.replace("#", "");
+  const expanded = normalized.length === 3
+    ? normalized.split("").map((ch) => ch + ch).join("")
+    : normalized;
+  const value = Number.parseInt(expanded, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 
-/** Pill showing a platform abbreviation */
+// ─── Hero geometry ───────────────────────────────────────────────────────────
+const BAR_H = 56;
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const buildHeroGeometry = (width, height, isTablet, isLandscape) => {
+  const expWidth = clamp(
+    width * (isTablet ? 0.72 : 0.88),
+    280,
+    isTablet ? 620 : width * 0.92,
+  );
+  const expHeight = clamp(
+    height * (isTablet ? (isLandscape ? 0.52 : 0.48) : (isLandscape ? 0.56 : 0.62)),
+    260,
+    isTablet ? 560 : height * 0.72,
+  );
+  const expLeft = (width - expWidth) / 2;
+  const expTop = BAR_H + (isLandscape ? 4 : 8);
+
+  const colWidth = clamp(width * (isTablet ? 0.15 : 0.24), 90, isTablet ? 150 : 118);
+  const colHeight = Math.round(colWidth * 1.4);
+  const colLeft = width - colWidth - 16;
+  const colTop = BAR_H + 8;
+
+  const colScaleX = colWidth / expWidth;
+  const colScaleY = colHeight / expHeight;
+  const colTx = colLeft - expLeft - (expWidth * (1 - colScaleX)) / 2;
+  const colTy = colTop - expTop - (expHeight * (1 - colScaleY)) / 2;
+
+  const contentTop = expTop + expHeight + (isTablet ? 88 : 80);
+  const range = Math.max(120, contentTop - (colTop + colHeight + 16));
+
+  return {
+    expWidth,
+    expHeight,
+    expLeft,
+    expTop,
+    colWidth,
+    colHeight,
+    colTop,
+    colScaleX,
+    colScaleY,
+    colTx,
+    colTy,
+    contentTop,
+    range,
+  };
+};
+
+// ─── Sub-components ──────────────────────────────────────────────────────────
+
+// ── HUD Podium Stats ──────────────────────────────────────────────────────────
+const PODIUM_GOLD   = '#F4C542';
+const PODIUM_SILVER = '#A8B8C8';
+const PODIUM_BRONZE = '#C8835A';
+
+const PodiumBar = memo(({ value, label, sublabel, rank, delay, maxH }) => {
+  const growAnim = useRef(new Animated.Value(0)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const rankColor = rank === 1 ? PODIUM_GOLD : rank === 2 ? PODIUM_SILVER : PODIUM_BRONZE;
+  // Heights: 2nd tallest (silver) on left, tallest (gold) center, 3rd (bronze) right
+  const barHeightMap = { 1: maxH, 2: maxH * 0.72, 3: maxH * 0.54 };
+  const barH = barHeightMap[rank] || maxH * 0.5;
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      Animated.parallel([
+        Animated.spring(growAnim, {
+          toValue: 1, useNativeDriver: true,
+          tension: 55, friction: 12, delay: 0,
+        }),
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(glowAnim, { toValue: 1, duration: 1400, useNativeDriver: true }),
+            Animated.timing(glowAnim, { toValue: 0.3, duration: 1400, useNativeDriver: true }),
+          ])
+        ),
+      ]).start();
+    }, delay);
+    return () => clearTimeout(t);
+  }, [growAnim, glowAnim, delay]);
+
+  const scaleY = growAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' });
+  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.55] });
+
+  return (
+    <View style={podiumStyles.col}>
+      {/* Value + label float above the bar */}
+      <View style={podiumStyles.statAbove}>
+        <Text style={[podiumStyles.statValue, { color: rankColor }]} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+        <Text style={podiumStyles.statLabel} numberOfLines={1}>{label}</Text>
+        {sublabel ? <Text style={podiumStyles.statSublabel} numberOfLines={1}>{sublabel}</Text> : null}
+      </View>
+
+      {/* The podium column itself */}
+      <View style={[podiumStyles.barTrack, { height: barH }]}>
+        {/* Glow behind bar */}
+        <Animated.View style={[podiumStyles.barGlow, { backgroundColor: rankColor, opacity: glowOpacity }]} />
+        {/* Growing bar */}
+        <Animated.View
+          style={[
+            podiumStyles.bar,
+            { backgroundColor: rankColor, transformOrigin: 'bottom', transform: [{ scaleY }] },
+          ]}
+        />
+        {/* Rank badge on top of bar */}
+        <View style={[podiumStyles.rankBadge, { borderColor: rankColor }]}>
+          <Text style={[podiumStyles.rankText, { color: rankColor }]}>
+            {rank === 1 ? '▲' : rank === 2 ? '◆' : '■'}
+          </Text>
+        </View>
+        {/* Tick marks on the side */}
+        {[0.25, 0.5, 0.75].map(frac => (
+          <View key={frac} style={[podiumStyles.tick, { bottom: barH * frac, backgroundColor: rankColor }]} />
+        ))}
+      </View>
+
+      {/* Base plate */}
+      <View style={[podiumStyles.base, { borderColor: rankColor }]}>
+        <View style={[podiumStyles.baseAccent, { backgroundColor: rankColor }]} />
+      </View>
+    </View>
+  );
+});
+
+const PodiumStats = memo(({ rating, ratingCount, mainStoryH, completionistH, playtime, platforms, genres }) => {
+  // Build 3 most interesting available stats
+  const stats = [];
+
+  if (rating != null) {
+    stats.push({
+      value: `${Math.round(rating)}`,
+      label: 'RATING',
+      sublabel: ratingCount ? `${ratingCount >= 1000 ? `${(ratingCount / 1000).toFixed(1)}K` : ratingCount} reviews` : null,
+      priority: 1,
+    });
+  }
+  if (completionistH != null) {
+    stats.push({
+      value: `${completionistH}h`,
+      label: 'COMPLETE',
+      sublabel: '100% run',
+      priority: 2,
+    });
+  } else if (mainStoryH != null) {
+    stats.push({
+      value: `${mainStoryH}h`,
+      label: 'MAIN STORY',
+      sublabel: 'to finish',
+      priority: 2,
+    });
+  } else if (playtime != null) {
+    stats.push({
+      value: `${playtime}h`,
+      label: 'PLAYTIME',
+      sublabel: 'avg.',
+      priority: 2,
+    });
+  }
+  if (platforms > 0) {
+    stats.push({
+      value: `${platforms}`,
+      label: 'PLATFORMS',
+      sublabel: null,
+      priority: 3,
+    });
+  } else if (genres > 0) {
+    stats.push({
+      value: `${genres}`,
+      label: 'GENRES',
+      sublabel: null,
+      priority: 3,
+    });
+  }
+
+  // Pad to 3 if needed
+  while (stats.length < 3) stats.push({ value: '—', label: 'N/A', sublabel: null, priority: stats.length + 1 });
+
+  // Order: 2nd, 1st, 3rd (classic podium arrangement)
+  const [p1, p2, p3] = stats;
+  const ordered = [p2, p1, p3]; // silver left, gold center, bronze right
+  const ranks   = [2,  1,  3];
+  const delays  = [120, 0, 240];
+  const MAX_H = 110;
+
+  return (
+    <View style={podiumStyles.container}>
+      <View style={podiumStyles.header}>
+        <View style={s.secSlant} />
+        <Text style={s.secTitle}>STATS</Text>
+        <View style={s.secScanLine} />
+      </View>
+      <View style={podiumStyles.podium}>
+        {ordered.map((stat, i) => (
+          <PodiumBar
+            key={ranks[i]}
+            value={stat.value}
+            label={stat.label}
+            sublabel={stat.sublabel}
+            rank={ranks[i]}
+            delay={delays[i]}
+            maxH={MAX_H}
+          />
+        ))}
+      </View>
+    </View>
+  );
+});
+
+const podiumStyles = StyleSheet.create({
+  container: { paddingTop: 4 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, gap: 8 },
+  podium: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 12,
+    paddingHorizontal: 8,
+  },
+  col: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statAbove: {
+    alignItems: 'center',
+    marginBottom: 8,
+    minHeight: 52,
+    justifyContent: 'flex-end',
+  },
+  statValue: {
+    fontSize: 22,
+    fontFamily: 'Blackbots',
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
+  statLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: TEXT_MUTED,
+    letterSpacing: 2,
+    textAlign: 'center',
+  },
+  statSublabel: {
+    fontSize: 8,
+    color: TEXT_DISABLED,
+    letterSpacing: 1,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  barTrack: {
+    width: '100%',
+    position: 'relative',
+    overflow: 'visible',
+    justifyContent: 'flex-end',
+  },
+  barGlow: {
+    position: 'absolute',
+    bottom: 0,
+    left: '15%',
+    right: '15%',
+    height: '100%',
+    borderRadius: 4,
+    filter: 'blur(8px)',
+  },
+  bar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 3,
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    opacity: 0.85,
+  },
+  rankBadge: {
+    position: 'absolute',
+    top: -14,
+    alignSelf: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 2,
+    borderWidth: 1,
+    backgroundColor: '#101010',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontSize: 8,
+    fontWeight: '900',
+  },
+  tick: {
+    position: 'absolute',
+    right: -4,
+    width: 4,
+    height: 1,
+    opacity: 0.4,
+  },
+  base: {
+    width: '100%',
+    height: 8,
+    borderWidth: 1,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: '#181818',
+    marginTop: 1,
+  },
+  baseAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: '35%',
+    opacity: 0.5,
+  },
+});
+
+
 const PlatformPill = ({ name, abbreviation }) => (
-  <View style={styles.platformPill}>
-    <Text style={styles.platformPillText}>{abbreviation || name}</Text>
+  <View style={s.platformPill}>
+    <Text style={s.platformPillText}>{abbreviation || name}</Text>
   </View>
 );
 
-/** Pill for game modes (Single-player, Multiplayerâ€¦) */
 const ModePill = ({ mode }) => (
-  <View style={styles.modePill}>
-    <Text style={styles.modePillText}>{mode}</Text>
+  <View style={s.modePill}>
+    <Text style={s.modePillText}>{mode}</Text>
   </View>
 );
 
-/** Developer / publisher row */
 const CompanyRow = ({ name, role }) => (
-  <View style={styles.companyRow}>
-    <View style={styles.companyAvatar}>
+  <View style={s.companyRow}>
+    <View style={s.companyAvatar}>
       <Ionicons name="business-outline" size={16} color={ACCENT} />
     </View>
     <View>
-      <Text style={styles.companyName}>{name}</Text>
-      <Text style={styles.companyRole}>{role}</Text>
+      <Text style={s.companyName}>{name}</Text>
+      <Text style={s.companyRole}>{role}</Text>
     </View>
   </View>
 );
 
-/** Trailer thumbnail card */
-const TrailerCard = memo(({ trailer }) => {
-  const handlePress = useCallback(
-    () => Linking.openURL(trailer.url),
-    [trailer.url],
-  );
+const GameTrailerCard = memo(({ trailer, cardWidth, cardHeight }) => {
+  const open = useCallback(() => Linking.openURL(trailer.url), [trailer.url]);
   return (
-    <Pressable
-      style={styles.trailerCard}
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={`Play trailer: ${trailer.name}`}
-    >
-      <Image
-        source={{ uri: trailer.thumbnail }}
-        style={styles.trailerThumb}
-        contentFit="cover"
-        recyclingKey={trailer.url}
-      />
-      <View style={styles.trailerOverlay}>
-        <View style={styles.playButton}>
-          <Ionicons name="play" size={20} color="#fff" />
+    <Pressable style={[s.trailerCard, { width: cardWidth }]} onPress={open} accessibilityRole="button"
+      accessibilityLabel={`Play trailer: ${trailer.name}`}>
+      <Image source={{ uri: trailer.thumbnail }} style={[s.trailerThumb, { width: cardWidth, height: cardHeight }]}
+        contentFit="cover" recyclingKey={trailer.url} />
+      <View style={[s.trailerOverlay, { height: cardHeight }]}>
+        <View style={s.playBtn}>
+          <Ionicons name="play" size={20} color={TEXT_PRIMARY} />
         </View>
       </View>
-      <Text style={styles.trailerName} numberOfLines={1}>
-        {trailer.name}
-      </Text>
+      <Text style={s.trailerName} numberOfLines={1}>{trailer.name}</Text>
     </Pressable>
   );
 });
-TrailerCard.displayName = "TrailerCard";
+GameTrailerCard.displayName = "GameTrailerCard";
 
-const SkiaSection = ({
-  title,
-  children,
-  style,
-  contentStyle,
-  showTab = true,
-}) => {
-  return (
-    <View style={[showTab ? styles.sectionShell : styles.sectionShellNoTab, style]}>
-      {showTab && title ? <Text style={styles.sectionTabText}>{title}</Text> : null}
-      <View
-        style={[
-          showTab ? styles.skiaSectionContent : styles.skiaSectionContentNoTab,
-          contentStyle,
-        ]}
-      >
-        {children}
-      </View>
+const Blobs = () => (
+  <View style={s.bgShapes} pointerEvents="none">
+    <View style={s.blob1} />
+    <View style={s.blob2} />
+    <View style={s.blob3} />
+  </View>
+);
+
+// ─── Futuristic section helpers ──────────────────────────────────────────────
+const SectionHeader = ({ title }) => (
+  <View style={s.secTitleRow}>
+    <View style={s.secSlant} />
+    <Text style={s.secTitle}>{title}</Text>
+    <View style={s.secScanLine} />
+  </View>
+);
+
+/** Angular corner bracket decorations — top-left & bottom-right */
+const HudFrame = () => (
+  <>
+    <View style={s.cornerTL}>
+      <View style={s.cornerH} />
+      <View style={s.cornerV} />
     </View>
-  );
-};
+    <View style={s.cornerBR}>
+      <View style={s.cornerH} />
+      <View style={s.cornerV} />
+    </View>
+    <View style={s.cornerTR}>
+      <View style={s.cornerH} />
+      <View style={s.cornerV} />
+    </View>
+  </>
+);
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 const GameDetail = ({ route, navigation }) => {
-  // â”€â”€ Route params (from RAWG card) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const {
-    gameId, // RAWG id
-    gameName, // name (used for IGDB search)
-    coverImage, // RAWG cover (fallback)
-    genres: rawgGenres = [],
-    playtime,
+    gameId, gameName, coverImage, genres: rawgGenres = [], playtime,
   } = route?.params || {};
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const isLandscape = viewportWidth > viewportHeight;
+  const isTablet = Math.min(viewportWidth, viewportHeight) >= 768;
+  const hero = useMemo(
+    () => buildHeroGeometry(viewportWidth, viewportHeight, isTablet, isLandscape),
+    [viewportWidth, viewportHeight, isTablet, isLandscape],
+  );
+  const sectionHorizontalInset = isTablet ? 24 : 16;
+  const sectionPadding = isTablet ? 18 : 16;
+  const horizontalListGap = isTablet ? 16 : 12;
+  const trailerCardWidth = useMemo(
+    () => clamp(viewportWidth * (isTablet ? 0.34 : 0.56), 190, isTablet ? 320 : 260),
+    [viewportWidth, isTablet],
+  );
+  const trailerCardHeight = Math.round(trailerCardWidth * 0.56);
+  const screenshotWidth = useMemo(
+    () => clamp(viewportWidth * (isTablet ? 0.42 : 0.66), 220, isTablet ? 420 : 320),
+    [viewportWidth, isTablet],
+  );
+  const screenshotHeight = Math.round(screenshotWidth * 9 / 16);
+  const relatedCardWidth = useMemo(
+    () => clamp(viewportWidth * (isTablet ? 0.2 : 0.32), 120, isTablet ? 190 : 150),
+    [viewportWidth, isTablet],
+  );
+  const relatedCardHeight = Math.round(relatedCardWidth * 1.42);
 
-  // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── State ──
   const [igdbData, setIgdbData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  // null = not yet checked, false = has credentials, true = missing credentials
   const [noCredentials, setNoCredentials] = useState(null);
-
   const [userStatus, setUserStatus] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
-
   const [dbReviews, setDbReviews] = useState([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
-
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
+  const [showDeferredSections, setShowDeferredSections] = useState(false);
 
+  // ── Scroll-driven animations ──
   const scrollY = useRef(new Animated.Value(0)).current;
-  const { cardWidth: homeCardWidth, cardHeight: homeCardHeight } = useMemo(
-    () => getCardDimensions(),
-    [],
-  );
 
-  const backBarHeight = 56;
-  const posterExpandedWidth = width * 0.86;
-  const posterExpandedHeight = height * 0.7;
-  const posterExpandedTop =
-    backBarHeight + Math.max(10, (height - backBarHeight - posterExpandedHeight) * 0.48);
-  const posterCollapsedTop = backBarHeight + 10;
-  const heroScrollRange = Math.max(
-    140,
-    posterExpandedHeight - homeCardHeight + (posterExpandedTop - posterCollapsedTop),
-  );
+  // Section stagger pop-in
+  const SEC_N = 10;
+  const secAnims = useRef(Array.from({ length: SEC_N }, () => new Animated.Value(0))).current;
 
-  const heroHeight = scrollY.interpolate({
-    inputRange: [0, heroScrollRange * 0.45, heroScrollRange],
-    outputRange: [posterExpandedHeight, posterExpandedHeight - 76, homeCardHeight],
-    extrapolate: "clamp",
+  // Hero poster interpolations — center → top-right
+  const heroScaleX = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [1, hero.colScaleX], extrapolate: "clamp" });
+  const heroScaleY = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [1, hero.colScaleY], extrapolate: "clamp" });
+  const heroTX = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [0, hero.colTx], extrapolate: "clamp" });
+  const heroTY = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [0, hero.colTy], extrapolate: "clamp" });
+
+  // Expanded title (on poster) fades out
+  const expTitleOp = scrollY.interpolate({ inputRange: [0, hero.range * 0.3], outputRange: [1, 0], extrapolate: "clamp" });
+  // Collapsed header fades in
+  const colHeaderOp = scrollY.interpolate({ inputRange: [hero.range * 0.5, hero.range * 0.85], outputRange: [0, 1], extrapolate: "clamp" });
+  // Top bar bg
+  const barBgOp = scrollY.interpolate({ inputRange: [0, hero.range * 0.8], outputRange: [0, 0.94], extrapolate: "clamp" });
+  // Poster glow border when collapsed
+  const borderOp = scrollY.interpolate({ inputRange: [hero.range * 0.7, hero.range], outputRange: [0, 0.7], extrapolate: "clamp" });
+
+  // ── Section animation helper ──
+  const secStyle = (i) => ({
+    opacity: secAnims[Math.min(i, SEC_N - 1)],
+    transform: [{
+      translateY: secAnims[Math.min(i, SEC_N - 1)].interpolate({
+        inputRange: [0, 1], outputRange: [28, 0],
+      }),
+    }],
   });
 
-  const heroWidth = scrollY.interpolate({
-    inputRange: [0, heroScrollRange],
-    outputRange: [posterExpandedWidth, homeCardWidth],
-    extrapolate: "clamp",
-  });
+  // ── Trigger section pop-in ──
+  useEffect(() => {
+    if (igdbData) {
+      secAnims.forEach((a) => a.setValue(0));
+      Animated.stagger(80,
+        secAnims.map((a) => Animated.spring(a, { toValue: 1, tension: 50, friction: 9, useNativeDriver: true }))
+      ).start();
+    }
+  }, [igdbData]);
 
-  const heroTranslateY = scrollY.interpolate({
-    inputRange: [0, heroScrollRange],
-    outputRange: [posterExpandedTop, posterCollapsedTop],
-    extrapolate: "clamp",
-  });
+  // Defer heavy carousels/reviews until initial interactions settle.
+  useEffect(() => {
+    setShowDeferredSections(false);
+    if (!igdbData) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      setShowDeferredSections(true);
+    });
+    return () => task.cancel?.();
+  }, [igdbData, gameId]);
 
-  const posterRadius = scrollY.interpolate({
-    inputRange: [0, heroScrollRange * 0.45, heroScrollRange],
-    outputRange: [28, 20, 16],
-    extrapolate: "clamp",
-  });
-
-  const posterOverlayOpacity = scrollY.interpolate({
-    inputRange: [0, heroScrollRange],
-    outputRange: [0.2, 0.55],
-    extrapolate: "clamp",
-  });
-
-  const topBarBackdropOpacity = scrollY.interpolate({
-    inputRange: [0, heroScrollRange * 0.9],
-    outputRange: [0, 0.85],
-    extrapolate: "clamp",
-  });
-
-  const posterParallax = scrollY.interpolate({
-    inputRange: [0, heroScrollRange],
-    outputRange: [0, -34],
-    extrapolate: "clamp",
-  });
-
-  const metaBlockTranslateY = scrollY.interpolate({
-    inputRange: [0, heroScrollRange],
-    outputRange: [
-      posterExpandedTop + posterExpandedHeight + 16,
-      posterCollapsedTop + homeCardHeight + 12,
-    ],
-    extrapolate: "clamp",
-  });
-
-  const contentStartOffset = posterExpandedTop + posterExpandedHeight + 140;
-
-  // â”€â”€ Data fetching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+  // ── Data fetching ──
   useEffect(() => {
     if (!gameId) return;
-    // Check for user-supplied IGDB credentials first.
-    // If missing, block the page entirely â€” do NOT attempt an API call.
     hasIGDBCredentials().then((has) => {
-      if (!has) {
-        setNoCredentials(true);
-        setIsLoading(false);
-      } else {
-        setNoCredentials(false);
-        fetchAll();
-      }
+      if (!has) { setNoCredentials(true); setIsLoading(false); }
+      else { setNoCredentials(false); fetchAll(); }
     });
   }, [gameId]);
 
@@ -268,109 +574,55 @@ const GameDetail = ({ route, navigation }) => {
       setIgdbData(result);
     } catch (err) {
       console.error("GameDetail IGDB fetch error:", err);
-      Alert.alert(
-        "IGDB API Not Found",
+      Alert.alert("IGDB API Not Found",
         "Could not load game details from IGDB. Please check your API credentials and try again.",
-        [
-          {
-            text: "Go Back",
-            onPress: () => navigation?.goBack(),
-            style: "cancel",
-          },
-          { text: "Retry", onPress: () => fetchAll() },
-        ],
-      );
-    } finally {
-      setIsLoading(false);
-    }
+        [{ text: "Go Back", onPress: () => navigation?.goBack(), style: "cancel" },
+         { text: "Retry", onPress: () => fetchAll() }]);
+    } finally { setIsLoading(false); }
   };
 
-  // Reviews â€” re-runs every time this screen gains focus
-  // so newly submitted reviews appear immediately after returning from the review form
-  useFocusEffect(
-    useCallback(() => {
-      if (!gameId) return;
-      const load = async () => {
-        setIsLoadingReviews(true);
-        try {
-          const rv = await getMediaReviews("games", gameId);
-          if (rv?.success) setDbReviews(rv.reviews || []);
-        } finally {
-          setIsLoadingReviews(false);
-        }
-      };
-      load();
-    }, [gameId])
-  );
+  useFocusEffect(useCallback(() => {
+    if (!gameId) return;
+    (async () => {
+      setIsLoadingReviews(true);
+      try {
+        const rv = await getMediaReviews("games", gameId);
+        if (rv?.success) setDbReviews(rv.reviews || []);
+      } finally { setIsLoadingReviews(false); }
+    })();
+  }, [gameId]));
 
-  // User status
   useEffect(() => {
     if (!gameId) return;
     getMediaStatus("games", gameId).then((r) => {
-      if (r.success && r.data) {
-        setUserStatus(r.data.status);
-        setIsWishlisted(r.data.is_wishlisted);
-      }
+      if (r.success && r.data) { setUserStatus(r.data.status); setIsWishlisted(r.data.is_wishlisted); }
     });
   }, [gameId]);
 
-  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  const handleStatusChange = async (newStatus) => {
-    setUserStatus(newStatus);
-    await setMediaStatus("games", gameId, newStatus);
-  };
-
-  const handleWishlistToggle = async (wishlisted) => {
-    setIsWishlisted(wishlisted);
-    await setWishlist("games", gameId, wishlisted);
-  };
-
+  // ── Handlers ──
+  const handleStatusChange = async (ns) => { setUserStatus(ns); await setMediaStatus("games", gameId, ns); };
+  const handleWishlistToggle = async (w) => { setIsWishlisted(w); await setWishlist("games", gameId, w); };
   const handleGoBack = useCallback(() => navigation?.goBack(), [navigation]);
 
-  const renderScreenshot = useCallback(
-    ({ item }) => <ScreenshotCard uri={item} style={styles.screenshot} />,
-    [],
-  );
+  const renderScreenshot = useCallback(({ item }) => (
+    <ScreenshotCard uri={item} style={[s.screenshot, { width: screenshotWidth, height: screenshotHeight }]} />
+  ), [screenshotHeight, screenshotWidth]);
+  const renderTrailer = useCallback(({ item }) => (
+    <GameTrailerCard trailer={item} cardWidth={trailerCardWidth} cardHeight={trailerCardHeight} />
+  ), [trailerCardHeight, trailerCardWidth]);
+  const renderSimilar = useCallback(({ item }) => (
+    <Pressable style={[s.relatedCard, { width: relatedCardWidth, height: relatedCardHeight }]}
+      onPress={() => navigation?.push("DetailsGames", { gameId: item.id, gameName: item.name, coverImage: item.coverImage })}
+      accessibilityRole="button" accessibilityLabel={`View similar game: ${item.name}`}>
+      <Image source={{ uri: item.coverImage }} style={s.relatedImg} contentFit="cover" recyclingKey={`sim-${item.id}`} />
+      <View style={s.relatedOverlay}>
+        <Text style={s.relatedTitle} numberOfLines={2}>{item.name}</Text>
+      </View>
+    </Pressable>
+  ), [navigation, relatedCardHeight, relatedCardWidth]);
 
-  const renderSimilarGame = useCallback(
-    ({ item }) => (
-      <Pressable
-        style={styles.relatedCard}
-        onPress={() =>
-          navigation?.push("DetailsGames", {
-            gameId: item.id,
-            gameName: item.name,
-            coverImage: item.coverImage,
-          })
-        }
-        accessibilityRole="button"
-        accessibilityLabel={`View similar game: ${item.name}`}
-      >
-        <Image
-          source={{ uri: item.coverImage }}
-          style={styles.relatedCardImage}
-          contentFit="cover"
-          recyclingKey={`sim-${item.id}`}
-        />
-        <View style={styles.relatedCardOverlay}>
-          <Text style={styles.relatedCardTitle} numberOfLines={2}>
-            {item.name}
-          </Text>
-        </View>
-      </Pressable>
-    ),
-    [navigation],
-  );
-
-  const renderTrailer = useCallback(
-    ({ item }) => <TrailerCard trailer={item} />,
-    [],
-  );
-
-  // â”€â”€ Derived data (from IGDB + route param fallbacks while loading) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  const name = igdbData?.name || gameName || "Loadingâ€¦";
+  // ── Derived data ──
+  const name = igdbData?.name || gameName || "Loading…";
   const summary = igdbData?.summary || "";
   const storyline = igdbData?.storyline || "";
   const cover = igdbData?.coverImage || coverImage;
@@ -384,62 +636,46 @@ const GameDetail = ({ route, navigation }) => {
   const trailers = igdbData?.trailers || [];
   const similarGames = igdbData?.similarGames || [];
   const releaseDate = igdbData?.releaseDate || "TBA";
-  const avgPlaytime = playtime || null;
   const gameDescription = summary || storyline || "No description available.";
-  const playtimeValue = igdbData?.timeToBeat?.mainStory
+  const playtimeVal = igdbData?.timeToBeat?.mainStory
     ? Math.max(1, Math.round(igdbData.timeToBeat.mainStory))
-    : avgPlaytime
-      ? Math.max(1, Math.round(avgPlaytime))
-      : null;
-  const playtimeText = playtimeValue
-    ? `${playtimeValue}h Playtime`
-    : "Playtime Unknown";
-  const gameStatusText = igdbData?.status || "Unknown";
+    : playtime ? Math.max(1, Math.round(playtime)) : null;
+  const playtimeText = playtimeVal ? `${playtimeVal}h Playtime` : "Playtime Unknown";
+  const statusText = igdbData?.status || "Unknown";
 
-  // â”€â”€ Loading / Error states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  const Blobs = () => (
-    <View style={styles.backgroundShapes} pointerEvents="none">
-      <View style={styles.blobShape1} />
-      <View style={styles.blobShape2} />
-      <View style={styles.blobShape3} />
-    </View>
+  // Reviews pagination
+  const PER_PAGE = 10;
+  const totalPages = useMemo(() => Math.ceil(dbReviews.length / PER_PAGE), [dbReviews.length]);
+  const visibleReviews = useMemo(
+    () => dbReviews.slice((currentReviewPage - 1) * PER_PAGE, currentReviewPage * PER_PAGE),
+    [dbReviews, currentReviewPage]
+  );
+  const sectionCardStyle = useMemo(
+    () => ({ marginHorizontal: sectionHorizontalInset, padding: sectionPadding }),
+    [sectionHorizontalInset, sectionPadding],
   );
 
-  // â”€â”€ No IGDB credentials â€” block the page entirely â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+  // ── No credentials ──
   if (noCredentials === true) {
     return (
-      <View style={styles.container}>
+      <View style={s.container}>
         <StatusBar barStyle="light-content" backgroundColor={BG} />
         <Blobs />
-        <SafeAreaView style={styles.noCredSafeArea} edges={["top", "bottom"]}>
-          <View style={styles.noCredContainer}>
-            <View style={styles.noCredIconWrap}>
-              <Ionicons name="game-controller-outline" size={56} color={ACCENT} />
-            </View>
-            <Text style={styles.noCredTitle}>IGDB API Key Required</Text>
-            <Text style={styles.noCredBody}>
-              Game details are powered by the IGDB database. To view this page
-              you need to add your own Twitch / IGDB Client ID and Access Token
-              in Settings.
+        <SafeAreaView style={s.noCredSafe} edges={["top", "bottom"]}>
+          <View style={s.noCredBox}>
+            <View style={s.noCredIcon}><Ionicons name="game-controller-outline" size={56} color={ACCENT} /></View>
+            <Text style={s.noCredTitle}>IGDB API Key Required</Text>
+            <Text style={s.noCredBody}>
+              Game details are powered by the IGDB database. To view this page you need to add your own Twitch / IGDB Client ID and Access Token in Settings.
             </Text>
-            <Pressable
-              style={styles.noCredPrimaryButton}
-              onPress={() => navigation?.navigate("ProfilePage")}
-              accessibilityRole="button"
-              accessibilityLabel="Go to Settings to add IGDB credentials"
-            >
-              <Ionicons name="settings-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.noCredPrimaryText}>Go to Settings</Text>
+            <Pressable style={s.noCredPrimBtn} onPress={() => navigation?.navigate("ProfilePage")}
+              accessibilityRole="button" accessibilityLabel="Go to Settings">
+              <Ionicons name="settings-outline" size={18} color={TEXT_PRIMARY} style={{ marginRight: 8 }} />
+              <Text style={s.noCredPrimText}>Go to Settings</Text>
             </Pressable>
-            <Pressable
-              style={styles.noCredSecondaryButton}
-              onPress={() => navigation?.goBack()}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <Text style={styles.noCredSecondaryText}>Go Back</Text>
+            <Pressable style={s.noCredSecBtn} onPress={() => navigation?.goBack()}
+              accessibilityRole="button" accessibilityLabel="Go back">
+              <Text style={s.noCredSecText}>Go Back</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -447,860 +683,466 @@ const GameDetail = ({ route, navigation }) => {
     );
   }
 
-  // â”€â”€ Loading state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+  // ── Loading ──
   if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Blobs />
-        <DetailsSkeleton />
-      </View>
-    );
+    return (<View style={s.container}><Blobs /><DetailsSkeleton /></View>);
+  }
+  if (!igdbData) {
+    return (<View style={s.container}><Blobs /></View>);
   }
 
-  // If igdbData is null (alert shown, waiting for user action) show nothing extra
-  if (!igdbData)
-    return (
-      <View style={styles.container}>
-        <Blobs />
-      </View>
-    );
-
-  // â”€â”€ Main render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  const REVIEWS_PER_PAGE = 10;
-  const totalReviewPages = Math.ceil(dbReviews.length / REVIEWS_PER_PAGE);
-  const visibleReviews = dbReviews.slice(
-    (currentReviewPage - 1) * REVIEWS_PER_PAGE,
-    currentReviewPage * REVIEWS_PER_PAGE,
-  );
-
+  // ── Main render ──
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <StatusBar barStyle="light-content" backgroundColor={BG} />
 
-      <SafeAreaView style={styles.topBar} edges={["top"]}>
-        <Animated.View style={[styles.topBarBackdrop, { opacity: topBarBackdropOpacity }]} />
-        <Pressable
-          style={styles.topBackButton}
-          onPress={handleGoBack}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </Pressable>
+      {/* ── Fixed top bar ── */}
+      <SafeAreaView style={s.topBar} edges={["top"]}>
+        <Animated.View style={[s.topBarBg, { opacity: barBgOp }]} />
+        <View style={s.topBarRow}>
+          <Pressable style={s.backBtn} onPress={handleGoBack}
+            accessibilityRole="button" accessibilityLabel="Go back">
+            <Ionicons name="arrow-back" size={24} color={TEXT_PRIMARY} />
+          </Pressable>
+        </View>
       </SafeAreaView>
 
-      {/* â”€â”€ Background blobs â”€â”€ */}
+      {/* ── Blobs ── */}
       <Blobs />
 
-      <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: contentStartOffset }]}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false },
-        )}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.metaSpacer} />
+      {/* ── Hero poster (center → top-right) ── */}
+      <Animated.View style={[s.heroWrap, {
+        left: hero.expLeft,
+        top: hero.expTop,
+        width: hero.expWidth,
+        height: hero.expHeight,
+        borderRadius: isTablet ? 28 : 24,
+        transform: [{ translateX: heroTX }, { translateY: heroTY }, { scaleX: heroScaleX }, { scaleY: heroScaleY }],
+      }]} pointerEvents="none">
+        <Image source={{ uri: cover }} style={s.heroImg} contentFit="cover"
+          recyclingKey={`game-poster-${gameId}`} transition={200} />
+        {/* Subtle bottom gradient for title readability */}
+        <LinearGradient colors={["transparent", "rgba(0,0,0,0.65)"]}
+          locations={[0.55, 1]} style={s.heroGrad} />
+        {/* Cyan glow border when collapsed */}
+        <Animated.View style={[s.heroBorder, { opacity: borderOp }]} />
+      </Animated.View>
 
-        <View style={styles.descriptionBlock}>
-          <Text style={styles.sectionTabText}>DESCRIPTION</Text>
-          <Text style={styles.descriptionBody}>{gameDescription}</Text>
-        </View>
+      {/* ── Collapsed header gradient backdrop — renders AFTER hero so it layers on top on Android ── */}
+      <Animated.View style={[s.colGradWrap, { opacity: colHeaderOp }]} pointerEvents="none">
+        <LinearGradient
+          colors={["rgba(0,0,0,0.95)", "rgba(0,0,0,0.88)", "rgba(0,0,0,0.4)", "transparent"]}
+          locations={[0, 0.4, 0.7, 1]}
+          style={[s.colGrad, { height: hero.colTop + hero.colHeight + (isTablet ? 70 : 50) }]}
+        />
+      </Animated.View>
 
-
-        {/* â”€â”€ Completion Time chart (IGDB time-to-beat) â”€â”€ */}
-        {igdbData?.timeToBeat && (
-          <SkiaSection showTab={false}>
-            <CompletionChart data={igdbData.timeToBeat} />
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ User status â”€â”€ */}
-        <SkiaSection title="MY STATUS">
-          <StatusTag
-            status={userStatus}
-            isWishlisted={isWishlisted}
-            onStatusChange={handleStatusChange}
-            onWishlistToggle={handleWishlistToggle}
-            mediaType="games"
-          />
-        </SkiaSection>
-
-        {/* â”€â”€ Platforms â”€â”€ */}
-        {platforms.length > 0 && (
-          <SkiaSection title="PLATFORMS">
-            <View style={styles.pillRow}>
-              {platforms.map((p, i) => (
-                <PlatformPill
-                  key={i}
-                  name={p.name}
-                  abbreviation={p.abbreviation}
-                />
-              ))}
-            </View>
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ Genre, Themes & Modes â”€â”€ */}
-        {(genres.length > 0 || themes.length > 0 || gameModes.length > 0) && (
-          <SkiaSection title="GENRES & MODES">
-            {genres.length > 0 && (
-              <>
-                <Text style={styles.subSectionLabel}>GENRES</Text>
-                <View style={styles.pillRow}>
-                  {genres.map((g, i) => (
-                    <GenrePill key={i} genre={g} />
-                  ))}
-                </View>
-              </>
-            )}
-
-            {themes.length > 0 && (
-              <>
-                <Text style={[styles.subSectionLabel, { marginTop: 16 }]}>
-                  THEMES
-                </Text>
-                <View style={styles.pillRow}>
-                  {themes.map((t, i) => (
-                    <GenrePill key={i} genre={t} />
-                  ))}
-                </View>
-              </>
-            )}
-
-            {gameModes.length > 0 && (
-              <>
-                <Text style={[styles.subSectionLabel, { marginTop: 16 }]}>
-                  GAME MODES
-                </Text>
-                <View style={styles.pillRow}>
-                  {gameModes.map((m, i) => (
-                    <ModePill key={i} mode={m} />
-                  ))}
-                </View>
-              </>
-            )}
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ Developers & Publishers â”€â”€ */}
-        {(developers.length > 0 || publishers.length > 0) && (
-          <SkiaSection title="CAST & CREW">
-            <View style={styles.companyList}>
-              {developers.map((d, i) => (
-                <CompanyRow key={`dev-${i}`} name={d} role="Developer" />
-              ))}
-              {publishers.map((p, i) => (
-                <CompanyRow key={`pub-${i}`} name={p} role="Publisher" />
-              ))}
-            </View>
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ Trailers (IGDB) â”€â”€ */}
-        {trailers.length > 0 && (
-          <SkiaSection title="TRAILERS">
-            <FlatList
-              data={trailers}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalListTight}
-              keyExtractor={(item) => item.id}
-              renderItem={renderTrailer}
-            />
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ Screenshots (IGDB) â”€â”€ */}
-        {screenshots.length > 0 && (
-          <SkiaSection title="SCREENSHOTS">
-            <FlatList
-              data={screenshots}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalListTight}
-              keyExtractor={(item, i) => `ss-${i}`}
-              renderItem={renderScreenshot}
-            />
-          </SkiaSection>
-        )}
-
-        {/* â”€â”€ Reviews â”€â”€ */}
-        <SkiaSection title="REVIEW">
-            <View style={styles.reviewsHeader}>
-              <Pressable
-                style={styles.addReviewButton}
-                onPress={() =>
-                  navigation?.navigate("ReviewAnime", {
-                    animeId: gameId,
-                    id: gameId,
-                    title: name,
-                    coverImage: cover,
-                    mediaType: "games",
-                  })
-                }
-                accessibilityRole="button"
-                accessibilityLabel="Write a review"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="add" size={20} color="#fff" />
-              </Pressable>
-            </View>
-
-            {isLoadingReviews ? (
-              <ActivityIndicator color={ACCENT} style={{ marginVertical: 20 }} />
-            ) : visibleReviews.length > 0 ? (
-              <>
-                {visibleReviews.map((review) => (
-                  <ReviewCard
-                    key={review.id}
-                    name={
-                      review.profiles?.use_display_name &&
-                      review.profiles?.display_name
-                        ? review.profiles.display_name
-                        : review.profiles?.username ||
-                          `User ${review.user_id?.substring(0, 8)}`
-                    }
-                    rating={Math.ceil(review.overall_rating / 2)}
-                    text={review.content}
-                    avatarUrl={review.profiles?.avatar_url}
-                  />
-                ))}
-
-                {dbReviews.length > REVIEWS_PER_PAGE && (
-                  <View style={styles.paginationContainer}>
-                    <Pressable
-                      style={[
-                        styles.paginationButton,
-                        currentReviewPage === 1 &&
-                          styles.paginationButtonDisabled,
-                      ]}
-                      onPress={() =>
-                        setCurrentReviewPage((p) => Math.max(1, p - 1))
-                      }
-                      disabled={currentReviewPage === 1}
-                      accessibilityRole="button"
-                      accessibilityLabel="Previous reviews page"
-                    >
-                      <Ionicons
-                        name="chevron-back"
-                        size={20}
-                        color={currentReviewPage === 1 ? "#666" : "#fff"}
-                      />
-                      <Text
-                        style={[
-                          styles.paginationButtonText,
-                          currentReviewPage === 1 &&
-                            styles.paginationButtonTextDisabled,
-                        ]}
-                      >
-                        Previous
-                      </Text>
-                    </Pressable>
-                    <Text style={styles.pageIndicator}>
-                      {currentReviewPage} / {totalReviewPages}
-                    </Text>
-                    <Pressable
-                      style={[
-                        styles.paginationButton,
-                        currentReviewPage === totalReviewPages &&
-                          styles.paginationButtonDisabled,
-                      ]}
-                      onPress={() =>
-                        setCurrentReviewPage((p) =>
-                          Math.min(totalReviewPages, p + 1),
-                        )
-                      }
-                      disabled={currentReviewPage === totalReviewPages}
-                      accessibilityRole="button"
-                      accessibilityLabel="Next reviews page"
-                    >
-                      <Text
-                        style={[
-                          styles.paginationButtonText,
-                          currentReviewPage === totalReviewPages &&
-                            styles.paginationButtonTextDisabled,
-                        ]}
-                      >
-                        Next
-                      </Text>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color={
-                          currentReviewPage === totalReviewPages ? "#666" : "#fff"
-                        }
-                      />
-                    </Pressable>
-                  </View>
-                )}
-              </>
-            ) : (
-              <Text style={styles.noDataText}>
-                No reviews yet. Be the first to review!
-              </Text>
-            )}
-        </SkiaSection>
-
-        {/* â”€â”€ Similar Games (IGDB) â”€â”€ */}
-        {similarGames.length > 0 && (
-          <SkiaSection title="RELATED SHOWS" style={styles.relatedSectionShell}>
-            <FlatList
-              data={similarGames}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalListTight}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderSimilarGame}
-            />
-          </SkiaSection>
-        )}
-      </Animated.ScrollView>
-
+      {/* ── Collapsed header (title left of poster) ── */}
       <Animated.View
         style={[
-          styles.heroPosterWrap,
+          s.colHeader,
           {
-            width: heroWidth,
-            height: heroHeight,
-            borderRadius: posterRadius,
-            transform: [{ translateY: heroTranslateY }],
+            opacity: colHeaderOp,
+            top: hero.colTop + 4,
+            right: hero.colWidth + (isTablet ? 44 : 32),
           },
         ]}
         pointerEvents="none"
       >
-        <Animated.View
-          style={[styles.heroPosterImageWrap, { transform: [{ translateY: posterParallax }] }]}
-        >
-          <Image
-            source={{ uri: cover }}
-            style={styles.heroPosterImage}
-            contentFit="cover"
-            recyclingKey={`game-poster-${gameId}`}
-            transition={200}
-          />
-        </Animated.View>
-        <Animated.View style={[styles.heroPosterOverlay, { opacity: posterOverlayOpacity }]} />
+        <Text style={s.colTitle} numberOfLines={1}>{name}</Text>
+        <Text style={s.colMeta}>{releaseDate}  •  {playtimeText}</Text>
+        <Text style={s.colStatus}>{statusText}</Text>
       </Animated.View>
 
+      {/* ── Expanded title overlay (on poster bottom) ── */}
       <Animated.View
-        style={[styles.heroMetaBlock, { transform: [{ translateY: metaBlockTranslateY }] }]}
+        style={[
+          s.expMeta,
+          {
+            opacity: expTitleOp,
+            left: hero.expLeft + (isTablet ? 28 : 20),
+            right: viewportWidth - hero.expLeft - hero.expWidth + (isTablet ? 28 : 20),
+            top: hero.expTop + hero.expHeight - (isTablet ? 96 : 90),
+          },
+        ]}
         pointerEvents="none"
       >
-        <Text style={styles.heroMetaTitle} numberOfLines={2}>{name}</Text>
-        <View style={styles.heroMetaLine}>
-          {releaseDate ? <Text style={styles.heroMetaLineText}>{releaseDate}</Text> : null}
-          <Text style={styles.heroMetaLineDot}>|</Text>
-          <Text style={styles.heroMetaLineText}>{playtimeText}</Text>
-          <Text style={styles.heroMetaLineDot}>|</Text>
-          <Text style={styles.heroMetaLineText}>{gameStatusText}</Text>
+        <Text style={s.expTitle}>{name}</Text>
+        <View style={s.expMetaRow}>
+          <Text style={s.expMetaText}>{releaseDate}</Text>
+          <Text style={s.expDot}>•</Text>
+          <Text style={s.expMetaText}>{playtimeText}</Text>
+          <Text style={s.expDot}>•</Text>
+          <Text style={s.expMetaText}>{statusText}</Text>
         </View>
       </Animated.View>
+
+      {/* ── Scrollable content ── */}
+      <Animated.ScrollView style={s.scroll}
+        contentContainerStyle={{ paddingTop: hero.contentTop, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}>
+
+
+
+        {/* §— Podium Stats */}
+        {igdbData && (
+          <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>
+            <HudFrame />
+            <PodiumStats
+              rating={igdbData.totalRating}
+              ratingCount={igdbData.totalRatingCount}
+              mainStoryH={igdbData.timeToBeat?.mainStory}
+              completionistH={igdbData.timeToBeat?.completionist}
+              playtime={playtimeVal}
+              platforms={platforms.length}
+              genres={genres.length}
+            />
+          </Animated.View>
+        )}
+
+        {/* §0 — Description */}
+        <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>
+          <HudFrame />
+          <SectionHeader title="DESCRIPTION" />
+          <Text style={s.descBody}>{gameDescription}</Text>
+        </Animated.View>
+
+        {/* §1 — Completion Time */}
+        {igdbData?.timeToBeat && (
+          <Animated.View style={[s.sec, sectionCardStyle, secStyle(1)]}>
+            <HudFrame />
+            <CompletionChart data={igdbData.timeToBeat} />
+          </Animated.View>
+        )}
+
+        {/* §2 — My Status */}
+        <Animated.View style={[s.sec, sectionCardStyle, secStyle(2)]}>
+          <HudFrame />
+          <SectionHeader title="MY STATUS" />
+          <StatusTag status={userStatus} isWishlisted={isWishlisted}
+            onStatusChange={handleStatusChange} onWishlistToggle={handleWishlistToggle} mediaType="games" />
+        </Animated.View>
+
+        {/* §3 — Platforms */}
+        {platforms.length > 0 && (
+          <Animated.View style={[s.sec, sectionCardStyle, secStyle(3)]}>
+            <HudFrame />
+            <SectionHeader title="PLATFORMS" />
+            <View style={s.pillRow}>
+              {platforms.map((p, i) => <PlatformPill key={i} name={p.name} abbreviation={p.abbreviation} />)}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* §4 — Genres, Themes, Modes */}
+        {(genres.length > 0 || themes.length > 0 || gameModes.length > 0) && (
+          <Animated.View style={[s.sec, sectionCardStyle, secStyle(4)]}>
+            <HudFrame />
+            <SectionHeader title="GENRES & MODES" />
+            {genres.length > 0 && (
+              <>
+                <Text style={s.subLabel}>GENRES</Text>
+                <View style={s.pillRow}>{genres.map((g, i) => <GenrePill key={i} genre={g} />)}</View>
+              </>
+            )}
+            {themes.length > 0 && (
+              <>
+                <Text style={[s.subLabel, { marginTop: 14 }]}>THEMES</Text>
+                <View style={s.pillRow}>{themes.map((t, i) => <GenrePill key={i} genre={t} />)}</View>
+              </>
+            )}
+            {gameModes.length > 0 && (
+              <>
+                <Text style={[s.subLabel, { marginTop: 14 }]}>GAME MODES</Text>
+                <View style={s.pillRow}>{gameModes.map((m, i) => <ModePill key={i} mode={m} />)}</View>
+              </>
+            )}
+          </Animated.View>
+        )}
+
+        {showDeferredSections ? (
+          <>
+            {/* §5 — Developers & Publishers */}
+            {(developers.length > 0 || publishers.length > 0) && (
+              <Animated.View style={[s.sec, sectionCardStyle, secStyle(5)]}>
+                <HudFrame />
+                <SectionHeader title="STUDIO" />
+                <View style={s.companyList}>
+                  {developers.map((d, i) => <CompanyRow key={`d-${i}`} name={d} role="Developer" />)}
+                  {publishers.map((p, i) => <CompanyRow key={`p-${i}`} name={p} role="Publisher" />)}
+                </View>
+              </Animated.View>
+            )}
+
+            {/* §6 — Trailers */}
+            {trailers.length > 0 && (
+              <Animated.View style={[s.sec, sectionCardStyle, secStyle(6)]}>
+                <HudFrame />
+                <SectionHeader title="TRAILERS" />
+                <FlatList data={trailers} horizontal showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(t) => t.id} renderItem={renderTrailer} />
+              </Animated.View>
+            )}
+
+            {/* §7 — Screenshots */}
+            {screenshots.length > 0 && (
+              <Animated.View style={[s.sec, sectionCardStyle, secStyle(7)]}>
+                <HudFrame />
+                <SectionHeader title="SCREENSHOTS" />
+                <FlatList data={screenshots} horizontal showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(_, i) => `ss-${i}`} renderItem={renderScreenshot} />
+              </Animated.View>
+            )}
+
+            {/* §8 — Reviews */}
+            <Animated.View style={[s.sec, sectionCardStyle, secStyle(8)]}>
+              <HudFrame />
+              <View style={s.reviewHeader}>
+                <SectionHeader title="REVIEWS" />
+                <Pressable style={s.addReviewBtn}
+                  onPress={() => navigation?.navigate("ReviewAnime", { animeId: gameId, id: gameId, title: name, coverImage: cover, mediaType: "games" })}
+                  accessibilityRole="button" accessibilityLabel="Write a review" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="add" size={20} color={TEXT_PRIMARY} />
+                </Pressable>
+              </View>
+              {isLoadingReviews ? (
+                <ActivityIndicator color={ACCENT} style={{ marginVertical: 20 }} />
+              ) : visibleReviews.length > 0 ? (
+                <>
+                  {visibleReviews.map((r) => (
+                    <ReviewCard key={r.id}
+                      name={r.profiles?.use_display_name && r.profiles?.display_name ? r.profiles.display_name : r.profiles?.username || `User ${r.user_id?.substring(0, 8)}`}
+                      rating={Math.ceil(r.overall_rating / 2)} text={r.content} avatarUrl={r.profiles?.avatar_url} />
+                  ))}
+                  {dbReviews.length > PER_PAGE && (
+                    <View style={s.pagRow}>
+                      <Pressable style={[s.pagBtn, currentReviewPage === 1 && s.pagBtnOff]}
+                        onPress={() => setCurrentReviewPage((p) => Math.max(1, p - 1))} disabled={currentReviewPage === 1}>
+                        <Ionicons name="chevron-back" size={20} color={currentReviewPage === 1 ? TEXT_DISABLED : TEXT_PRIMARY} />
+                        <Text style={[s.pagText, currentReviewPage === 1 && s.pagTextOff]}>Previous</Text>
+                      </Pressable>
+                      <Text style={s.pagInd}>{currentReviewPage} / {totalPages}</Text>
+                      <Pressable style={[s.pagBtn, currentReviewPage === totalPages && s.pagBtnOff]}
+                        onPress={() => setCurrentReviewPage((p) => Math.min(totalPages, p + 1))} disabled={currentReviewPage === totalPages}>
+                        <Text style={[s.pagText, currentReviewPage === totalPages && s.pagTextOff]}>Next</Text>
+                        <Ionicons name="chevron-forward" size={20} color={currentReviewPage === totalPages ? TEXT_DISABLED : TEXT_PRIMARY} />
+                      </Pressable>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <Text style={s.noData}>No reviews yet. Be the first to review!</Text>
+              )}
+            </Animated.View>
+
+            {/* §9 — Similar Games */}
+            {similarGames.length > 0 && (
+              <Animated.View style={[s.sec, sectionCardStyle, { marginBottom: 32 }, secStyle(9)]}>
+                <SectionHeader title="SIMILAR GAMES" />
+                <FlatList data={similarGames} horizontal showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(g) => g.id.toString()} renderItem={renderSimilar} />
+              </Animated.View>
+            )}
+          </>
+        ) : (
+          <View style={s.deferredPlaceholder}>
+            <ActivityIndicator color={ACCENT} />
+          </View>
+        )}
+      </Animated.ScrollView>
     </View>
   );
 };
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 // STYLES
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BG,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: BG },
 
-  // Top controls
-  topBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    height: 56,
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  topBarBackdrop: {
+  // ── Background blobs ──
+  bgShapes: { position: "absolute", top: 0, left: 0, right: 0, height: 500, overflow: "hidden" },
+  blob1: { position: "absolute", top: -60, right: -80, width: 320, height: 320, borderRadius: 160, backgroundColor: "#083344", opacity: 0.12, transform: [{ scaleX: 1.4 }, { rotate: "20deg" }] },
+  blob2: { position: "absolute", top: 120, left: -100, width: 260, height: 260, borderRadius: 130, backgroundColor: "#0E7490", opacity: 0.1, transform: [{ scaleY: 1.3 }, { rotate: "-10deg" }] },
+  blob3: { position: "absolute", top: 260, right: 40, width: 200, height: 200, borderRadius: 100, backgroundColor: "#155E75", opacity: 0.08 },
+
+  // ── Top bar ──
+  topBar: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, height: BAR_H, justifyContent: "center", paddingHorizontal: 12 },
+  topBarBg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: "rgba(0,0,0,0.92)",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(15,163,177,0.2)",
+    borderBottomColor: hexToRgba(ACCENT, 0.2),
   },
-  topBackButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderCurve: "continuous",
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  // â”€â”€ Background blobs â”€â”€
-  backgroundShapes: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 500,
-    overflow: "hidden",
-  },
-  blobShape1: {
-    position: "absolute",
-    top: -60,
-    right: -80,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    borderCurve: "continuous",
-    backgroundColor: BLOB1,
-    opacity: 0.12,
-    transform: [{ scaleX: 1.4 }, { rotate: "20deg" }],
-  },
-  blobShape2: {
-    position: "absolute",
-    top: 120,
-    left: -100,
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    borderCurve: "continuous",
-    backgroundColor: BLOB2,
-    opacity: 0.1,
-    transform: [{ scaleY: 1.3 }, { rotate: "-10deg" }],
-  },
-  blobShape3: {
-    position: "absolute",
-    top: 260,
-    right: 40,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderCurve: "continuous",
-    backgroundColor: BLOB3,
-    opacity: 0.08,
-  },
+  topBarRow: { flexDirection: "row", alignItems: "center" },
+  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.4)" },
 
-  // â”€â”€ Scroll â”€â”€
-  scrollView: { flex: 1 },
-  scrollContent: {
-    paddingBottom: 24,
-  },
+  // ── Collapsed header (left of poster) ──
+  colGradWrap: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 45 },
+  colGrad: { width: "100%", height: 190 },
+  colHeader: { position: "absolute", top: 68, left: 16, right: 122, zIndex: 90 },
+  colTitle: { fontSize: 20, fontFamily: "Blackbots", color: TEXT_PRIMARY, marginBottom: 4 },
+  colMeta: { fontSize: 11, color: hexToRgba(ACCENT2, 0.85), fontWeight: "600", marginBottom: 2 },
+  colStatus: { fontSize: 10, color: ACCENT, fontWeight: "700", letterSpacing: 1 },
 
-  // Hero poster
-  heroPosterWrap: {
-    position: "absolute",
-    alignSelf: "center",
-    zIndex: 40,
-    overflow: "hidden",
-    backgroundColor: "#101010",
-    borderWidth: 1,
-    borderColor: "rgba(15,163,177,0.22)",
-    shadowColor: ACCENT,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 10,
-  },
-  heroPosterImageWrap: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroPosterImage: {
-    width: "100%",
-    height: "100%",
-  },
-  heroPosterOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#000",
-  },
-  heroMetaBlock: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    zIndex: 30,
-  },
-  heroMetaTitle: {
-    fontSize: 32,
-    lineHeight: 38,
-    color: "#fff",
-    fontFamily: "Genjiro",
+  // ── Hero poster ──
+  heroWrap: { position: "absolute", zIndex: 50, overflow: "hidden", backgroundColor: SURFACE_BG },
+  heroImg: { width: "100%", height: "100%" },
+  heroGrad: { position: "absolute", bottom: 0, left: 0, right: 0, height: "40%" },
+  heroBorder: { ...StyleSheet.absoluteFillObject, borderWidth: 1.5, borderColor: ACCENT, borderRadius: 12 },
+
+  // ── Expanded title (on poster bottom) ──
+  expMeta: { position: "absolute", left: 44, right: 44, top: 350, zIndex: 55 },
+  expTitle: {
+    fontSize: 30,
+    lineHeight: 36,
+    color: TEXT_PRIMARY,
+    fontFamily: "Blackbots",
     marginBottom: 6,
+    textShadowColor: "rgba(0,0,0,0.8)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
-  heroMetaLine: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  expMetaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
+  expMetaText: { fontSize: 12, color: hexToRgba(ACCENT2, 0.9), fontWeight: "600" },
+  expDot: { marginHorizontal: 8, color: hexToRgba(ACCENT, 0.75), fontSize: 11, fontWeight: "700" },
+
+  // ── Scroll ──
+  scroll: { flex: 1 },
+  deferredPlaceholder: {
+    paddingVertical: 18,
     alignItems: "center",
   },
-  heroMetaLineText: {
-    fontSize: 12,
-    color: "rgba(224,247,250,0.9)",
-    fontWeight: "600",
-  },
-  heroMetaLineDot: {
-    marginHorizontal: 8,
-    color: "rgba(15,163,177,0.75)",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  metaSpacer: {
-    height: 94,
-  },
-  descriptionBlock: {
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  descriptionBody: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#d3d3d3",
-    lineHeight: 22,
-  },
 
-  sectionShell: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    paddingTop: 18,
-    position: "relative",
-  },
-  sectionShellNoTab: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    position: "relative",
-  },
-  relatedSectionShell: {
-    marginBottom: 32,
-  },
-  sectionTabText: {
-    color: ACCENT,
-    fontSize: 14,
-    fontFamily: "Genjiro",
-    letterSpacing: 1.1,
-  },
-  skiaSectionContent: {
-    paddingHorizontal: 0,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-  skiaSectionContentNoTab: {
-    paddingHorizontal: 0,
-    paddingTop: 10,
-    paddingBottom: 20,
-  },
-
-  // â”€â”€ Meta chips â”€â”€
-  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 14 },
-  metaChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+  // ── Section container (futuristic HUD — with smooth corner brackets) ──
+  sec: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    backgroundColor: hexToRgba(ACCENT, 0.05),
+    borderRadius: 6,
+    padding: 16,
     borderWidth: 1,
-    borderColor: ACCENT2,
+    borderColor: hexToRgba(ACCENT, 0.2),
+    overflow: "visible",
   },
-  metaChipText: { fontSize: 11, color: ACCENT2, fontWeight: "600" },
+  // Corner bracket decorations (rounded ends to match pill curve)
+  cornerTL: { position: "absolute", top: -1, left: -1, width: 24, height: 24 },
+  cornerBR: { position: "absolute", bottom: -1, right: -1, width: 24, height: 24, transform: [{ rotate: "180deg" }] },
+  cornerTR: { position: "absolute", top: -1, right: -1, width: 18, height: 18, transform: [{ rotate: "90deg" }] },
+  cornerH: { position: "absolute", top: 0, left: 0, width: "100%", height: 2, backgroundColor: ACCENT, borderRadius: 1 },
+  cornerV: { position: "absolute", top: 0, left: 0, width: 2, height: "100%", backgroundColor: ACCENT, borderRadius: 1 },
+  // Section header with slanted accent + scan line
+  secTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 14, gap: 8 },
+  secSlant: { width: 4, height: 16, backgroundColor: ACCENT, transform: [{ skewX: "-14deg" }] },
+  secTitle: { color: ACCENT, fontSize: 13, fontFamily: "Blackbots", letterSpacing: 1.8, textTransform: "uppercase" },
+  secScanLine: { flex: 1, height: 1, backgroundColor: hexToRgba(ACCENT, 0.18), marginLeft: 8 },
+  subLabel: { fontSize: 10, letterSpacing: 3, fontWeight: "700", color: hexToRgba(ACCENT, 0.7), marginBottom: 10, textTransform: "uppercase" },
 
-  // â”€â”€ Description â”€â”€
-  description: { fontSize: 14, color: "#ddd", lineHeight: 22, marginBottom: 8 },
-  expandText: {
-    fontSize: 13,
-    color: ACCENT,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
+  // ── Description ──
+  descBody: { fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22 },
 
-  // â”€â”€ Storyline â”€â”€
-  storylineBox: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.1)",
-  },
-  storylineLabel: {
-    fontSize: 11,
-    letterSpacing: 2,
-    color: ACCENT,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-  storylineText: { fontSize: 13, color: "#ccc", lineHeight: 20 },
-
-  // â”€â”€ Status â”€â”€
-  statusSection: { marginHorizontal: 20, marginBottom: 20 },
-  statusSectionLabel: {
-    fontSize: 11,
-    letterSpacing: 2,
-    color: "#999",
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-
-  // â”€â”€ Section label â”€â”€
-  sectionLabel: {
-    fontSize: 12,
-    letterSpacing: 2,
-    fontWeight: "700",
-    color: ACCENT,
-    marginBottom: 12,
-  },
-  subSectionLabel: {
-    fontSize: 12,
-    letterSpacing: 2,
-    fontWeight: "700",
-    color: ACCENT,
-    marginBottom: 12,
-  },
-
-  // â”€â”€ Pill rows â”€â”€
+  // ── Pills (angular — not rounded) ──
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-
-  // â”€â”€ Platform pill â”€â”€
   platformPill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 3,
     borderWidth: 1,
     borderColor: ACCENT2,
-    backgroundColor: "rgba(15,163,177,0.1)",
+    backgroundColor: hexToRgba(ACCENT, 0.08),
   },
-  platformPillText: { fontSize: 12, color: ACCENT2, fontWeight: "600" },
-
-  // â”€â”€ Mode pill â”€â”€
+  platformPillText: { fontSize: 11, color: ACCENT2, fontWeight: "700", letterSpacing: 0.8 },
   modePill: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 3,
     borderWidth: 1,
     borderColor: ACCENT,
-    backgroundColor: "rgba(15,163,177,0.1)",
+    backgroundColor: hexToRgba(ACCENT, 0.08),
   },
-  modePillText: { fontSize: 12, color: ACCENT, fontWeight: "600" },
+  modePillText: { fontSize: 11, color: ACCENT, fontWeight: "700", letterSpacing: 0.8 },
 
-  // â”€â”€ Company â”€â”€
+  // ── Companies ──
   companyList: { gap: 12 },
   companyRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   companyAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderCurve: "continuous",
-    backgroundColor: "rgba(15,163,177,0.15)",
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    backgroundColor: hexToRgba(ACCENT, 0.12),
+    borderWidth: 1,
+    borderColor: hexToRgba(ACCENT, 0.25),
     justifyContent: "center",
     alignItems: "center",
   },
-  companyName: { fontSize: 14, color: "#fff", fontWeight: "600" },
-  companyRole: { fontSize: 12, color: "#888", marginTop: 2 },
+  companyName: { fontSize: 13, color: TEXT_PRIMARY, fontWeight: "700", letterSpacing: 0.5 },
+  companyRole: { fontSize: 11, color: ACCENT2, marginTop: 2, letterSpacing: 1 },
 
-  // â”€â”€ Horizontal sections â”€â”€
-  sectionOuter: { marginBottom: 20 },
-  horizontalList: { paddingHorizontal: 20, gap: 12 },
-  horizontalListTight: { paddingHorizontal: 2, gap: 12 },
-
-  // â”€â”€ Trailers â”€â”€
+  // ── Trailers ──
   trailerCard: { width: 200 },
-  trailerThumb: {
-    width: 200,
-    height: 112,
-    borderRadius: 8,
-    backgroundColor: "#222",
-  },
-  trailerOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 112,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderCurve: "continuous",
-    backgroundColor: "rgba(15,163,177,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  trailerThumb: { width: 200, height: 112, borderRadius: 4, backgroundColor: SURFACE_SUBTLE },
+  trailerOverlay: { position: "absolute", top: 0, left: 0, right: 0, height: 112, borderRadius: 4, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", alignItems: "center" },
+  playBtn: { width: 44, height: 44, borderRadius: 4, backgroundColor: hexToRgba(ACCENT, 0.9), justifyContent: "center", alignItems: "center", transform: [{ rotate: "0deg" }] },
   trailerName: { fontSize: 12, color: "#ccc", marginTop: 6 },
 
-  // â”€â”€ Screenshots â”€â”€
-  screenshot: {
-    width: 240,
-    height: 135,
-    borderRadius: 8,
-    backgroundColor: "#222",
-  },
+  // ── Screenshots ──
+  screenshot: { width: 240, height: 135, borderRadius: 3, backgroundColor: SURFACE_SUBTLE, borderWidth: 1, borderColor: hexToRgba(ACCENT, 0.1) },
 
-  // â”€â”€ Related / Similar cards â”€â”€
-  relatedCard: {
-    width: 120,
-    height: 170,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#252525",
-  },
-  relatedCardImage: { width: "100%", height: "100%" },
-  relatedCardOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 8,
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  relatedCardTitle: { fontSize: 11, color: "#fff", fontWeight: "600" },
+  // ── Horizontal list ──
+  hList: { paddingHorizontal: 2, gap: 12 },
 
-  // â”€â”€ Reviews â”€â”€
-  reviewsHeader: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  addReviewButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderCurve: "continuous",
-    backgroundColor: ACCENT,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noDataText: {
-    fontSize: 14,
-    color: "#999",
-    textAlign: "center",
-    paddingVertical: 20,
-  },
+  // ── Related / Similar ──
+  relatedCard: { width: 120, height: 170, borderRadius: 3, overflow: "hidden", backgroundColor: SURFACE_SUBTLE, borderWidth: 1, borderColor: hexToRgba(ACCENT, 0.12) },
+  relatedImg: { width: "100%", height: "100%" },
+  relatedOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: "rgba(0,0,0,0.75)" },
+  relatedTitle: { fontSize: 11, color: TEXT_PRIMARY, fontWeight: "700", letterSpacing: 0.3 },
 
-  // â”€â”€ Pagination â”€â”€
-  paginationContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 20,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.1)",
-  },
-  paginationButton: {
+  // ── Reviews ──
+  reviewHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  addReviewBtn: { width: 28, height: 28, borderRadius: 4, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" },
+  noData: { fontSize: 14, color: TEXT_MUTED, textAlign: "center", paddingVertical: 20 },
+
+  // ── Pagination ──
+  pagRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.1)" },
+  pagBtn: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: "rgba(15,163,177,0.2)",
+    paddingHorizontal: 14,
+    borderRadius: 2,
+    backgroundColor: hexToRgba(ACCENT, 0.12),
+    borderWidth: 1,
+    borderColor: hexToRgba(ACCENT, 0.25),
     gap: 5,
   },
-  paginationButtonDisabled: {
-    backgroundColor: "rgba(0,0,0,0.1)",
-    opacity: 0.5,
-  },
-  paginationButtonText: { fontSize: 14, color: "#fff", fontWeight: "500" },
-  paginationButtonTextDisabled: { color: "#666" },
-  pageIndicator: { fontSize: 14, color: "#fff", fontWeight: "500" },
+  pagBtnOff: { backgroundColor: "rgba(0,0,0,0.1)", opacity: 0.5 },
+  pagText: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "500" },
+  pagTextOff: { color: TEXT_DISABLED },
+  pagInd: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "500" },
 
-  // â”€â”€ Error â”€â”€
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#ff6b6b",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: ACCENT,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderCurve: "continuous",
-  },
-  retryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  // â”€â”€ No credentials screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  noCredSafeArea: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  noCredContainer: {
-    alignItems: "center",
-    paddingHorizontal: 32,
-    maxWidth: 380,
-    width: "100%",
-  },
-  noCredIconWrap: {
+  // ── No credentials ──
+  noCredSafe: { flex: 1, justifyContent: "center", alignItems: "center" },
+  noCredBox: { alignItems: "center", paddingHorizontal: 32, maxWidth: 380, width: "100%" },
+  noCredIcon: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    borderCurve: "continuous",
-    backgroundColor: "rgba(15,163,177,0.12)",
+    backgroundColor: hexToRgba(ACCENT, 0.12),
     borderWidth: 1,
-    borderColor: "rgba(15,163,177,0.3)",
+    borderColor: hexToRgba(ACCENT, 0.3),
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
   },
-  noCredTitle: {
-    fontSize: 22,
-    fontFamily: "Genjiro",
-    color: "#fff",
-    letterSpacing: 0.5,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  noCredBody: {
-    fontSize: 14,
-    color: "#aaa",
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 32,
-  },
-  noCredPrimaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: ACCENT,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderCurve: "continuous",
-    width: "100%",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  noCredPrimaryText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  noCredSecondaryButton: {
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderCurve: "continuous",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    width: "100%",
-    alignItems: "center",
-  },
-  noCredSecondaryText: {
-    color: "#888",
-    fontSize: 15,
-    fontWeight: "500",
-  },
+  noCredTitle: { fontSize: 22, fontFamily: "Genjiro", color: TEXT_PRIMARY, letterSpacing: 0.5, textAlign: "center", marginBottom: 16 },
+  noCredBody: { fontSize: 14, color: "#aaa", lineHeight: 22, textAlign: "center", marginBottom: 32 },
+  noCredPrimBtn: { flexDirection: "row", alignItems: "center", backgroundColor: ACCENT, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, width: "100%", justifyContent: "center", marginBottom: 12 },
+  noCredPrimText: { color: TEXT_PRIMARY, fontSize: 16, fontWeight: "700" },
+  noCredSecBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", width: "100%", alignItems: "center" },
+  noCredSecText: { color: "#888", fontSize: 15, fontWeight: "500" },
 });
 
 export default GameDetail;

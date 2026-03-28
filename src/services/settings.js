@@ -109,10 +109,25 @@ export const resetSettings = async () => {
 export const getIGDBCredentials = async () => {
   try {
     const raw = await AsyncStorage.getItem(IGDB_CREDENTIALS_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.clientId && parsed.accessToken) return parsed;
+    }
+    // Fall back to environment variables if AsyncStorage is empty
+    const envClientId = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID || '';
+    const envAccessToken = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN || '';
+    if (envClientId && envAccessToken) {
+      return { clientId: envClientId, accessToken: envAccessToken };
+    }
     return { clientId: '', accessToken: '' };
   } catch (error) {
     console.error('Error loading IGDB credentials:', error);
+    // Still try env vars on error
+    const envClientId = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID || '';
+    const envAccessToken = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN || '';
+    if (envClientId && envAccessToken) {
+      return { clientId: envClientId, accessToken: envAccessToken };
+    }
     return { clientId: '', accessToken: '' };
   }
 };
