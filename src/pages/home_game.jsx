@@ -214,6 +214,7 @@ const GameHome = ({ navigation }) => {
   const [isSearching, setIsSearching]         = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
   const [useIGDB, setUseIGDB]                 = useState(false);
+  const [isRawgFallback, setIsRawgFallback]   = useState(false);
 
   const userProfile  = useProfileStore(s => s.profile);
   const fetchProfile = useProfileStore(s => s.fetchProfile);
@@ -253,6 +254,7 @@ const GameHome = ({ navigation }) => {
       }
 
       // Fallback to RAWG if IGDB failed or returned nothing
+      const fellBackToRawg = useIGDB && (!data || !data.results || data.results.length === 0);
       if (!data || !data.results || data.results.length === 0) {
         switch (category) {
           case 'Popular': data = await getPopularGames(page, 20);  break;
@@ -264,6 +266,7 @@ const GameHome = ({ navigation }) => {
       setGames(page === 1 ? (data.results || []) : prev => [...prev, ...(data.results || [])]);
       setCurrentPage(page);
       setHasMore(Boolean(data.next));
+      setIsRawgFallback(fellBackToRawg);
     } catch (err) {
       console.error('Error loading games:', err);
       setError('Failed to load games. Please try again.');
@@ -474,7 +477,7 @@ const GameHome = ({ navigation }) => {
         <Text style={styles.headerTitle}>{GAME_THEME.name.toUpperCase()}</Text>
 
         <Pressable
-          style={styles.profileButton}
+          style={[styles.profileButton, isRawgFallback && styles.profileButtonFallback]}
           onPress={() => navigation.navigate('ProfilePage')}
           accessibilityRole="button"
           accessibilityLabel="Go to profile"
@@ -485,7 +488,7 @@ const GameHome = ({ navigation }) => {
                 uri: userProfile.avatar_url ||
                   `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`,
               }}
-              style={styles.profileIcon}
+              style={[styles.profileIcon, isRawgFallback && styles.profileIconFallback]}
             />
           ) : (
             <View style={styles.profileIconContainer}>
@@ -707,11 +710,25 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
+  profileButtonFallback: {
+    overflow: 'visible',
+    borderWidth: 2.5,
+    borderColor: '#FF4444',
+    shadowColor: '#FF4444',
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
   profileIcon: {
-    width: 48, height: 48,
-    borderRadius: 24,
+    width: 43, height: 43,
+    borderRadius: 22,
     borderCurve: 'continuous',
     backgroundColor: GAME_ACCENT2,
+  },
+  profileIconFallback: {
+    width: 43, height: 43,
+    borderRadius: 22,
   },
   profileIconContainer: {
     width: 48, height: 48,
