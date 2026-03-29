@@ -876,14 +876,14 @@ const styles = StyleSheet.create({
   },
   pageButtonPlaceholder: { minWidth: 90 },
   pageButtonText: {
-    color: GAME_ACCENT,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
     fontFamily: GAME_THEME.contentFont,
     letterSpacing: 0.5,
   },
   pageIndicator: {
-    color: GAME_TEXT_MUTED,
+    color: '#FFFFFF',
     fontSize: 14,
     fontFamily: GAME_THEME.contentFont,
     letterSpacing: 0.5,

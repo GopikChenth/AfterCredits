@@ -77,7 +77,7 @@ const parseStoredNumber = (value) => {
 };
 
 // ─── Hero geometry ───────────────────────────────────────────────────────────
-const BAR_H = 56;
+const BAR_H = 76;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 const buildHeroGeometry = (width, height, isTablet, isLandscape) => {
@@ -92,12 +92,12 @@ const buildHeroGeometry = (width, height, isTablet, isLandscape) => {
     isTablet ? 560 : height * 0.72,
   );
   const expLeft = (width - expWidth) / 2;
-  const expTop = BAR_H + (isLandscape ? 4 : 8);
+  const expTop = BAR_H + (isLandscape ? 12 : 28);
 
   const colWidth = clamp(width * (isTablet ? 0.15 : 0.24), 90, isTablet ? 150 : 118);
   const colHeight = Math.round(colWidth * 1.4);
   const colLeft = width - colWidth - 16;
-  const colTop = BAR_H + 8;
+  const colTop = BAR_H + 28;
 
   const colScaleX = colWidth / expWidth;
   const colScaleY = colHeight / expHeight;
@@ -525,25 +525,86 @@ const GameDetail = ({ route, navigation }) => {
 
   // ── Scroll-driven animations ──
   const scrollY = useRef(new Animated.Value(0)).current;
+  // snapAnim: 0 = expanded, 1 = collapsed — spring-snaps when scroll crosses threshold
+  const snapAnim = useRef(new Animated.Value(0)).current;
+  // snapAnimLayout: same snap but JS-driven so it can animate layout (height/paddingTop)
+  const snapAnimLayout = useRef(new Animated.Value(0)).current;
+  // bubbleAnim: 0 → 1 bubbly bounce on sections after snap-to-collapsed
+  const bubbleAnim = useRef(new Animated.Value(1)).current;
+  const snapState = useRef(0); // 0 or 1
+  const scrollYVal = useRef(0);
+
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      scrollYVal.current = value;
+      const threshold = hero.range * 0.20;
+      const target = value >= threshold ? 1 : 0;
+      if (target !== snapState.current) {
+        snapState.current = target;
+        const springCfg = { tension: 200, friction: 24, overshootClamping: true };
+        Animated.parallel([
+          Animated.spring(snapAnim,       { toValue: target, useNativeDriver: true,  ...springCfg }),
+          Animated.spring(snapAnimLayout, { toValue: target, useNativeDriver: false, ...springCfg }),
+        ]).start();
+        // bubbly bounce fires only when collapsing
+        if (target === 1) {
+          bubbleAnim.setValue(0);
+          Animated.spring(bubbleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 55,
+            friction: 5,
+            overshootClamping: false, // allow overshoot for the bubbly feel
+          }).start();
+        }
+      }
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY, snapAnim, snapAnimLayout, hero.range]);
 
   // Section stagger pop-in
   const SEC_N = 10;
   const secAnims = useRef(Array.from({ length: SEC_N }, () => new Animated.Value(0))).current;
 
-  // Hero poster interpolations — center → top-right
-  const heroScaleX = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [1, hero.colScaleX], extrapolate: "clamp" });
-  const heroScaleY = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [1, hero.colScaleY], extrapolate: "clamp" });
-  const heroTX = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [0, hero.colTx], extrapolate: "clamp" });
-  const heroTY = scrollY.interpolate({ inputRange: [0, hero.range], outputRange: [0, hero.colTy], extrapolate: "clamp" });
+  // Hero poster interpolations — snap spring between expanded and collapsed
+  const heroScaleX = snapAnim.interpolate({ inputRange: [0, 1], outputRange: [1, hero.colScaleX], extrapolate: "clamp" });
+  const heroScaleY = snapAnim.interpolate({ inputRange: [0, 1], outputRange: [1, hero.colScaleY], extrapolate: "clamp" });
+  const heroTX = snapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, hero.colTx], extrapolate: "clamp" });
+  const heroTY = snapAnim.interpolate({ inputRange: [0, 1], outputRange: [0, hero.colTy], extrapolate: "clamp" });
 
-  // Expanded title (on poster) fades out
-  const expTitleOp = scrollY.interpolate({ inputRange: [0, hero.range * 0.3], outputRange: [1, 0], extrapolate: "clamp" });
+  // Expanded title (on poster) fades out — still scroll-driven for feel
+  const expTitleOp = snapAnim.interpolate({ inputRange: [0, 0.35], outputRange: [1, 0], extrapolate: "clamp" });
   // Collapsed header fades in
-  const colHeaderOp = scrollY.interpolate({ inputRange: [hero.range * 0.5, hero.range * 0.85], outputRange: [0, 1], extrapolate: "clamp" });
-  // Top bar bg
+  const colHeaderOp = snapAnim.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: "clamp" });
+  // Top bar bg — still scroll-driven for gradual feel
   const barBgOp = scrollY.interpolate({ inputRange: [0, hero.range * 0.8], outputRange: [0, 0.94], extrapolate: "clamp" });
   // Poster glow border when collapsed
-  const borderOp = scrollY.interpolate({ inputRange: [hero.range * 0.7, hero.range], outputRange: [0, 0.7], extrapolate: "clamp" });
+  const borderOp = snapAnim.interpolate({ inputRange: [0.7, 1], outputRange: [0, 0.7], extrapolate: "clamp" });
+
+  // Game title — snap spring from expanded to collapsed position
+  const titleInset = isTablet ? 16 : 12;
+  const titleTX = snapAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 16 - (hero.expLeft + titleInset)],
+    extrapolate: "clamp",
+  });
+  const titleTY = snapAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, (hero.colTop + 4) - (hero.expTop + hero.expHeight + 10)],
+    extrapolate: "clamp",
+  });
+
+  // Meta row — snap spring from expanded to collapsed position
+  const metaTX = snapAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 16 - (hero.expLeft + titleInset)],
+    extrapolate: "clamp",
+  });
+  const metaTY = snapAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, (hero.colTop + 4 + 28) - (hero.expTop + hero.expHeight + 38)],
+    extrapolate: "clamp",
+  });
 
   // ── Section animation helper ──
   const secStyle = (i) => ({
@@ -814,13 +875,15 @@ const GameDetail = ({ route, navigation }) => {
         width: hero.expWidth,
         height: hero.expHeight,
         borderRadius: isTablet ? 28 : 24,
-        transform: [{ translateX: heroTX }, { translateY: heroTY }, { scaleX: heroScaleX }, { scaleY: heroScaleY }],
+        transform: [
+          { translateX: heroTX }, { translateY: heroTY },
+          { scaleX: heroScaleX }, { scaleY: heroScaleY },
+          // bubbly pop: slight scale overshoot then settle
+          { scale: bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [1.07, 1], extrapolate: 'clamp' }) },
+        ],
       }]} pointerEvents="none">
         <Image source={{ uri: cover }} style={s.heroImg} contentFit="cover"
           recyclingKey={`game-poster-${gameId}`} transition={200} />
-        {/* Subtle bottom gradient for title readability */}
-        <LinearGradient colors={["transparent", "rgba(0,0,0,0.65)"]}
-          locations={[0.55, 1]} style={s.heroGrad} />
         {/* Cyan glow border when collapsed */}
         <Animated.View style={[s.heroBorder, { opacity: borderOp }]} />
       </Animated.View>
@@ -834,37 +897,41 @@ const GameDetail = ({ route, navigation }) => {
         />
       </Animated.View>
 
-      {/* ── Collapsed header (title left of poster) ── */}
+      {/* ── Game title — physically moves from expanded to collapsed position ── */}
       <Animated.View
-        style={[
-          s.colHeader,
-          {
-            opacity: colHeaderOp,
-            top: hero.colTop + 4,
-            right: hero.colWidth + (isTablet ? 44 : 32),
-          },
-        ]}
+        style={{
+          position: "absolute",
+          zIndex: 47,
+          left: hero.expLeft + titleInset,
+          top: hero.expTop + hero.expHeight + 10,
+          width: viewportWidth - 16 - hero.colWidth - (isTablet ? 52 : 40),
+          transform: [
+            { translateX: titleTX }, { translateY: titleTY },
+            // bubbly micro-jump upward then settle
+            { translateY: bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [-7, 0], extrapolate: 'clamp' }) },
+          ],
+        }}
         pointerEvents="none"
       >
-        <Text style={s.colTitle} numberOfLines={1}>{name}</Text>
-        <Text style={s.colMeta}>{releaseDate}  •  {playtimeText}</Text>
-        <Text style={s.colStatus}>{statusText}</Text>
+        <Text style={s.expTitle} numberOfLines={1}>{name}</Text>
       </Animated.View>
 
-      {/* ── Expanded title overlay (on poster bottom) ── */}
+      {/* ── Meta row (date/playtime/status) — physically moves from expanded to collapsed position ── */}
       <Animated.View
-        style={[
-          s.expMeta,
-          {
-            opacity: expTitleOp,
-            left: hero.expLeft + (isTablet ? 28 : 20),
-            right: viewportWidth - hero.expLeft - hero.expWidth + (isTablet ? 28 : 20),
-            top: hero.expTop + hero.expHeight - (isTablet ? 96 : 90),
-          },
-        ]}
+        style={{
+          position: "absolute",
+          zIndex: 47,
+          left: hero.expLeft + titleInset,
+          top: hero.expTop + hero.expHeight + 38,
+          width: viewportWidth - 16 - hero.colWidth - (isTablet ? 52 : 40),
+          transform: [
+            { translateX: metaTX }, { translateY: metaTY },
+            // bubbly micro-jump (slightly less than title for layered feel)
+            { translateY: bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [-5, 0], extrapolate: 'clamp' }) },
+          ],
+        }}
         pointerEvents="none"
       >
-        <Text style={s.expTitle}>{name}</Text>
         <View style={s.expMetaRow}>
           <Text style={s.expMetaText}>{releaseDate}</Text>
           <Text style={s.expDot}>•</Text>
@@ -876,12 +943,29 @@ const GameDetail = ({ route, navigation }) => {
 
       {/* ── Scrollable content ── */}
       <Animated.ScrollView style={s.scroll}
-        contentContainerStyle={{ paddingTop: hero.contentTop, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         scrollEventThrottle={16}>
 
+        {/* Animated spacer — springs from expanded height to collapsed height so
+            content snaps up to sit right below the collapsed poster then scrolls normally */}
+        <Animated.View style={{
+          height: snapAnimLayout.interpolate({
+            inputRange: [0, 1],
+            outputRange: [hero.contentTop, hero.colTop + hero.colHeight + 24],
+            extrapolate: 'clamp',
+          }),
+        }} />
 
+        {/* Sections wrapper — bubbly bounce after snap */}
+        <Animated.View style={{
+          transform: [
+            { translateY: bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) },
+            { scaleY:     bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] }) },
+            { scaleX:     bubbleAnim.interpolate({ inputRange: [0, 1], outputRange: [0.99, 1] }) },
+          ],
+        }}>
 
         {/* §0 — Description */}
         <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>
@@ -1032,6 +1116,7 @@ const GameDetail = ({ route, navigation }) => {
             <ActivityIndicator color={ACCENT} />
           </View>
         )}
+        </Animated.View>{/* end sections bubble wrapper */}
       </Animated.ScrollView>
 
       {/* ── Completion popup (playtime + DLC tracker) ── */}
@@ -1093,17 +1178,14 @@ const s = StyleSheet.create({
   heroGrad: { position: "absolute", bottom: 0, left: 0, right: 0, height: "40%" },
   heroBorder: { ...StyleSheet.absoluteFillObject, borderWidth: 1.5, borderColor: ACCENT, borderRadius: 12 },
 
-  // ── Expanded title (on poster bottom) ──
-  expMeta: { position: "absolute", left: 44, right: 44, top: 350, zIndex: 55 },
+  // ── Expanded title (below poster) ──
+  expMeta: { position: "absolute", zIndex: 55 },
   expTitle: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 24,
+    lineHeight: 30,
     color: TEXT_PRIMARY,
     fontFamily: "Blackbots",
-    marginBottom: 6,
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    marginBottom: 5,
   },
   expMetaRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center" },
   expMetaText: { fontSize: 12, color: hexToRgba(ACCENT2, 0.9), fontWeight: "600" },
