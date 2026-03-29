@@ -10,7 +10,7 @@ import SkeletonPodiumList from "../components/skeletons/SkeletonPodiumList";
 
 // ─── Services ──────────────────────────────────────────────
 import { getAnimeDetails, formatAnimeData } from "../services/api_anilist";
-import { getGameDetails, formatGameData } from "../services/api_rawg";
+import { fetchIGDBById } from "../services/api_igdb";
 import { getMovieDetails, formatMovieData } from "../services/api_tmdb";
 
 /**
@@ -107,14 +107,15 @@ const animeTheme = {
 
 const gamesTheme = {
   // ─── Visual tokens ───────────────────────────────────────
-  accent: "#4ADE80",
-  accentSecondary: "#34D399",
-  background: "#070F0A",
-  cardBg: "#0F1F14",
-  cardPlaceholderBg: "#1A3A2A",
-  profileIconColor: "#4ADE80",
+  accent: "#0FA3B1",
+  accentSecondary: "#22D3EE",
+  background: "#070B0F",
+  cardBg: "#0A161C",
+  cardPlaceholderBg: "#122A34",
+  profileIconColor: "#0FA3B1",
   fontFamily: "System",
   fontFamilyBold: "System",
+  titleFont: "Blackbots",
 
   // ─── Labels ──────────────────────────────────────────────
   headerTitle: "Podium",
@@ -141,8 +142,15 @@ const gamesTheme = {
 
   // ─── Service functions ───────────────────────────────────
   services: {
-    fetchDetails: (mediaId) => getGameDetails(parseInt(mediaId)),
-    formatData: (result) => formatGameData(result),
+    fetchDetails: (mediaId) => fetchIGDBById(parseInt(mediaId, 10)),
+    formatData: (result) => ({
+      id: result?.igdbId ?? result?.id,
+      igdbId: result?.igdbId ?? result?.id,
+      name: result?.name || "Loading...",
+      coverImage: result?.coverImage || null,
+      genres: result?.genres || [],
+      developers: result?.developers || [],
+    }),
   },
 
   // ─── Data extraction ────────────────────────────────────
@@ -340,7 +348,7 @@ const buildPodiumStyles = (theme) =>
       ...basePodiumStyles.profileIcon,
       backgroundColor: theme.accent,
     },
-    headerTitle: { ...basePodiumStyles.headerTitle, fontFamily: "Genjiro" },
+    headerTitle: { ...basePodiumStyles.headerTitle, fontFamily: theme.titleFont || "Genjiro" },
     headerSubtitle: {
       ...basePodiumStyles.headerSubtitle,
       fontFamily: theme.fontFamily,

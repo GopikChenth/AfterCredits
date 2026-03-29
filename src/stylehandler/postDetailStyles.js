@@ -120,12 +120,12 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#4ADE80',
-  background: '#070F0A',
-  avatarBg: '#0F1F14',
-  gridImageBg: '#0F1F14',
+  accent: '#0FA3B1',
+  background: '#070B0F',
+  avatarBg: '#0A161C',
+  gridImageBg: '#0A161C',
   fontFamily: 'System',
-  fontFamilyBold: 'System',
+  fontFamilyBold: 'Blackbots',
   detailsRoute: 'DetailsAnime', // TODO: Create DetailsGame page
 };
 

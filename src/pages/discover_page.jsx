@@ -317,7 +317,7 @@ const DiscoverPage = ({ navigation }) => {
         {/* Static Header */}
         <View style={styles.headerContainer}>
           <View>
-            <Text style={[styles.headerTitle, { fontFamily: 'Genjiro' }]}>Discover</Text>
+            <Text style={styles.headerTitle}>Discover</Text>
             <Text style={styles.headerSubtitle}>
               {theme.subtitleText}
             </Text>

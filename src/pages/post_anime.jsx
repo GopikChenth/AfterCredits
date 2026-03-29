@@ -50,10 +50,11 @@ const PostPage = ({ navigation }) => {
         description={item.description}
         animeCovers={item.mediaCovers}
         accent={theme.accent}
+        titleFont={theme.titleFont}
         onPress={() => navigation.navigate(theme.detailRoute, { post: item })}
       />
     ),
-    [navigation, theme.accent, theme.detailRoute]
+    [navigation, theme.accent, theme.detailRoute, theme.titleFont]
   );
 
   const keyExtractor = useCallback((item) => String(item.id), []);
@@ -76,7 +77,7 @@ const PostPage = ({ navigation }) => {
         {/* Header */}
         <View style={styles.headerContainer}>
           <View>
-            <Text style={[styles.headerTitle, { fontFamily: 'Genjiro' }]}>{theme.headerTitle}</Text>
+            <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
             <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
           </View>
           <Pressable

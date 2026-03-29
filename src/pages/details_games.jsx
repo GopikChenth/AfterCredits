@@ -28,12 +28,14 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import GenrePill from "../components/details_page/GenrePill";
 import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
 import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
 import CompletedWindow from "../components/details_page/CompletedWindow";
+import PlayingWindow from "../components/details_page/PlayingWindow";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
@@ -65,6 +67,13 @@ const hexToRgba = (hex, alpha) => {
   const g = (value >> 8) & 255;
   const b = value & 255;
   return `rgba(${r},${g},${b},${alpha})`;
+};
+
+const parseStoredNumber = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return numeric;
 };
 
 // ─── Hero geometry ───────────────────────────────────────────────────────────
@@ -509,6 +518,10 @@ const GameDetail = ({ route, navigation }) => {
   const [currentReviewPage, setCurrentReviewPage] = useState(1);
   const [showDeferredSections, setShowDeferredSections] = useState(false);
   const [showCompletionSheet, setShowCompletionSheet] = useState(false);
+  const [showPlayingWindow, setShowPlayingWindow]     = useState(false);
+  const [userPlaytimeHours, setUserPlaytimeHours]     = useState(null);
+  const [userStoryProgress, setUserStoryProgress]     = useState(null);
+  const [userOverallProgress, setUserOverallProgress] = useState(null);
 
   // ── Scroll-driven animations ──
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -589,6 +602,26 @@ const GameDetail = ({ route, navigation }) => {
     } finally { setIsLoading(false); }
   };
 
+  const loadUserGameTracking = useCallback(async () => {
+    if (!gameId) return;
+    try {
+      const pairs = await AsyncStorage.multiGet([
+        `game_playtime_${gameId}`,
+        `game_story_progress_${gameId}`,
+        `game_overall_progress_${gameId}`,
+      ]);
+      const playtime = parseStoredNumber(pairs[0]?.[1]);
+      const story = parseStoredNumber(pairs[1]?.[1]);
+      const overall = parseStoredNumber(pairs[2]?.[1]);
+
+      setUserPlaytimeHours(playtime !== null && playtime >= 0 ? playtime : null);
+      setUserStoryProgress(story !== null ? clamp(story, 0, 100) : null);
+      setUserOverallProgress(overall !== null ? clamp(overall, 0, 100) : null);
+    } catch (error) {
+      console.warn('Failed to load user game tracking from storage:', error);
+    }
+  }, [gameId]);
+
   useFocusEffect(useCallback(() => {
     if (!gameId) return;
     (async () => {
@@ -601,6 +634,14 @@ const GameDetail = ({ route, navigation }) => {
   }, [gameId]));
 
   useEffect(() => {
+    loadUserGameTracking();
+  }, [loadUserGameTracking]);
+
+  useFocusEffect(useCallback(() => {
+    loadUserGameTracking();
+  }, [loadUserGameTracking]));
+
+  useEffect(() => {
     if (!gameId) return;
     getMediaStatus("games", gameId).then((r) => {
       if (r.success && r.data) { setUserStatus(r.data.status); setIsWishlisted(r.data.is_wishlisted); }
@@ -611,10 +652,23 @@ const GameDetail = ({ route, navigation }) => {
   const handleStatusChange = async (ns) => {
     setUserStatus(ns);
     await setMediaStatus("games", gameId, ns);
-    if (ns === 'watched') setShowCompletionSheet(true);
+    if (ns === 'watched') {
+      // Story is always 100% when completed; overall is set by user in CompletedWindow
+      await AsyncStorage.setItem(`game_story_progress_${gameId}`, "100");
+      setShowCompletionSheet(true);
+    }
+    if (ns === 'watching')  setShowPlayingWindow(true);
   };
   const handleWishlistToggle = async (w) => { setIsWishlisted(w); await setWishlist("games", gameId, w); };
   const handleGoBack = useCallback(() => navigation?.goBack(), [navigation]);
+  const handleCompletionWindowClose = useCallback(() => {
+    setShowCompletionSheet(false);
+    loadUserGameTracking();
+  }, [loadUserGameTracking]);
+  const handlePlayingWindowClose = useCallback(() => {
+    setShowPlayingWindow(false);
+    loadUserGameTracking();
+  }, [loadUserGameTracking]);
 
   const renderScreenshot = useCallback(({ item }) => (
     <ScreenshotCard uri={item} style={[s.screenshot, { width: screenshotWidth, height: screenshotHeight }]} />
@@ -649,10 +703,41 @@ const GameDetail = ({ route, navigation }) => {
   const similarGames = igdbData?.similarGames || [];
   const releaseDate = igdbData?.releaseDate || "TBA";
   const gameDescription = summary || storyline || "No description available.";
-  const playtimeVal = igdbData?.timeToBeat?.mainStory
-    ? Math.max(1, Math.round(igdbData.timeToBeat.mainStory))
-    : playtime ? Math.max(1, Math.round(playtime)) : null;
-  const playtimeText = playtimeVal ? `${playtimeVal}h Playtime` : "Playtime Unknown";
+  const estimatedPlaytimeFromProgress = useMemo(() => {
+    const mainStoryHours = parseStoredNumber(igdbData?.timeToBeat?.mainStory);
+    const completionistHours = parseStoredNumber(igdbData?.timeToBeat?.completionist);
+
+    const estimateFromStory = (mainStoryHours !== null && userStoryProgress !== null)
+      ? (mainStoryHours * userStoryProgress) / 100
+      : null;
+    const estimateFromOverall = (completionistHours !== null && userOverallProgress !== null)
+      ? (completionistHours * userOverallProgress) / 100
+      : null;
+
+    if (estimateFromStory !== null && estimateFromOverall !== null) {
+      return Math.max(estimateFromStory, estimateFromOverall);
+    }
+    return estimateFromOverall ?? estimateFromStory;
+  }, [
+    igdbData?.timeToBeat?.mainStory,
+    igdbData?.timeToBeat?.completionist,
+    userStoryProgress,
+    userOverallProgress,
+  ]);
+
+  const resolvedPlayedHours = useMemo(() => {
+    if (userPlaytimeHours !== null && userPlaytimeHours > 0) return userPlaytimeHours;
+    if (estimatedPlaytimeFromProgress !== null && estimatedPlaytimeFromProgress > 0) return estimatedPlaytimeFromProgress;
+    if (igdbData?.timeToBeat?.mainStory) return igdbData.timeToBeat.mainStory;
+    if (playtime) return playtime;
+    return null;
+  }, [userPlaytimeHours, estimatedPlaytimeFromProgress, igdbData?.timeToBeat?.mainStory, playtime]);
+
+  const playtimeVal = resolvedPlayedHours ? Math.max(1, Math.round(resolvedPlayedHours)) : null;
+  const isEstimatedPlaytime = userPlaytimeHours === null && estimatedPlaytimeFromProgress !== null;
+  const playtimeText = playtimeVal
+    ? `${playtimeVal}h ${isEstimatedPlaytime ? "Played (Est.)" : "Playtime"}`
+    : "Playtime Unknown";
   const statusText = igdbData?.status || "Unknown";
 
   // Reviews pagination
@@ -955,7 +1040,16 @@ const GameDetail = ({ route, navigation }) => {
         gameId={String(gameId)}
         igdbId={igdbData?.igdbId}
         gameName={name}
-        onClose={() => setShowCompletionSheet(false)}
+        timeToBeat={igdbData?.timeToBeat}
+        onClose={handleCompletionWindowClose}
+      />
+
+      {/* ── Playing popup (story + overall progress) ── */}
+      <PlayingWindow
+        visible={showPlayingWindow}
+        gameId={String(gameId)}
+        gameName={name}
+        onClose={handlePlayingWindowClose}
       />
     </View>
   );

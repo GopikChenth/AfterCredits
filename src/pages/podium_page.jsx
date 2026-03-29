@@ -193,7 +193,7 @@ const PodiumPage = ({ navigation }) => {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerTitle, { fontFamily: 'Genjiro' }]}>{theme.headerTitle}</Text>
+          <Text style={styles.headerTitle}>{theme.headerTitle}</Text>
           <Text style={styles.headerSubtitle}>{theme.headerSubtitle}</Text>
         </View>
         <Pressable

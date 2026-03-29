@@ -231,32 +231,33 @@ const animeTheme = {
 // ┃     ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝               ┃
 // ┃                                                               ┃
 // ┃    Theme: Emerald Matrix  🎮                                  ┃
-// ┃    Palette: #4ADE80 · #22C55E · #16A34A                      ┃
+// ┃    Palette: #0FA3B1 · #22D3EE · #067D89                      ┃
 // ┃    Font: System                                               ┃
 // ┃                                                               ┃
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 const gamesTheme = {
-  accent: "#4ADE80",
-  accentLight: "rgba(74, 222, 128, 0.12)",
-  accentBorder: "rgba(74, 222, 128, 0.35)",
-  background: "#070F0A",
-  cardBg: "#0F1F14",
-  cardImageBg: "#0F1F14",
-  cardBorder: "rgba(74, 222, 128, 0.15)",
-  wishlistBg: "rgba(74, 222, 128, 0.1)",
-  wishlistBorder: "rgba(74, 222, 128, 0.3)",
-  wishlistActiveBg: "rgba(74, 222, 128, 0.25)",
-  wishlistActiveBorder: "rgba(74, 222, 128, 0.5)",
-  wishlistIcon: "#4ADE80",
-  detailsBg: "rgba(74, 222, 128, 0.15)",
+  accent: "#0FA3B1",
+  accentLight: "rgba(15, 163, 177, 0.12)",
+  accentBorder: "rgba(15, 163, 177, 0.35)",
+  background: "#070B0F",
+  cardBg: "#0A161C",
+  cardImageBg: "#0A161C",
+  cardBorder: "rgba(15, 163, 177, 0.15)",
+  wishlistBg: "rgba(15, 163, 177, 0.1)",
+  wishlistBorder: "rgba(15, 163, 177, 0.3)",
+  wishlistActiveBg: "rgba(15, 163, 177, 0.25)",
+  wishlistActiveBorder: "rgba(15, 163, 177, 0.5)",
+  wishlistIcon: "#0FA3B1",
+  detailsBg: "rgba(15, 163, 177, 0.15)",
   gradientOverlay: [
-    "rgba(7,15,10,0.2)",
-    "rgba(7,15,10,0.8)",
-    "rgba(7,15,10,0.98)",
+    "rgba(7,11,15,0.2)",
+    "rgba(7,11,15,0.8)",
+    "rgba(7,11,15,0.98)",
   ],
   fontFamily: "System",
-  profileIconColor: "#4ADE80",
+  titleFont: "Blackbots",
+  profileIconColor: "#0FA3B1",
   subtitleText: "Upcoming releases, news & more",
   comingSoonTitle: "Upcoming Games",
   comingSoonSubtitle: "Games that are yet to release",
@@ -345,7 +346,7 @@ const buildStyles = (theme) =>
     },
     headerTitle: {
       fontSize: 32,
-      fontFamily: "Genjiro",
+      fontFamily: theme.titleFont || "Genjiro",
       color: "#fff",
       letterSpacing: 1,
     },

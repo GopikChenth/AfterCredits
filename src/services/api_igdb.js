@@ -236,10 +236,18 @@ export const searchGameIGDB = async (name) => {
  * @returns {Promise<Array>} - Array of { id, title, coverImage, year, genres, popularity }
  */
 export const searchGamesIGDB = async (query, limit = 20) => {
-  const cacheKey = `IGDB_SEARCH_V2:${query.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
+  const cleanedQuery = (query || '').trim();
+  if (!cleanedQuery) return [];
+
+  // Escape user input for APICalypse search string.
+  const escapedQuery = cleanedQuery
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"');
+
+  const cacheKey = `IGDB_SEARCH_V2:${cleanedQuery.toLowerCase().replace(/\s+/g, '_')}:${limit}`;
   const raw = await igdbRequest(
     'games',
-    `search "${query}";
+    `search "${escapedQuery}";
      fields id, name, cover.url, cover.image_id, first_release_date,
             genres.name, total_rating, total_rating_count, category;
      limit ${limit};`,
@@ -491,22 +499,18 @@ export const fetchIGDBById = async (igdbId) => {
 const IGDB_HOME_FIELDS = 'fields id, name, cover.image_id, cover.url, screenshots.image_id, screenshots.url, total_rating, total_rating_count, first_release_date, category;';
 
 const mapIGDBHomeGame = (g) => {
+  // Use the same cover art the details page hero shows (portrait format)
   const coverUrl = g.cover?.image_id
     ? igdbImageUrl(g.cover.image_id, 'cover_big')
     : g.cover?.url?.replace('t_thumb', 't_cover_big') || null;
 
-  // Prefer first screenshot (landscape) for the card background image
-  const screenshotUrl = g.screenshots?.[0]?.image_id
-    ? igdbImageUrl(g.screenshots[0].image_id, 'screenshot_big')
-    : g.screenshots?.[0]?.url?.replace('t_thumb', 't_screenshot_big') || null;
-
   return {
     id: g.id,
     name: g.name,
-    background_image: screenshotUrl || coverUrl,  // same field GameCardItem reads
+    background_image: coverUrl,   // matches details page cover art
     coverImage: coverUrl,
     rating: g.total_rating ? Math.round(g.total_rating) / 10 : null,
-    _source: 'igdb',  // flag so details page knows to use direct ID lookup
+    _source: 'igdb',
   };
 };
 

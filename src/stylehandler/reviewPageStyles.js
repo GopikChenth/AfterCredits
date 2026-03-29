@@ -173,14 +173,14 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#4ADE80',
-  background: '#070F0A',
+  accent: '#0FA3B1',
+  background: '#070B0F',
   headingFont: 'System',
   contentFont: 'System',
   headerText: 'I Played',
   mediaTypeKey: 'games',
   ratingLabel: 'Please rate the game before submitting.',
-  inactiveStar: '#1A3A2A',
+  inactiveStar: '#122A34',
 };
 
 

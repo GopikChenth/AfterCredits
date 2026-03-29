@@ -3,33 +3,50 @@
  *
  * Centered popup that appears when the user marks a game as Completed.
  * Shows:
- *   1. Playtime input — how many hours they spent
- *   2. DLC / Expansion checklist fetched from IGDB
+ *   1. Platform selector (PC, PS5, PS4, Xbox, Switch, Steam Deck, etc.)
+ *   2. Playtime input — how many hours they spent
+ *   3. DLC / Expansion checklist fetched from IGDB
  *
- * Saves to AsyncStorage:
+ * Saves to AsyncStorage + Supabase:
+ *   game_platform_${gameId}  → platform id string
  *   game_playtime_${gameId}  → hours string
  *   game_dlcs_${gameId}      → JSON array of checked DLC ids
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Animated,
   Modal,
   Pressable,
   TextInput,
   ScrollView,
-  Platform,
   ActivityIndicator,
   TouchableOpacity,
   useWindowDimensions,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, {
+  Easing,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { getGameDLCs } from '../../services/api_igdb';
+import { saveGameCompletionDetails } from '../../services/mediaStatusService';
+
+let HapticsModule = null;
+try {
+  const mod = require('@mhpdev/react-native-haptics');
+  HapticsModule = mod?.default ?? mod;
+} catch (_) {
+  HapticsModule = null;
+}
 
 const ACCENT   = '#0FA3B1';
 const BG       = '#131313';
@@ -37,7 +54,48 @@ const SURFACE  = '#1C1C1C';
 const BORDER   = 'rgba(15,163,177,0.18)';
 const TEXT     = '#FFFFFF';
 const MUTED    = '#777777';
-const COMPLETE = '#4ADE80';
+const COMPLETE = '#22D3EE';
+const FAST_IN  = { duration: 80, easing: Easing.out(Easing.cubic) };
+const FAST_OUT = { duration: 60, easing: Easing.in(Easing.quad) };
+
+// ── Platform definitions ──────────────────────────────────────────────────────
+const PLATFORMS = [
+  { id: 'pc',          label: 'PC',           icon: 'desktop-outline',            iconLib: 'ion' },
+  { id: 'ps5',         label: 'PS5',          icon: 'logo-playstation',            iconLib: 'ion' },
+  { id: 'ps4',         label: 'PS4',          icon: 'logo-playstation',            iconLib: 'ion' },
+  { id: 'xbox_x',      label: 'Xbox X|S',     icon: 'logo-xbox',                   iconLib: 'ion' },
+  { id: 'xbox_one',    label: 'Xbox One',     icon: 'logo-xbox',                   iconLib: 'ion' },
+  { id: 'switch',      label: 'Switch',       icon: 'game-controller-outline',     iconLib: 'ion' },
+  { id: 'steam_deck',  label: 'Steam Deck',   icon: 'steam',                       iconLib: 'mci' },
+  { id: 'mobile',      label: 'Mobile',       icon: 'phone-portrait-outline',      iconLib: 'ion' },
+  { id: 'gog',         label: 'GOG',          icon: 'storefront-outline',          iconLib: 'ion' },
+  { id: 'epic',        label: 'Epic',         icon: 'storefront-outline',          iconLib: 'ion' },
+];
+
+const PlatformChip = ({ platform, selected, onPress }) => (
+  <TouchableOpacity
+    style={[styles.platformChip, selected && styles.platformChipSelected]}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    {platform.iconLib === 'mci' ? (
+      <MaterialCommunityIcons
+        name={platform.icon}
+        size={13}
+        color={selected ? BG : MUTED}
+      />
+    ) : (
+      <Ionicons
+        name={platform.icon}
+        size={13}
+        color={selected ? BG : MUTED}
+      />
+    )}
+    <Text style={[styles.platformLabel, selected && styles.platformLabelSelected]}>
+      {platform.label}
+    </Text>
+  </TouchableOpacity>
+);
 
 // ── DLC row ───────────────────────────────────────────────────────────────────
 const DlcRow = ({ dlc, checked, onToggle }) => (
@@ -75,51 +133,119 @@ const DlcRow = ({ dlc, checked, onToggle }) => (
   </TouchableOpacity>
 );
 
+// ── Draggable haptic slider for Overall Completion ────────────────────────────
+const OverallHapticSlider = ({ value, onChange }) => {
+  const THUMB = 22;
+  const lastPctRef = useRef(-1);
+  const trackWRef = useRef(200);
+  const startPctRef = useRef(0);
+
+  const triggerHaptic = (pct) => {
+    if (pct !== lastPctRef.current) {
+      lastPctRef.current = pct;
+      try {
+        if (HapticsModule?.impact) {
+          HapticsModule.impact(pct === 0 || pct === 100 ? 'heavy' : 'light');
+        }
+      } catch (_) {}
+    }
+  };
+
+  const clampPct = (v) => Math.round(Math.max(0, Math.min(100, v)));
+
+  const panRef = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => {
+        const x = e.nativeEvent.locationX;
+        const pct = clampPct((x / trackWRef.current) * 100);
+        startPctRef.current = pct;
+        onChange(pct);
+        triggerHaptic(pct);
+      },
+      onPanResponderMove: (_e, gs) => {
+        const dxPct = (gs.dx / trackWRef.current) * 100;
+        const pct = clampPct(startPctRef.current + dxPct);
+        onChange(pct);
+        triggerHaptic(pct);
+      },
+    })
+  ).current;
+
+  const thumbLeft = `${value}%`;
+
+  return (
+    <View style={styles.sliderRow}>
+      <Text style={styles.sliderMin}>0</Text>
+      <View
+        style={styles.sliderTrack}
+        onLayout={(e) => { trackWRef.current = e.nativeEvent.layout.width; }}
+        {...panRef.panHandlers}
+      >
+        <View style={[styles.sliderFill, { width: `${value}%` }]} />
+        <View style={[styles.sliderThumbOuter, { left: thumbLeft, marginLeft: -(THUMB / 2) }]}>
+          <View style={styles.sliderThumb} />
+        </View>
+      </View>
+      <Text style={styles.sliderMax}>100</Text>
+    </View>
+  );
+};
+
 // ── Main popup ────────────────────────────────────────────────────────────────
-const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
-  const scaleAnim    = useRef(new Animated.Value(0.85)).current;
-  const opacityAnim  = useRef(new Animated.Value(0)).current;
-  const backdropAnim = useRef(new Animated.Value(0)).current;
+const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClose }) => {
+  const scaleAnim = useSharedValue(0.92);
+  const opacityAnim = useSharedValue(0);
+  const backdropAnim = useSharedValue(0);
   const { width: vw } = useWindowDimensions();
 
-  const [hours, setHours]             = useState('');
-  const [dlcs, setDlcs]               = useState([]);
-  const [checkedDlcs, setCheckedDlcs] = useState({});
-  const [isLoadingDlcs, setIsLoadingDlcs] = useState(false);
-  const [isSaving, setIsSaving]       = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [hours, setHours]                       = useState('');
+  const [overallPct, setOverallPct]             = useState(33);
+  const [dlcs, setDlcs]                         = useState([]);
+  const [checkedDlcs, setCheckedDlcs]           = useState({});
+  const [isLoadingDlcs, setIsLoadingDlcs]       = useState(false);
+  const [isSaving, setIsSaving]                 = useState(false);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropAnim.value,
+  }));
+
+  const popupStyle = useAnimatedStyle(() => ({
+    opacity: opacityAnim.value,
+    transform: [{ scale: scaleAnim.value }],
+  }));
 
   // ── Animate in + load data ────────────────────────────────────────────────
   useEffect(() => {
     if (!visible) return;
 
-    scaleAnim.setValue(0.85);
-    opacityAnim.setValue(0);
-    backdropAnim.setValue(0);
+    scaleAnim.value = 0.92;
+    opacityAnim.value = 0;
+    backdropAnim.value = 0;
 
-    Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1, tension: 65, friction: 10, useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 1, duration: 200, useNativeDriver: true,
-      }),
-      Animated.timing(backdropAnim, {
-        toValue: 1, duration: 220, useNativeDriver: true,
-      }),
-    ]).start();
+    scaleAnim.value = withTiming(1, FAST_IN);
+    opacityAnim.value = withTiming(1, FAST_IN);
+    backdropAnim.value = withTiming(1, FAST_IN);
 
-    // Restore saved playtime
-    AsyncStorage.getItem(`game_playtime_${gameId}`).then(val => setHours(val || ''));
-
-    // Restore saved DLC checks
-    AsyncStorage.getItem(`game_dlcs_${gameId}`).then(val => {
-      if (!val) return;
+    // Restore saved values
+    AsyncStorage.multiGet([
+      `game_platform_${gameId}`,
+      `game_playtime_${gameId}`,
+      `game_dlcs_${gameId}`,
+      `game_overall_progress_${gameId}`,
+    ]).then(pairs => {
+      setSelectedPlatform(pairs[0][1] || null);
+      setHours(pairs[1][1] || '');
       try {
-        const arr = JSON.parse(val);
+        const arr = pairs[2][1] ? JSON.parse(pairs[2][1]) : [];
         const map = {};
         arr.forEach(id => { map[id] = true; });
         setCheckedDlcs(map);
       } catch (_) {}
+      const saved = Number(pairs[3][1]);
+      setOverallPct(Number.isFinite(saved) ? saved : 33);
     });
 
     // Fetch DLCs
@@ -132,56 +258,72 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
       setDlcs([]);
       setIsLoadingDlcs(false);
     });
-  }, [visible, gameId, igdbId]);
+  }, [visible, gameId, igdbId, scaleAnim, opacityAnim, backdropAnim]);
 
   // ── Close animation ────────────────────────────────────────────────────────
   const handleClose = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(scaleAnim, { toValue: 0.85, duration: 180, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
-      Animated.timing(backdropAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
-    ]).start(() => onClose?.());
+    backdropAnim.value = withTiming(0, FAST_OUT);
+    opacityAnim.value = withTiming(0, FAST_OUT);
+    scaleAnim.value = withTiming(0.92, FAST_OUT, (finished) => {
+      if (finished && onClose) runOnJS(onClose)();
+    });
   }, [scaleAnim, opacityAnim, backdropAnim, onClose]);
 
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
+      const selectedDlcIds = Object.keys(checkedDlcs).filter(k => checkedDlcs[k]);
+      const parsedHours = Number.parseFloat(hours.trim());
+      const playtimeHours = Number.isFinite(parsedHours) ? parsedHours : null;
+
       await Promise.all([
+        selectedPlatform
+          ? AsyncStorage.setItem(`game_platform_${gameId}`, selectedPlatform)
+          : AsyncStorage.removeItem(`game_platform_${gameId}`),
         hours.trim()
           ? AsyncStorage.setItem(`game_playtime_${gameId}`, hours.trim())
           : AsyncStorage.removeItem(`game_playtime_${gameId}`),
         AsyncStorage.setItem(
           `game_dlcs_${gameId}`,
-          JSON.stringify(Object.keys(checkedDlcs).filter(k => checkedDlcs[k]))
+          JSON.stringify(selectedDlcIds)
         ),
+        AsyncStorage.multiSet([
+          [`game_story_progress_${gameId}`, '100'],
+          [`game_overall_progress_${gameId}`, String(overallPct)],
+        ]),
       ]);
+
+      const dbResult = await saveGameCompletionDetails(String(gameId), {
+        platform: selectedPlatform,
+        playtimeHours,
+        completedDlcs: selectedDlcIds,
+        overallProgress: overallPct,
+        mainStoryHours: timeToBeat?.mainStory ?? null,
+        completionistHours: timeToBeat?.completionist ?? null,
+      });
+
+      if (!dbResult?.success) {
+        console.warn('CompletedWindow DB save failed:', dbResult?.error || 'Unknown error');
+      }
     } finally {
       setIsSaving(false);
       handleClose();
     }
-  }, [hours, checkedDlcs, gameId, handleClose]);
+  }, [selectedPlatform, hours, checkedDlcs, overallPct, gameId, handleClose, timeToBeat]);
 
   const toggleDlc = useCallback((id) => {
     setCheckedDlcs(prev => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
   const checkedCount = Object.keys(checkedDlcs).filter(k => checkedDlcs[k]).length;
-
-  // Popup width: 90% of screen, max 420px
   const popupWidth = Math.min(vw * 0.9, 420);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={handleClose}
-      statusBarTranslucent
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose} statusBarTranslucent>
       <View style={styles.overlay}>
         {/* Backdrop */}
-        <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
 
@@ -190,10 +332,7 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
           style={[
             styles.popup,
             { width: popupWidth },
-            {
-              opacity: opacityAnim,
-              transform: [{ scale: scaleAnim }],
-            },
+            popupStyle,
           ]}
         >
           {/* Header */}
@@ -219,6 +358,29 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* ── Platform ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="desktop-outline" size={15} color={ACCENT} />
+                <Text style={styles.sectionTitle}>Played On</Text>
+                {selectedPlatform && (
+                  <Text style={styles.selectedPlatformBadge}>
+                    {PLATFORMS.find(p => p.id === selectedPlatform)?.label}
+                  </Text>
+                )}
+              </View>
+              <View style={styles.platformGrid}>
+                {PLATFORMS.map(p => (
+                  <PlatformChip
+                    key={p.id}
+                    platform={p}
+                    selected={selectedPlatform === p.id}
+                    onPress={() => setSelectedPlatform(prev => prev === p.id ? null : p.id)}
+                  />
+                ))}
+              </View>
+            </View>
+
             {/* ── Time Spent ── */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -239,6 +401,16 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
                 />
                 <Text style={styles.timeUnit}>hours played</Text>
               </View>
+            </View>
+
+            {/* ── Overall Completion ── */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="stats-chart-outline" size={15} color="#60A5FA" />
+                <Text style={[styles.sectionTitle, { color: '#60A5FA' }]}>Overall Completion</Text>
+                <Text style={styles.overallPctBadge}>{overallPct}%</Text>
+              </View>
+              <OverallHapticSlider value={overallPct} onChange={setOverallPct} />
             </View>
 
             {/* ── DLC / Expansions ── */}
@@ -309,25 +481,18 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.78)',
   },
-
-  // ── Popup card ──
   popup: {
     backgroundColor: BG,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: BORDER,
-    maxHeight: '80%',
+    maxHeight: '85%',
     overflow: 'hidden',
-    // Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.6,
@@ -344,31 +509,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   completeIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 34, height: 34, borderRadius: 17,
     backgroundColor: 'rgba(74,222,128,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(74,222,128,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(74,222,128,0.25)',
+    alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { fontSize: 15, fontWeight: '700', color: TEXT },
   headerSub:   { fontSize: 11, color: MUTED, marginTop: 1 },
   closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 28, height: 28, borderRadius: 14,
     backgroundColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
 
   // ── Scroll ──
@@ -385,31 +538,47 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12,
   },
   sectionTitle: {
-    flex: 1,
-    fontSize: 10,
-    fontWeight: '800',
-    color: ACCENT,
-    letterSpacing: 1.6,
-    textTransform: 'uppercase',
+    flex: 1, fontSize: 10, fontWeight: '800', color: ACCENT,
+    letterSpacing: 1.6, textTransform: 'uppercase',
   },
-  dlcBadge: {
-    fontSize: 10,
-    color: COMPLETE,
-    fontWeight: '700',
+  selectedPlatformBadge: {
+    fontSize: 9, fontWeight: '700', color: COMPLETE,
+    textTransform: 'uppercase', letterSpacing: 0.8,
+  },
+
+  // ── Platform grid ──
+  platformGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  platformChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#0D0D0D',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  platformChipSelected: {
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
+  },
+  platformLabel: {
+    fontSize: 11, fontWeight: '600', color: MUTED,
+  },
+  platformLabelSelected: {
+    color: BG,
   },
 
   // ── Time input ──
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   timeInput: {
     width: 100,
     borderWidth: 1,
@@ -423,24 +592,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
-  timeUnit: {
-    fontSize: 14,
-    color: MUTED,
-    fontWeight: '500',
-  },
+  timeUnit: { fontSize: 14, color: MUTED, fontWeight: '500' },
 
   // ── States ──
-  stateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  stateText: {
-    fontSize: 12,
-    color: MUTED,
-    fontStyle: 'italic',
-  },
+  stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  stateText: { fontSize: 12, color: MUTED, fontStyle: 'italic' },
 
   // ── DLC progress ──
   progressTrack: {
@@ -456,7 +612,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 
-  // ── DLC row ──
+  // ── DLC rows ──
+  dlcBadge: { fontSize: 10, color: COMPLETE, fontWeight: '700' },
   dlcRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -466,38 +623,22 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(255,255,255,0.04)',
   },
   dlcRowChecked: { opacity: 0.5 },
-  dlcCover: {
-    width: 30,
-    height: 40,
-    borderRadius: 4,
-    backgroundColor: '#222',
-  },
+  dlcCover: { width: 30, height: 40, borderRadius: 4, backgroundColor: '#222' },
   dlcCoverPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: BORDER,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: BORDER,
   },
   dlcInfo: { flex: 1 },
   dlcName: { fontSize: 12, color: TEXT, fontWeight: '600', lineHeight: 16 },
   dlcMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  dlcTag: {
-    fontSize: 8, fontWeight: '800', color: ACCENT,
-    letterSpacing: 1, textTransform: 'uppercase',
-  },
+  dlcTag: { fontSize: 8, fontWeight: '800', color: ACCENT, letterSpacing: 1, textTransform: 'uppercase' },
   dlcYear: { fontSize: 9, color: MUTED },
   checkbox: {
-    width: 20, height: 20,
-    borderRadius: 5,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 20, height: 20, borderRadius: 5,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  checkboxChecked: {
-    backgroundColor: COMPLETE,
-    borderColor: COMPLETE,
-  },
+  checkboxChecked: { backgroundColor: COMPLETE, borderColor: COMPLETE },
 
   // ── Footer ──
   footer: {
@@ -506,18 +647,49 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.06)',
   },
   saveBtn: {
-    backgroundColor: ACCENT,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
+    backgroundColor: ACCENT, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
   },
   saveBtnDisabled: { opacity: 0.55 },
-  saveBtnText: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#000',
-    letterSpacing: 0.4,
+  saveBtnText: { fontSize: 14, fontWeight: '800', color: '#000', letterSpacing: 0.4 },
+
+  // ── Overall slider ──
+  overallPctBadge: { fontSize: 14, fontWeight: '900', color: '#60A5FA' },
+  sliderRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10,
+    paddingVertical: 10,
   },
+  sliderMin: { fontSize: 9, color: MUTED, fontWeight: '700', width: 20, textAlign: 'center' },
+  sliderMax: { fontSize: 9, color: MUTED, fontWeight: '700', width: 24, textAlign: 'center' },
+  sliderTrack: {
+    flex: 1, height: 6, backgroundColor: '#1A1A1A',
+    borderRadius: 3, position: 'relative', justifyContent: 'center',
+  },
+  sliderFill: {
+    position: 'absolute', left: 0, height: '100%',
+    borderRadius: 3, backgroundColor: '#60A5FA',
+  },
+  sliderThumbOuter: {
+    position: 'absolute', top: -8,
+    width: 22, height: 22, alignItems: 'center', justifyContent: 'center',
+  },
+  sliderThumb: {
+    width: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#0D0D0D', borderWidth: 2.5, borderColor: '#60A5FA',
+    shadowColor: '#60A5FA', shadowOpacity: 0.5, shadowRadius: 6, elevation: 6,
+  },
+  sliderBtnRow: {
+    flexDirection: 'row', justifyContent: 'space-between', gap: 6,
+  },
+  sliderPreset: {
+    flex: 1, paddingVertical: 6, borderRadius: 8,
+    backgroundColor: '#0D0D0D', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+  },
+  sliderPresetActive: {
+    backgroundColor: 'rgba(96,165,250,0.15)', borderColor: 'rgba(96,165,250,0.4)',
+  },
+  sliderPresetText: { fontSize: 10, fontWeight: '700', color: MUTED },
+  sliderPresetTextActive: { color: '#60A5FA' },
 });
 
 export default CompletedWindow;

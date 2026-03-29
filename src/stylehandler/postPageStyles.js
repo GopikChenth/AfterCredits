@@ -104,10 +104,11 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: "#4ADE80",
-  background: "#070F0A",
-  profileIconColor: "#4ADE80",
+  accent: "#0FA3B1",
+  background: "#070B0F",
+  profileIconColor: "#0FA3B1",
   fontFamily: "System",
+  titleFont: "Blackbots",
   headerTitle: "Post",
   headerSubtitle: "Curated game lists from the community",
   detailRoute: "PostDetailAnime", // Shared detail page
@@ -161,7 +162,7 @@ const buildStyles = (theme) =>
     },
     headerTitle: {
       ...baseStyles.headerTitle,
-      fontFamily: "Genjiro",
+      fontFamily: theme.titleFont || "Genjiro",
     },
     headerSubtitle: {
       ...baseStyles.headerSubtitle,

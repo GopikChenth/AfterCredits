@@ -96,9 +96,9 @@ const animeTheme = {
 // ╚═══════════════════════════════════════════════════════════════╝
 
 const gamesTheme = {
-  accent: '#4ADE80',
-  background: '#070F0A',
-  backButtonBg: '#0F1F14',
+  accent: '#0FA3B1',
+  background: '#070B0F',
+  backButtonBg: '#0A161C',
   fontFamily: 'System',
   headerTitle: 'Gaming News',
   headerSubtitle: 'Latest updates from Insider Gaming',

@@ -63,9 +63,9 @@ export const MEDIA_THEMES = {
   },
   game: {
     name: 'Games',
-    accent: '#4ADE80',      // Emerald Green
-    accentLight: '#86EFAC', // Light Green
-    accentGlow: 'rgba(74, 222, 128, 0.6)',
+    accent: '#0FA3B1',      // Cyan
+    accentLight: '#22D3EE', // Light Cyan
+    accentGlow: 'rgba(15, 163, 177, 0.6)',
     headingFont: 'Blackbots',
     contentFont: 'Arial',
   },

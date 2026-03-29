@@ -9,7 +9,17 @@ import {
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, onPress, accent = '#FFB3C6' }) => {
+const ListPost = ({
+  username,
+  avatarUrl,
+  date,
+  title,
+  description,
+  animeCovers,
+  onPress,
+  accent = '#FFB3C6',
+  titleFont = null,
+}) => {
   const [imageErrors, setImageErrors] = useState({});
 
   const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(username || 'user')}`;
@@ -32,7 +42,7 @@ const ListPost = ({ username, avatarUrl, date, title, description, animeCovers, 
       </View>
 
       {/* Post Title */}
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, titleFont ? { fontFamily: titleFont } : null]}>{title}</Text>
 
       {/* Anime Cover Strip */}
       <FlatList

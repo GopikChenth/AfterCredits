@@ -335,7 +335,10 @@ const GameHome = ({ navigation }) => {
 
   const handleSearchResultPress = useCallback((item) => {
     navigation.navigate('DetailsGames', {
-      gameId: item.id, gameName: item.title, coverImage: item.coverImage,
+      gameId: item.id,
+      gameName: item.title,
+      coverImage: item.coverImage,
+      igdbId: item.id,  // search uses IGDB — pass id for direct lookup
     });
     handleSearchCancel();
   }, [navigation, handleSearchCancel]);
@@ -488,7 +491,7 @@ const GameHome = ({ navigation }) => {
                 uri: userProfile.avatar_url ||
                   `https://api.dicebear.com/7.x/avataaars/png?seed=${encodeURIComponent(userProfile.username || 'user')}`,
               }}
-              style={[styles.profileIcon, isRawgFallback && styles.profileIconFallback]}
+              style={styles.profileIcon}
             />
           ) : (
             <View style={styles.profileIconContainer}>
@@ -721,14 +724,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   profileIcon: {
-    width: 43, height: 43,
-    borderRadius: 22,
+    width: 48, height: 48,
+    borderRadius: 24,
     borderCurve: 'continuous',
     backgroundColor: GAME_ACCENT2,
-  },
-  profileIconFallback: {
-    width: 43, height: 43,
-    borderRadius: 22,
   },
   profileIconContainer: {
     width: 48, height: 48,
