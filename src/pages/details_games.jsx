@@ -975,7 +975,7 @@ const GameDetail = ({ route, navigation }) => {
         </Animated.View>
 
         {/* §1 — Completion Time */}
-        {igdbData?.timeToBeat && (
+        {igdbData?.timeToBeat && (igdbData.timeToBeat.mainStory || igdbData.timeToBeat.mainExtra || igdbData.timeToBeat.completionist) && (
           <Animated.View style={[s.sec, sectionCardStyle, secStyle(1)]}>
             <HudFrame />
             <CompletionChart data={igdbData.timeToBeat} />

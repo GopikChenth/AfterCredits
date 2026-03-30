@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -215,6 +216,8 @@ const GameHome = ({ navigation }) => {
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
   const [useIGDB, setUseIGDB]                 = useState(false);
   const [isRawgFallback, setIsRawgFallback]   = useState(false);
+  const [credentialsChecked, setCredentialsChecked] = useState(false);
+  const [forceRawg, setForceRawg]             = useState(false);
 
   const userProfile  = useProfileStore(s => s.profile);
   const fetchProfile = useProfileStore(s => s.fetchProfile);
@@ -228,34 +231,31 @@ const GameHome = ({ navigation }) => {
 
   // Check IGDB credentials once — determines which API to use for listings
   useEffect(() => {
-    hasIGDBCredentials().then(has => setUseIGDB(!!has));
+    hasIGDBCredentials().then(has => {
+      setUseIGDB(!!has);
+      setCredentialsChecked(true);
+    });
   }, []);
 
-  // Fetch games — IGDB primary, RAWG fallback
+  // Fetch games — waits for credential check, IGDB-only or RAWG-only
   const fetchGames = useCallback(async (category, page = 1) => {
+    if (!credentialsChecked) return; // don't fetch until we know which API
+
     setIsLoadingMore(page > 1);
     setIsLoading(page === 1);
     setError(null);
     try {
       let data;
 
-      // Try IGDB first if credentials are present
-      if (useIGDB) {
-        try {
-          switch (category) {
-            case 'Popular': data = await getIGDBPopular(page, 20);      break;
-            case 'New':     data = await getIGDBNewReleases(page, 20);  break;
-            default:        data = await getIGDBTrending(page, 20);     break;
-          }
-        } catch (igdbErr) {
-          console.warn('IGDB home fetch failed, falling back to RAWG:', igdbErr.message);
-          data = null;
+      if (useIGDB && !forceRawg) {
+        // Use IGDB exclusively — no RAWG fallback
+        switch (category) {
+          case 'Popular': data = await getIGDBPopular(page, 20);      break;
+          case 'New':     data = await getIGDBNewReleases(page, 20);  break;
+          default:        data = await getIGDBTrending(page, 20);     break;
         }
-      }
-
-      // Fallback to RAWG if IGDB failed or returned nothing
-      const fellBackToRawg = useIGDB && (!data || !data.results || data.results.length === 0);
-      if (!data || !data.results || data.results.length === 0) {
+      } else {
+        // Use RAWG (no IGDB credentials or user chose RAWG)
         switch (category) {
           case 'Popular': data = await getPopularGames(page, 20);  break;
           case 'New':     data = await getNewReleases(page, 20);   break;
@@ -263,20 +263,50 @@ const GameHome = ({ navigation }) => {
         }
       }
 
-      setGames(page === 1 ? (data.results || []) : prev => [...prev, ...(data.results || [])]);
+      setGames(page === 1 ? (data?.results || []) : prev => [...prev, ...(data?.results || [])]);
       setCurrentPage(page);
-      setHasMore(Boolean(data.next));
-      setIsRawgFallback(fellBackToRawg);
+      setHasMore(Boolean(data?.next));
+      setIsRawgFallback(forceRawg);
     } catch (err) {
       console.error('Error loading games:', err);
+
+      // If IGDB failed, ask user what to do
+      if (useIGDB && !forceRawg) {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        Alert.alert(
+          'IGDB API Error',
+          'Could not fetch games from IGDB. Your API credentials may be invalid or the server is unavailable.',
+          [
+            {
+              text: 'Check API Settings',
+              onPress: () => navigation.navigate('ProfilePage'),
+            },
+            {
+              text: 'Continue with RAWG',
+              style: 'destructive',
+              onPress: () => {
+                setForceRawg(true);
+                setIsRawgFallback(true);
+              },
+            },
+          ],
+          { cancelable: false }
+        );
+        return;
+      }
+
       setError('Failed to load games. Please try again.');
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [useIGDB]);
+  }, [useIGDB, credentialsChecked, forceRawg, navigation]);
 
-  useEffect(() => { fetchGames(selectedCategory); }, [useIGDB]);
+  // Trigger fetch only after credentials are resolved
+  useEffect(() => {
+    if (credentialsChecked) fetchGames(selectedCategory);
+  }, [credentialsChecked, forceRawg]);
 
   const handleCategoryChange = useCallback((cat) => {
     setSelectedCategory(cat);

@@ -16,12 +16,12 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   Pressable,
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
   PanResponder,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -200,6 +200,7 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
   useEffect(() => {
     if (!visible) return;
 
+    // Fire animation immediately
     scaleAnim.value = 0.92;
     opacityAnim.value = 0;
     backdropAnim.value = 0;
@@ -208,14 +209,17 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
     opacityAnim.value = withTiming(1, FAST_IN);
     backdropAnim.value = withTiming(1, FAST_IN);
 
-    AsyncStorage.multiGet([
-      `game_story_progress_${gameId}`,
-      `game_overall_progress_${gameId}`,
-      `game_platform_${gameId}`,
-    ]).then((pairs) => {
-      setStoryPct(pairs[0][1] != null ? Number(pairs[0][1]) : 0);
-      setOverallPct(pairs[1][1] != null ? Number(pairs[1][1]) : 0);
-      setSelectedPlatform(pairs[2][1] || null);
+    // Defer data loading so animation is never blocked
+    InteractionManager.runAfterInteractions(() => {
+      AsyncStorage.multiGet([
+        `game_story_progress_${gameId}`,
+        `game_overall_progress_${gameId}`,
+        `game_platform_${gameId}`,
+      ]).then((pairs) => {
+        setStoryPct(pairs[0][1] != null ? Number(pairs[0][1]) : 0);
+        setOverallPct(pairs[1][1] != null ? Number(pairs[1][1]) : 0);
+        setSelectedPlatform(pairs[2][1] || null);
+      });
     });
   }, [visible, gameId, scaleAnim, opacityAnim, backdropAnim]);
 
@@ -258,9 +262,10 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
 
   const popupWidth = Math.min(vw * 0.9, 420);
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose} statusBarTranslucent>
-      <View style={styles.overlay}>
+    <View style={styles.overlay} pointerEvents="box-none">
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         </Animated.View>
@@ -360,13 +365,16 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 999, elevation: 999,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.78)',

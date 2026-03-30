@@ -72,8 +72,17 @@ export default function App() {
   const fontsLoaded = useMediaFonts();
 
   useEffect(() => {
-    const stopSweep = startCacheSweepJob();
-    return () => stopSweep?.();
+    let stopSweep;
+    try {
+      stopSweep = startCacheSweepJob();
+    } catch (error) {
+      console.warn('[cacheManager] Failed to start sweep job:', error?.message || error);
+    }
+    return () => {
+      try {
+        stopSweep?.();
+      } catch {}
+    };
   }, []);
 
   if (!fontsLoaded) {

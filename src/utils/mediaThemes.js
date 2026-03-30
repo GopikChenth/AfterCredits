@@ -24,7 +24,7 @@ export const useMediaFonts = () => {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded]);
 
@@ -36,7 +36,7 @@ export const useMediaFonts = () => {
  * Call this before rendering any components
  */
 export const initializeFonts = () => {
-  SplashScreen.preventAutoHideAsync();
+  SplashScreen.preventAutoHideAsync().catch(() => {});
 };
 
 /**

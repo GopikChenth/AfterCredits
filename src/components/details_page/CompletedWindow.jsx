@@ -18,7 +18,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Modal,
   Pressable,
   TextInput,
   ScrollView,
@@ -26,6 +25,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   PanResponder,
+  InteractionManager,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -207,6 +207,7 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
   const [checkedDlcs, setCheckedDlcs]           = useState({});
   const [isLoadingDlcs, setIsLoadingDlcs]       = useState(false);
   const [isSaving, setIsSaving]                 = useState(false);
+  const dlcCacheRef = useRef({ igdbId: null, data: [] });
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropAnim.value,
@@ -221,6 +222,7 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
   useEffect(() => {
     if (!visible) return;
 
+    // Fire animation immediately — no blocking
     scaleAnim.value = 0.92;
     opacityAnim.value = 0;
     backdropAnim.value = 0;
@@ -229,34 +231,42 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
     opacityAnim.value = withTiming(1, FAST_IN);
     backdropAnim.value = withTiming(1, FAST_IN);
 
-    // Restore saved values
-    AsyncStorage.multiGet([
-      `game_platform_${gameId}`,
-      `game_playtime_${gameId}`,
-      `game_dlcs_${gameId}`,
-      `game_overall_progress_${gameId}`,
-    ]).then(pairs => {
-      setSelectedPlatform(pairs[0][1] || null);
-      setHours(pairs[1][1] || '');
-      try {
-        const arr = pairs[2][1] ? JSON.parse(pairs[2][1]) : [];
-        const map = {};
-        arr.forEach(id => { map[id] = true; });
-        setCheckedDlcs(map);
-      } catch (_) {}
-      const saved = Number(pairs[3][1]);
-      setOverallPct(Number.isFinite(saved) ? saved : 33);
-    });
+    // Restore saved values (fast local read, deferred to not block animation)
+    InteractionManager.runAfterInteractions(() => {
+      AsyncStorage.multiGet([
+        `game_platform_${gameId}`,
+        `game_playtime_${gameId}`,
+        `game_dlcs_${gameId}`,
+        `game_overall_progress_${gameId}`,
+      ]).then(pairs => {
+        setSelectedPlatform(pairs[0][1] || null);
+        setHours(pairs[1][1] || '');
+        try {
+          const arr = pairs[2][1] ? JSON.parse(pairs[2][1]) : [];
+          const map = {};
+          arr.forEach(id => { map[id] = true; });
+          setCheckedDlcs(map);
+        } catch (_) {}
+        const saved = Number(pairs[3][1]);
+        setOverallPct(Number.isFinite(saved) ? saved : 33);
+      });
 
-    // Fetch DLCs
-    setDlcs([]);
-    setIsLoadingDlcs(true);
-    getGameDLCs(igdbId).then(results => {
-      setDlcs(results || []);
-      setIsLoadingDlcs(false);
-    }).catch(() => {
-      setDlcs([]);
-      setIsLoadingDlcs(false);
+      // Fetch DLCs only if not already cached for this game
+      if (dlcCacheRef.current.igdbId === igdbId) {
+        setDlcs(dlcCacheRef.current.data);
+      } else {
+        setIsLoadingDlcs(true);
+        getGameDLCs(igdbId).then(results => {
+          const data = results || [];
+          dlcCacheRef.current = { igdbId, data };
+          setDlcs(data);
+          setIsLoadingDlcs(false);
+        }).catch(() => {
+          dlcCacheRef.current = { igdbId, data: [] };
+          setDlcs([]);
+          setIsLoadingDlcs(false);
+        });
+      }
     });
   }, [visible, gameId, igdbId, scaleAnim, opacityAnim, backdropAnim]);
 
@@ -319,9 +329,10 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
   const checkedCount = Object.keys(checkedDlcs).filter(k => checkedDlcs[k]).length;
   const popupWidth = Math.min(vw * 0.9, 420);
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose} statusBarTranslucent>
-      <View style={styles.overlay}>
+    <View style={styles.overlay} pointerEvents="box-none">
         {/* Backdrop */}
         <Animated.View style={[styles.backdrop, backdropStyle]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
@@ -475,13 +486,16 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center', alignItems: 'center',
+    zIndex: 999, elevation: 999,
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.78)',
