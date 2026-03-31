@@ -22,6 +22,7 @@ import {
   useWindowDimensions,
   PanResponder,
   InteractionManager,
+  AccessibilityInfo,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,6 +31,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated';
 let HapticsModule = null;
@@ -48,8 +50,10 @@ const BORDER   = 'rgba(251,191,36,0.18)';
 const TEXT     = '#FFFFFF';
 const MUTED    = '#777777';
 const TRACK_BG = '#222222';
-const FAST_IN  = { duration: 24, easing: Easing.out(Easing.quad) };
-const FAST_OUT = { duration: 60, easing: Easing.in(Easing.quad) };
+const POPUP_IN_MS = 24;
+const POPUP_OUT_MS = 60;
+const CONTENT_IN_MS = 140;
+const CONTENT_OUT_MS = 80;
 
 const PLATFORMS = [
   { id: 'pc', label: 'PC', icon: 'desktop-outline' },
@@ -179,8 +183,11 @@ const hStyles = StyleSheet.create({
 // ── Main popup ────────────────────────────────────────────────────────────────
 const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
   const scaleAnim = useSharedValue(0.92);
+  const translateYAnim = useSharedValue(8);
   const opacityAnim = useSharedValue(0);
   const backdropAnim = useSharedValue(0);
+  const contentOpacityAnim = useSharedValue(0);
+  const contentTranslateYAnim = useSharedValue(8);
   const { width: vw } = useWindowDimensions();
 
   const [storyPct, setStoryPct] = useState(0);
@@ -189,6 +196,23 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isStory, setIsStory] = useState(true);
   const [isMultiplayer, setIsMultiplayer] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => { if (mounted) setReduceMotion(!!enabled); })
+      .catch(() => {});
+
+    const sub = AccessibilityInfo.addEventListener?.('reduceMotionChanged', (enabled) => {
+      setReduceMotion(!!enabled);
+    });
+
+    return () => {
+      mounted = false;
+      sub?.remove?.();
+    };
+  }, []);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropAnim.value,
@@ -196,20 +220,33 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
 
   const popupStyle = useAnimatedStyle(() => ({
     opacity: opacityAnim.value,
-    transform: [{ scale: scaleAnim.value }],
+    transform: [{ translateY: translateYAnim.value }, { scale: scaleAnim.value }],
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacityAnim.value,
+    transform: [{ translateY: contentTranslateYAnim.value }],
   }));
 
   useEffect(() => {
     if (!visible) return;
+    const popupIn = { duration: reduceMotion ? 1 : POPUP_IN_MS, easing: Easing.out(Easing.quad) };
+    const contentIn = { duration: reduceMotion ? 1 : CONTENT_IN_MS, easing: Easing.out(Easing.exp) };
 
     // Fire animation immediately
     scaleAnim.value = 0.92;
+    translateYAnim.value = reduceMotion ? 0 : 8;
     opacityAnim.value = 0;
     backdropAnim.value = 0;
+    contentOpacityAnim.value = 0;
+    contentTranslateYAnim.value = reduceMotion ? 0 : 8;
 
-    scaleAnim.value = withTiming(1, FAST_IN);
-    opacityAnim.value = withTiming(1, FAST_IN);
-    backdropAnim.value = withTiming(1, FAST_IN);
+    scaleAnim.value = withTiming(1, popupIn);
+    translateYAnim.value = withTiming(0, popupIn);
+    opacityAnim.value = withTiming(1, popupIn);
+    backdropAnim.value = withTiming(1, popupIn);
+    contentOpacityAnim.value = withDelay(reduceMotion ? 0 : 12, withTiming(1, contentIn));
+    contentTranslateYAnim.value = withDelay(reduceMotion ? 0 : 12, withTiming(0, contentIn));
 
     // Defer data loading so animation is never blocked
     InteractionManager.runAfterInteractions(() => {
@@ -227,15 +264,21 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
         setIsStory(pairs[4][1] !== 'false');
       });
     });
-  }, [visible, gameId, scaleAnim, opacityAnim, backdropAnim]);
+  }, [visible, gameId, scaleAnim, translateYAnim, opacityAnim, backdropAnim, contentOpacityAnim, contentTranslateYAnim, reduceMotion]);
 
   const handleClose = useCallback(() => {
-    backdropAnim.value = withTiming(0, FAST_OUT);
-    opacityAnim.value = withTiming(0, FAST_OUT);
-    scaleAnim.value = withTiming(0.92, FAST_OUT, (finished) => {
+    const popupOut = { duration: reduceMotion ? 1 : POPUP_OUT_MS, easing: Easing.in(Easing.quad) };
+    const contentOut = { duration: reduceMotion ? 1 : CONTENT_OUT_MS, easing: Easing.in(Easing.quad) };
+
+    contentOpacityAnim.value = withTiming(0, contentOut);
+    contentTranslateYAnim.value = withTiming(reduceMotion ? 0 : 6, contentOut);
+    backdropAnim.value = withTiming(0, popupOut);
+    opacityAnim.value = withTiming(0, popupOut);
+    translateYAnim.value = withTiming(reduceMotion ? 0 : 8, popupOut);
+    scaleAnim.value = withTiming(0.92, popupOut, (finished) => {
       if (finished && onClose) runOnJS(onClose)();
     });
-  }, [scaleAnim, opacityAnim, backdropAnim, onClose]);
+  }, [scaleAnim, translateYAnim, opacityAnim, backdropAnim, contentOpacityAnim, contentTranslateYAnim, onClose, reduceMotion]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -301,98 +344,100 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Game Type Chips - always visible */}
-          <View style={styles.gameTypeStrip}>
-            <TouchableOpacity
-              style={[styles.gameTypeChip, isStory && styles.gameTypeChipStory]}
-              onPress={() => setIsStory(prev => !prev)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={isStory ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isStory ? ACCENT : MUTED} />
-              <Text style={[styles.gameTypeChipText, isStory && { color: ACCENT }]}>Story</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.gameTypeChip, isMultiplayer && styles.gameTypeChipMP]}
-              onPress={() => setIsMultiplayer(prev => !prev)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name={isMultiplayer ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isMultiplayer ? '#A78BFA' : MUTED} />
-              <Text style={[styles.gameTypeChipText, isMultiplayer && { color: '#A78BFA' }]}>Multiplayer</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            scrollEnabled
-          >
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="desktop-outline" size={14} color={ACCENT} />
-                <Text style={styles.sectionTitle}>Platform</Text>
-                {selectedPlatform && (
-                  <Text style={styles.selectedPlatformBadge}>
-                    {PLATFORMS.find((p) => p.id === selectedPlatform)?.label}
-                  </Text>
-                )}
-              </View>
-              <View style={styles.platformGrid}>
-                {PLATFORMS.map((platform) => {
-                  const selected = selectedPlatform === platform.id;
-                  return (
-                    <TouchableOpacity
-                      key={platform.id}
-                      style={[styles.platformChip, selected && styles.platformChipSelected]}
-                      onPress={() => setSelectedPlatform((prev) => prev === platform.id ? null : platform.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name={platform.icon} size={13} color={selected ? BG : MUTED} />
-                      <Text style={[styles.platformLabel, selected && styles.platformLabelSelected]}>
-                        {platform.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <View style={[styles.sectionHeader, { marginTop: 12 }]}>
-                <Ionicons name="book-outline" size={14} color={ACCENT} />
-                <Text style={styles.sectionTitle}>Story Progression</Text>
-              </View>
-              <HapticSlider value={storyPct} onChange={setStoryPct} color={ACCENT} label="Story" />
-
-              <View style={[styles.sectionHeader, { marginTop: 4 }]}>
-                <Ionicons name="stats-chart-outline" size={14} color="#60A5FA" />
-                <Text style={[styles.sectionTitle, { color: '#60A5FA' }]}>Overall Completion</Text>
-              </View>
-              <HapticSlider value={overallPct} onChange={setOverallPct} color="#60A5FA" label="Overall" />
+          <Animated.View style={contentStyle}>
+            {/* Game Type Chips - always visible */}
+            <View style={styles.gameTypeStrip}>
+              <TouchableOpacity
+                style={[styles.gameTypeChip, isStory && styles.gameTypeChipStory]}
+                onPress={() => setIsStory(prev => !prev)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={isStory ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isStory ? ACCENT : MUTED} />
+                <Text style={[styles.gameTypeChipText, isStory && { color: ACCENT }]}>Story</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.gameTypeChip, isMultiplayer && styles.gameTypeChipMP]}
+                onPress={() => setIsMultiplayer(prev => !prev)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={isMultiplayer ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isMultiplayer ? '#A78BFA' : MUTED} />
+                <Text style={[styles.gameTypeChipText, isMultiplayer && { color: '#A78BFA' }]}>Multiplayer</Text>
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryNum, { color: ACCENT }]}>{storyPct}%</Text>
-                <Text style={styles.summaryLabel}>Story</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryCard}>
-                <Text style={[styles.summaryNum, { color: '#60A5FA' }]}>{overallPct}%</Text>
-                <Text style={styles.summaryLabel}>Overall</Text>
-              </View>
-            </View>
-          </ScrollView>
-
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
-              onPress={handleSave}
-              disabled={isSaving}
-              activeOpacity={0.8}
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              scrollEnabled
             >
-              <Text style={styles.saveBtnText}>Save Progress</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="desktop-outline" size={14} color={ACCENT} />
+                  <Text style={styles.sectionTitle}>Platform</Text>
+                  {selectedPlatform && (
+                    <Text style={styles.selectedPlatformBadge}>
+                      {PLATFORMS.find((p) => p.id === selectedPlatform)?.label}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.platformGrid}>
+                  {PLATFORMS.map((platform) => {
+                    const selected = selectedPlatform === platform.id;
+                    return (
+                      <TouchableOpacity
+                        key={platform.id}
+                        style={[styles.platformChip, selected && styles.platformChipSelected]}
+                        onPress={() => setSelectedPlatform((prev) => prev === platform.id ? null : platform.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name={platform.icon} size={13} color={selected ? BG : MUTED} />
+                        <Text style={[styles.platformLabel, selected && styles.platformLabelSelected]}>
+                          {platform.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <View style={[styles.sectionHeader, { marginTop: 12 }]}>
+                  <Ionicons name="book-outline" size={14} color={ACCENT} />
+                  <Text style={styles.sectionTitle}>Story Progression</Text>
+                </View>
+                <HapticSlider value={storyPct} onChange={setStoryPct} color={ACCENT} label="Story" />
+
+                <View style={[styles.sectionHeader, { marginTop: 4 }]}>
+                  <Ionicons name="stats-chart-outline" size={14} color="#60A5FA" />
+                  <Text style={[styles.sectionTitle, { color: '#60A5FA' }]}>Overall Completion</Text>
+                </View>
+                <HapticSlider value={overallPct} onChange={setOverallPct} color="#60A5FA" label="Overall" />
+              </View>
+
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryCard}>
+                  <Text style={[styles.summaryNum, { color: ACCENT }]}>{storyPct}%</Text>
+                  <Text style={styles.summaryLabel}>Story</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryCard}>
+                  <Text style={[styles.summaryNum, { color: '#60A5FA' }]}>{overallPct}%</Text>
+                  <Text style={styles.summaryLabel}>Overall</Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
+                onPress={handleSave}
+                disabled={isSaving}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.saveBtnText}>Save Progress</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </Animated.View>
     </View>
   );

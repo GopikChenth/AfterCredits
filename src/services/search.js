@@ -218,8 +218,13 @@ export const searchMedia = async (query, mediaType = 'anime', limit = 20) => {
  */
 export const debounce = (func, delay = 500) => {
   let timeoutId;
-  return (...args) => {
+  const debounced = (...args) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => func(...args), delay);
   };
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  };
+  return debounced;
 };
