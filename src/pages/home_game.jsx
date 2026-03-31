@@ -303,17 +303,16 @@ const GameHome = ({ navigation }) => {
     }
   }, [useIGDB, credentialsChecked, forceRawg, navigation]);
 
-  // Trigger fetch only after credentials are resolved
+  // Trigger fetch when credentials resolve, forceRawg changes, or category changes
   useEffect(() => {
     if (credentialsChecked) fetchGames(selectedCategory);
-  }, [credentialsChecked, forceRawg]);
+  }, [credentialsChecked, forceRawg, selectedCategory, fetchGames]);
 
   const handleCategoryChange = useCallback((cat) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
     setHasMore(true);
-    fetchGames(cat, 1);
-  }, [fetchGames]);
+  }, []);
 
   const handleLoadMore = useCallback(() => {
     if (!isLoadingMore && hasMore) fetchGames(selectedCategory, currentPage + 1);

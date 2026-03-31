@@ -166,7 +166,7 @@ const SearchSuggestionsOverlay = ({
                 {item.score && (
                   <View style={styles.scoreContainer}>
                     <Text style={styles.scoreIcon}>⭐</Text>
-                    <Text style={styles.scoreText}>{item.score}%</Text>
+                    <Text style={[styles.scoreText, { color: theme.accent }]}>{item.score}%</Text>
                   </View>
                 )}
               </View>
@@ -177,7 +177,7 @@ const SearchSuggestionsOverlay = ({
         ListFooterComponent={
           results.length > 3 ? (
             <View style={styles.moreResults}>
-              <Text style={styles.moreResultsText}>
+              <Text style={[styles.moreResultsText, { color: theme.accent }]}>
                 +{results.length - 3} more results
               </Text>
               <Text style={styles.pressEnterText}>Press Enter to see all</Text>
@@ -325,7 +325,6 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     fontSize: 12,
-    color: '#FFB3C6',
     fontWeight: '600',
   },
   chevron: {
@@ -340,7 +339,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   moreResultsText: {
-    color: '#FFB3C6',
     fontSize: 13,
     fontWeight: '600',
   },

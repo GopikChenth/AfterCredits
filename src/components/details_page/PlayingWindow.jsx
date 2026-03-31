@@ -39,7 +39,7 @@ try {
 } catch (_) {
   HapticsModule = null;
 }
-import { saveGamePlayingProgress } from '../../services/mediaStatusService';
+import { saveGamePlayingProgress, saveGameTracking } from '../../services/mediaStatusService';
 
 const ACCENT   = '#FBBF24';  // yellow — matches "Playing" status colour
 const BG       = '#131313';
@@ -48,7 +48,7 @@ const BORDER   = 'rgba(251,191,36,0.18)';
 const TEXT     = '#FFFFFF';
 const MUTED    = '#777777';
 const TRACK_BG = '#222222';
-const FAST_IN  = { duration: 80, easing: Easing.out(Easing.cubic) };
+const FAST_IN  = { duration: 24, easing: Easing.out(Easing.quad) };
 const FAST_OUT = { duration: 60, easing: Easing.in(Easing.quad) };
 
 const PLATFORMS = [
@@ -185,8 +185,10 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
 
   const [storyPct, setStoryPct] = useState(0);
   const [overallPct, setOverallPct] = useState(0);
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState('pc');
   const [isSaving, setIsSaving] = useState(false);
+  const [isStory, setIsStory] = useState(true);
+  const [isMultiplayer, setIsMultiplayer] = useState(false);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropAnim.value,
@@ -215,10 +217,14 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
         `game_story_progress_${gameId}`,
         `game_overall_progress_${gameId}`,
         `game_platform_${gameId}`,
+        `game_multiplayer_${gameId}`,
+        `game_story_${gameId}`,
       ]).then((pairs) => {
         setStoryPct(pairs[0][1] != null ? Number(pairs[0][1]) : 0);
         setOverallPct(pairs[1][1] != null ? Number(pairs[1][1]) : 0);
-        setSelectedPlatform(pairs[2][1] || null);
+        setSelectedPlatform(pairs[2][1] || 'pc');
+        setIsMultiplayer(pairs[3][1] === 'true');
+        setIsStory(pairs[4][1] !== 'false');
       });
     });
   }, [visible, gameId, scaleAnim, opacityAnim, backdropAnim]);
@@ -238,6 +244,8 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
         AsyncStorage.multiSet([
           [`game_story_progress_${gameId}`, String(storyPct)],
           [`game_overall_progress_${gameId}`, String(overallPct)],
+          [`game_multiplayer_${gameId}`, String(isMultiplayer)],
+          [`game_story_${gameId}`, String(isStory)],
         ]),
         selectedPlatform
           ? AsyncStorage.setItem(`game_platform_${gameId}`, selectedPlatform)
@@ -253,12 +261,13 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
       if (!dbResult?.success) {
         console.warn('PlayingWindow DB save failed:', dbResult?.error || 'Unknown error');
       }
+      saveGameTracking(String(gameId), { isMultiplayer, isStory });
       try { HapticsModule?.impact?.('medium'); } catch (_) {}
     } finally {
       setIsSaving(false);
       handleClose();
     }
-  }, [storyPct, overallPct, selectedPlatform, gameId, handleClose]);
+  }, [storyPct, overallPct, selectedPlatform, isMultiplayer, isStory, gameId, handleClose]);
 
   const popupWidth = Math.min(vw * 0.9, 420);
 
@@ -289,6 +298,26 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.7}>
               <Ionicons name="close" size={16} color={MUTED} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Game Type Chips - always visible */}
+          <View style={styles.gameTypeStrip}>
+            <TouchableOpacity
+              style={[styles.gameTypeChip, isStory && styles.gameTypeChipStory]}
+              onPress={() => setIsStory(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={isStory ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isStory ? ACCENT : MUTED} />
+              <Text style={[styles.gameTypeChipText, isStory && { color: ACCENT }]}>Story</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.gameTypeChip, isMultiplayer && styles.gameTypeChipMP]}
+              onPress={() => setIsMultiplayer(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={isMultiplayer ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isMultiplayer ? '#A78BFA' : MUTED} />
+              <Text style={[styles.gameTypeChipText, isMultiplayer && { color: '#A78BFA' }]}>Multiplayer</Text>
             </TouchableOpacity>
           </View>
 
@@ -491,6 +520,23 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 14, fontWeight: '800', color: '#000', letterSpacing: 0.4,
   },
+  // Game Type Chips
+  gameTypeStrip: {
+    flexDirection: 'row', gap: 6, marginBottom: 6, paddingHorizontal: 2,
+  },
+  gameTypeChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  gameTypeChipStory: {
+    borderColor: 'rgba(15,163,177,0.3)', backgroundColor: 'rgba(15,163,177,0.08)',
+  },
+  gameTypeChipMP: {
+    borderColor: 'rgba(167,139,250,0.3)', backgroundColor: 'rgba(167,139,250,0.08)',
+  },
+  gameTypeChipText: { fontSize: 11, fontWeight: '600', color: MUTED },
 });
 
 export default PlayingWindow;

@@ -60,12 +60,12 @@ const InlineSearchResults = ({
       </View>
       <Pressable 
         onPress={onClearSearch}
-        style={styles.clearButton}
+        style={[styles.clearButton, { backgroundColor: `${theme.accent}33` }]}
       >
-        <Text style={styles.clearButtonText}>✕ Clear</Text>
+        <Text style={[styles.clearButtonText, { color: theme.accent }]}>✕ Clear</Text>
       </Pressable>
     </View>
-  ), [results.length, searchQuery, onClearSearch]);
+  ), [results.length, searchQuery, onClearSearch, theme.accent]);
 
   if (isLoading) {
     return (
@@ -84,9 +84,9 @@ const InlineSearchResults = ({
         <Text style={styles.emptySubtitle}>Try searching with different keywords</Text>
         <Pressable 
           onPress={onClearSearch}
-          style={styles.backButton}
+          style={[styles.backButton, { backgroundColor: `${theme.accent}33` }]}
         >
-          <Text style={styles.backButtonText}>← Back to Browse</Text>
+          <Text style={[styles.backButtonText, { color: theme.accent }]}>← Back to Browse</Text>
         </Pressable>
       </View>
     );
@@ -132,14 +132,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   clearButton: {
-    backgroundColor: 'rgba(255, 179, 198, 0.2)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderCurve: 'continuous',
   },
   clearButtonText: {
-    color: '#FFB3C6',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -195,14 +193,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backButton: {
-    backgroundColor: 'rgba(255, 179, 198, 0.2)',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
     borderCurve: 'continuous',
   },
   backButtonText: {
-    color: '#FFB3C6',
     fontWeight: '600',
     fontSize: 16,
   },

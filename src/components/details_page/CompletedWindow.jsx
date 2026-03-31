@@ -38,7 +38,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { getGameDLCs } from '../../services/api_igdb';
-import { saveGameCompletionDetails } from '../../services/mediaStatusService';
+import { saveGameCompletionDetails, saveGameTracking } from '../../services/mediaStatusService';
 
 let HapticsModule = null;
 try {
@@ -55,7 +55,7 @@ const BORDER   = 'rgba(15,163,177,0.18)';
 const TEXT     = '#FFFFFF';
 const MUTED    = '#777777';
 const COMPLETE = '#22D3EE';
-const FAST_IN  = { duration: 80, easing: Easing.out(Easing.cubic) };
+const FAST_IN  = { duration: 24, easing: Easing.out(Easing.quad) };
 const FAST_OUT = { duration: 60, easing: Easing.in(Easing.quad) };
 
 // ── Platform definitions ──────────────────────────────────────────────────────
@@ -200,13 +200,15 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
   const backdropAnim = useSharedValue(0);
   const { width: vw } = useWindowDimensions();
 
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState('pc');
   const [hours, setHours]                       = useState('');
   const [overallPct, setOverallPct]             = useState(33);
   const [dlcs, setDlcs]                         = useState([]);
   const [checkedDlcs, setCheckedDlcs]           = useState({});
   const [isLoadingDlcs, setIsLoadingDlcs]       = useState(false);
   const [isSaving, setIsSaving]                 = useState(false);
+  const [isStory, setIsStory]                   = useState(true);
+  const [isMultiplayer, setIsMultiplayer]       = useState(false);
   const dlcCacheRef = useRef({ igdbId: null, data: [] });
 
   const backdropStyle = useAnimatedStyle(() => ({
@@ -238,8 +240,10 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
         `game_playtime_${gameId}`,
         `game_dlcs_${gameId}`,
         `game_overall_progress_${gameId}`,
+        `game_multiplayer_${gameId}`,
+        `game_story_${gameId}`,
       ]).then(pairs => {
-        setSelectedPlatform(pairs[0][1] || null);
+        setSelectedPlatform(pairs[0][1] || 'pc');
         setHours(pairs[1][1] || '');
         try {
           const arr = pairs[2][1] ? JSON.parse(pairs[2][1]) : [];
@@ -249,6 +253,8 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
         } catch (_) {}
         const saved = Number(pairs[3][1]);
         setOverallPct(Number.isFinite(saved) ? saved : 33);
+        setIsMultiplayer(pairs[4][1] === 'true');
+        setIsStory(pairs[5][1] !== 'false');
       });
 
       // Fetch DLCs only if not already cached for this game
@@ -301,8 +307,13 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
         AsyncStorage.multiSet([
           [`game_story_progress_${gameId}`, '100'],
           [`game_overall_progress_${gameId}`, String(overallPct)],
+          [`game_multiplayer_${gameId}`, String(isMultiplayer)],
+          [`game_story_${gameId}`, String(isStory)],
         ]),
       ]);
+
+      // Sync multiplayer flag to DB
+      saveGameTracking(String(gameId), { isMultiplayer, isStory });
 
       const dbResult = await saveGameCompletionDetails(String(gameId), {
         platform: selectedPlatform,
@@ -320,7 +331,7 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
       setIsSaving(false);
       handleClose();
     }
-  }, [selectedPlatform, hours, checkedDlcs, overallPct, gameId, handleClose, timeToBeat]);
+  }, [selectedPlatform, hours, checkedDlcs, overallPct, isMultiplayer, isStory, gameId, handleClose, timeToBeat]);
 
   const toggleDlc = useCallback((id) => {
     setCheckedDlcs(prev => ({ ...prev, [id]: !prev[id] }));
@@ -362,6 +373,26 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
             </TouchableOpacity>
           </View>
 
+          {/* Game Type Chips - always visible */}
+          <View style={styles.gameTypeStrip}>
+            <TouchableOpacity
+              style={[styles.gameTypeChip, isStory && styles.gameTypeChipStory]}
+              onPress={() => setIsStory(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={isStory ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isStory ? ACCENT : MUTED} />
+              <Text style={[styles.gameTypeChipText, isStory && { color: ACCENT }]}>Story</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.gameTypeChip, isMultiplayer && styles.gameTypeChipMP]}
+              onPress={() => setIsMultiplayer(prev => !prev)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name={isMultiplayer ? 'checkmark-circle' : 'ellipse-outline'} size={13} color={isMultiplayer ? '#A78BFA' : MUTED} />
+              <Text style={[styles.gameTypeChipText, isMultiplayer && { color: '#A78BFA' }]}>Multiplayer</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Scrollable body */}
           <ScrollView
             style={styles.scroll}
@@ -369,6 +400,7 @@ const CompletedWindow = ({ visible, gameId, igdbId, gameName, timeToBeat, onClos
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+
             {/* ── Platform ── */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -704,6 +736,26 @@ const styles = StyleSheet.create({
   },
   sliderPresetText: { fontSize: 10, fontWeight: '700', color: MUTED },
   sliderPresetTextActive: { color: '#60A5FA' },
+
+  // Game Type Toggle
+  gameTypeRow: {
+    flexDirection: 'row', gap: 8, marginTop: 4,
+  },
+  gameTypeBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, borderRadius: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#0D0D0D',
+  },
+  gameTypeBtnActive: {
+    backgroundColor: 'rgba(15,163,177,0.15)', borderColor: 'rgba(15,163,177,0.4)',
+  },
+  gameTypeBtnActiveMP: {
+    backgroundColor: 'rgba(167,139,250,0.15)', borderColor: 'rgba(167,139,250,0.4)',
+  },
+  gameTypeBtnText: { fontSize: 12, fontWeight: '700', color: MUTED },
+  gameTypeBtnTextActive: { color: ACCENT },
+  gameTypeBtnTextActiveMP: { color: '#A78BFA' },
 });
 
 export default CompletedWindow;

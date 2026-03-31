@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 import { startCacheSweepJob } from './src/services/cacheManager';
+import { syncGameTagsFromDB } from './src/services/mediaStatusService';
 
 // Tab Pages
 import HomeScreen from './src/pages/home_screen';
@@ -78,6 +79,10 @@ export default function App() {
     } catch (error) {
       console.warn('[cacheManager] Failed to start sweep job:', error?.message || error);
     }
+
+    // Sync game story/multiplayer tags from DB → AsyncStorage
+    syncGameTagsFromDB();
+
     return () => {
       try {
         stopSweep?.();

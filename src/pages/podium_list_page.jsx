@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
 
@@ -24,6 +25,7 @@ const STATUS_CONFIG = {
   watched:  { icon: 'checkmark-circle', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)' },
   dropped:  { icon: 'close-circle', color: '#F87171', bg: 'rgba(248,113,113,0.15)' },
   wishlist: { icon: 'bookmark', color: '#C084FC', bg: 'rgba(192,132,252,0.15)' },
+  multiplayer: { icon: 'people', color: '#A78BFA', bg: 'rgba(167,139,250,0.15)' },
 };
 
 const mediaDetailCache = {};
@@ -41,7 +43,7 @@ const PodiumListPage = ({ route, navigation }) => {
   const { status } = route.params;
   const config = {
     ...(STATUS_CONFIG[status] || STATUS_CONFIG.watching),
-    label: theme.statusLabels?.[status] || status,
+    label: status === 'multiplayer' ? 'Multiplayer' : (theme.statusLabels?.[status] || status),
   };
   const cachePrefix = theme.statusMediaType + '_';
 
@@ -53,24 +55,59 @@ const PodiumListPage = ({ route, navigation }) => {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const result = status === 'wishlist'
-        ? await getWishlist(theme.statusMediaType)
-        : await getByStatus(status, theme.statusMediaType);
+      let data = [];
 
-      if (result.success) {
-        const data = result.data || [];
-        setItems(data);
-
-        // Pre-populate from cache
-        const cached = {};
-        data.forEach(item => {
-          if (mediaDetailCache[cachePrefix + item.media_id]) {
-            cached[item.media_id] = mediaDetailCache[cachePrefix + item.media_id];
-          }
-        });
-        if (Object.keys(cached).length > 0) {
-          setMediaDetails(prev => ({ ...prev, ...cached }));
+      if (status === 'multiplayer') {
+        // Fetch all statuses and filter to only multiplayer games
+        const [watchingRes, watchedRes, droppedRes] = await Promise.all([
+          getByStatus('watching', theme.statusMediaType),
+          getByStatus('watched', theme.statusMediaType),
+          getByStatus('dropped', theme.statusMediaType),
+        ]);
+        const all = [
+          ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
+          ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
+          ...(droppedRes.success && droppedRes.data ? droppedRes.data : []),
+        ];
+        if (all.length > 0) {
+          const mpKeys = all.map(item => `game_multiplayer_${item.media_id}`);
+          const mpPairs = await AsyncStorage.multiGet(mpKeys);
+          const mpSet = new Set();
+          mpPairs.forEach(([key, val]) => {
+            if (val === 'true') mpSet.add(key.replace('game_multiplayer_', ''));
+          });
+          data = all.filter(item => mpSet.has(String(item.media_id)));
         }
+      } else if (status === 'wishlist') {
+        const result = await getWishlist(theme.statusMediaType);
+        if (result.success) data = result.data || [];
+      } else {
+        const result = await getByStatus(status, theme.statusMediaType);
+        if (result.success) data = result.data || [];
+
+        // For games, filter to only story games in normal status lists
+        if (theme.statusMediaType === 'games' && data.length > 0) {
+          const storyKeys = data.map(item => `game_story_${item.media_id}`);
+          const storyPairs = await AsyncStorage.multiGet(storyKeys);
+          const nonStorySet = new Set();
+          storyPairs.forEach(([key, val]) => {
+            if (val === 'false') nonStorySet.add(key.replace('game_story_', ''));
+          });
+          data = data.filter(item => !nonStorySet.has(String(item.media_id)));
+        }
+      }
+
+      setItems(data);
+
+      // Pre-populate from cache
+      const cached = {};
+      data.forEach(item => {
+        if (mediaDetailCache[cachePrefix + item.media_id]) {
+          cached[item.media_id] = mediaDetailCache[cachePrefix + item.media_id];
+        }
+      });
+      if (Object.keys(cached).length > 0) {
+        setMediaDetails(prev => ({ ...prev, ...cached }));
       }
     } catch (error) {
       console.error('Error fetching items:', error);
