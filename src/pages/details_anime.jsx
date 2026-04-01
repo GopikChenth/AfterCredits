@@ -19,6 +19,7 @@ import GenrePill from "../components/details_page/GenrePill";
 import CrewMember from "../components/details_page/CrewMember";
 import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
+import RelatedContentCarousel from "../components/details_page/RelatedContentCarousel";
 import { BackButton } from "../components/details_page/SharedListItems";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import {
@@ -105,6 +106,14 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
     );
   }
+
+  const handleRelatedItemPress = useCallback((relatedAnime) => {
+    navigation.push('DetailsAnime', { 
+      animeId: relatedAnime.id,
+      animeTitle: relatedAnime.title?.english || relatedAnime.title?.romaji,
+      coverImage: relatedAnime.coverImage?.medium || relatedAnime.coverImage?.large
+    });
+  }, [navigation]);
 
   if (error) {
     return (
@@ -201,6 +210,14 @@ const AnimeDetail = ({ route, navigation }) => {
             <Text style={styles.status}>Status: {animeData.status}</Text>
           </View>
         </GlassCard>
+
+        {/* Related Content Carousel */}
+        {animeData.relations && (
+          <RelatedContentCarousel 
+            relations={animeData.relations}
+            onItemPress={handleRelatedItemPress}
+          />
+        )}
 
         <View style={styles.statsSection}>
           <StatsPill label="Popularity" count={animeData.stats.members} color="#FF9AA2" />

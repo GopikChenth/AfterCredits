@@ -638,6 +638,7 @@ export const formatAnimeData = (media) => {
     studio: media.studios?.nodes?.[0]?.name || 'Unknown',
     color: media.coverImage.color,
     tags: media.tags || [],
+    relations: media.relations || null,
   };
 };
 
