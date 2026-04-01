@@ -17,128 +17,181 @@ const CARD_HEIGHT = 120;
 const CARD_MARGIN = 12;
 
 /**
- * Helper function to categorize and filter relations
+ * Helper function to filter non-season related content (side stories, alternatives, etc.)
  */
-const categorizeRelations = (relations) => {
-  if (!relations?.edges) return [];
+const filterRelatedShows = (relations) => {
+  if (!relations?.edges || !Array.isArray(relations.edges)) return [];
 
-  const relevantTypes = ['SEQUEL', 'PREQUEL', 'SIDE_STORY', 'PARENT', 'ALTERNATIVE'];
-  const formatPriority = { 'TV': 1, 'MOVIE': 2, 'OVA': 3, 'ONA': 4, 'SPECIAL': 5, 'TV_SHORT': 6 };
-
-  return relations.edges
-    .filter(edge => relevantTypes.includes(edge.relationType))
-    .filter(edge => edge.node && edge.node.title)
-    .sort((a, b) => {
-      // Sort by format priority, then by relation type
-      const formatA = formatPriority[a.node.format] || 99;
-      const formatB = formatPriority[b.node.format] || 99;
-      
-      if (formatA !== formatB) return formatA - formatB;
-      
-      // If same format, sort by relation type
-      const typeOrder = ['PARENT', 'PREQUEL', 'SEQUEL', 'SIDE_STORY', 'ALTERNATIVE'];
-      return typeOrder.indexOf(a.relationType) - typeOrder.indexOf(b.relationType);
-    });
+  // Show other types of relations that are not direct seasons
+  const relatedTypes = ['SIDE_STORY', 'ALTERNATIVE', 'SPIN_OFF', 'OTHER'];
+  
+  try {
+    return relations.edges
+      .filter(edge => edge && edge.relationType && relatedTypes.includes(edge.relationType))
+      .filter(edge => edge.node && edge.node.title && (edge.node.title.english || edge.node.title.romaji))
+      .sort((a, b) => {
+        // Sort by format priority, then by relation type
+        const formatPriority = { 'TV': 1, 'MOVIE': 2, 'OVA': 3, 'ONA': 4, 'SPECIAL': 5, 'TV_SHORT': 6 };
+        const formatA = formatPriority[a.node?.format] || 99;
+        const formatB = formatPriority[b.node?.format] || 99;
+        
+        if (formatA !== formatB) return formatA - formatB;
+        
+        const typeOrder = ['SIDE_STORY', 'SPIN_OFF', 'ALTERNATIVE', 'OTHER'];
+        return typeOrder.indexOf(a.relationType) - typeOrder.indexOf(b.relationType);
+      });
+  } catch (error) {
+    console.warn('Error in filterRelatedShows:', error);
+    return [];
+  }
 };
 
 /**
- * Get display text for different anime formats and episodes
+ * Get display text for different related content formats
  */
-const getDisplayInfo = (relation) => {
-  const { format, episodes, status } = relation.node;
-  
-  let formatText = '';
-  switch (format) {
-    case 'TV':
-      formatText = episodes ? `Season • ${episodes} Eps` : 'Season';
-      break;
-    case 'MOVIE':
-      formatText = 'Movie';
-      break;
-    case 'OVA':
-      formatText = episodes ? `OVA • ${episodes} Eps` : 'OVA';
-      break;
-    case 'ONA':
-      formatText = episodes ? `ONA • ${episodes} Eps` : 'ONA';
-      break;
-    case 'SPECIAL':
-      formatText = episodes ? `Special • ${episodes} Eps` : 'Special';
-      break;
-    case 'TV_SHORT':
-      formatText = episodes ? `Short • ${episodes} Eps` : 'Short';
-      break;
-    default:
-      formatText = episodes ? `${episodes} Episodes` : format;
+const getRelatedDisplayInfo = (relation) => {
+  try {
+    if (!relation?.node) {
+      return 'Unknown';
+    }
+    
+    const { format, episodes } = relation.node;
+    
+    let formatText = '';
+    switch (format) {
+      case 'TV':
+        formatText = episodes ? `Series • ${episodes} Eps` : 'Series';
+        break;
+      case 'MOVIE':
+        formatText = 'Movie';
+        break;
+      case 'OVA':
+        formatText = episodes ? `OVA • ${episodes} Eps` : 'OVA';
+        break;
+      case 'ONA':
+        formatText = episodes ? `ONA • ${episodes} Eps` : 'ONA';
+        break;
+      case 'SPECIAL':
+        formatText = episodes ? `Special • ${episodes} Eps` : 'Special';
+        break;
+      case 'TV_SHORT':
+        formatText = episodes ? `Short • ${episodes} Eps` : 'Short';
+        break;
+      default:
+        formatText = episodes ? `${episodes} Episodes` : (format || 'Unknown');
+    }
+    
+    return formatText;
+  } catch (error) {
+    console.warn('Error in getRelatedDisplayInfo:', error);
+    return 'Unknown';
   }
-  
-  return formatText;
 };
 
-const RelatedContentCarousel = ({ relations, onItemPress }) => {
-  const processedRelations = useMemo(() => categorizeRelations(relations), [relations]);
+const RelatedShowsSection = ({ relations, onItemPress }) => {
+  const relatedShows = useMemo(() => {
+    try {
+      return filterRelatedShows(relations);
+    } catch (error) {
+      console.warn('Error processing related shows:', error);
+      return [];
+    }
+  }, [relations]);
 
-  const renderRelationItem = useCallback(({ item }) => {
-    const displayInfo = getDisplayInfo(item);
-    const title = item.node.title.english || item.node.title.romaji;
-    
-    return (
-      <Pressable
-        style={({ pressed }) => [
-          styles.relationCard,
-          pressed && styles.relationCardPressed,
-        ]}
-        onPress={() => onItemPress?.(item.node)}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${title}`}
-      >
-        <ImageBackground
-          source={{ uri: item.node.coverImage.medium }}
-          style={styles.cardBackground}
-          resizeMode="cover"
+  const renderRelatedItem = useCallback(({ item }) => {
+    try {
+      if (!item?.node) {
+        return null;
+      }
+      
+      const displayInfo = getRelatedDisplayInfo(item);
+      const title = item.node.title?.english || item.node.title?.romaji || 'Unknown Title';
+      const imageUri = item.node.coverImage?.medium || item.node.coverImage?.large;
+      const relationType = item.relationType?.replace('_', ' ') || 'Related';
+      
+      return (
+        <Pressable
+          style={({ pressed }) => [
+            styles.relatedCard,
+            pressed && styles.relatedCardPressed,
+          ]}
+          onPress={() => onItemPress?.(item.node)}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${title}`}
         >
-          <BlurView blurType="dark" blurAmount={8} style={styles.blurOverlay}>
-            <LinearGradient
-              colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.7)']}
-              style={styles.gradientOverlay}
-            />
-            <View style={styles.cardContent}>
-              <Text style={styles.formatText} numberOfLines={1}>
-                {displayInfo}
-              </Text>
-              <Text style={styles.titleText} numberOfLines={2}>
-                {title}
-              </Text>
-              <Text style={styles.relationTypeText}>
-                {item.relationType.replace('_', ' ')}
-              </Text>
+          {imageUri ? (
+            <ImageBackground
+              source={{ uri: imageUri }}
+              style={styles.cardBackground}
+              resizeMode="cover"
+            >
+              <BlurView blurType="dark" blurAmount={8} style={styles.blurOverlay}>
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.4)', 'rgba(0,0,0,0.7)']}
+                  style={styles.gradientOverlay}
+                />
+                <View style={styles.cardContent}>
+                  <Text style={styles.formatText} numberOfLines={1}>
+                    {displayInfo}
+                  </Text>
+                  <Text style={styles.titleText} numberOfLines={2}>
+                    {title}
+                  </Text>
+                  <Text style={styles.relationTypeText}>
+                    {relationType}
+                  </Text>
+                </View>
+              </BlurView>
+            </ImageBackground>
+          ) : (
+            <View style={[styles.cardBackground, styles.fallbackBackground]}>
+              <View style={styles.cardContent}>
+                <Text style={styles.formatText} numberOfLines={1}>
+                  {displayInfo}
+                </Text>
+                <Text style={styles.titleText} numberOfLines={2}>
+                  {title}
+                </Text>
+                <Text style={styles.relationTypeText}>
+                  {relationType}
+                </Text>
+              </View>
             </View>
-          </BlurView>
-        </ImageBackground>
-      </Pressable>
-    );
+          )}
+        </Pressable>
+      );
+    } catch (error) {
+      console.warn('Error rendering related item:', error);
+      return null;
+    }
   }, [onItemPress]);
 
-  if (!processedRelations.length) return null;
+  if (!relatedShows.length) return null;
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>RELATED SERIES</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        decelerationRate="fast"
-        snapToInterval={CARD_WIDTH + CARD_MARGIN}
-        snapToAlignment="center"
-      >
-        {processedRelations.map((relation, index) => (
-          <View key={`${relation.node.id}-${index}`} style={styles.cardWrapper}>
-            {renderRelationItem({ item: relation })}
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
+  try {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.sectionTitle}>RELATED SHOWS</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          decelerationRate="fast"
+          snapToInterval={CARD_WIDTH + CARD_MARGIN}
+          snapToAlignment="center"
+        >
+          {relatedShows.map((show, index) => (
+            <View key={`${show.node?.id || index}-${index}`} style={styles.cardWrapper}>
+              {renderRelatedItem({ item: show })}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  } catch (error) {
+    console.warn('Error rendering RelatedShowsSection:', error);
+    return null;
+  }
 };
 
 const styles = StyleSheet.create({
@@ -161,7 +214,7 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     marginHorizontal: CARD_MARGIN / 2,
   },
-  relationCard: {
+  relatedCard: {
     width: '100%',
     height: CARD_HEIGHT,
     borderRadius: 12,
@@ -169,13 +222,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#1A1A1A',
   },
-  relationCardPressed: {
+  relatedCardPressed: {
     transform: [{ scale: 0.97 }],
     opacity: 0.8,
   },
   cardBackground: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  fallbackBackground: {
+    backgroundColor: '#2A2A2A',
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -213,4 +269,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RelatedContentCarousel;
+export default RelatedShowsSection;

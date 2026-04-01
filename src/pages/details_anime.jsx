@@ -20,6 +20,7 @@ import CrewMember from "../components/details_page/CrewMember";
 import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
 import RelatedContentCarousel from "../components/details_page/RelatedContentCarousel";
+import SeasonSection from "../components/details_page/SeasonSection";
 import { BackButton } from "../components/details_page/SharedListItems";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import {
@@ -68,6 +69,14 @@ const AnimeDetail = ({ route, navigation }) => {
     [headerOpacity]
   );
 
+  const handleRelatedItemPress = useCallback((relatedAnime) => {
+    navigation.push('DetailsAnime', { 
+      animeId: relatedAnime.id,
+      animeTitle: relatedAnime.title?.english || relatedAnime.title?.romaji,
+      coverImage: relatedAnime.coverImage?.medium || relatedAnime.coverImage?.large
+    });
+  }, [navigation]);
+
   useEffect(() => {
     setShowDeferredSections(false);
     const task = InteractionManager.runAfterInteractions(() => {
@@ -106,14 +115,6 @@ const AnimeDetail = ({ route, navigation }) => {
       </View>
     );
   }
-
-  const handleRelatedItemPress = useCallback((relatedAnime) => {
-    navigation.push('DetailsAnime', { 
-      animeId: relatedAnime.id,
-      animeTitle: relatedAnime.title?.english || relatedAnime.title?.romaji,
-      coverImage: relatedAnime.coverImage?.medium || relatedAnime.coverImage?.large
-    });
-  }, [navigation]);
 
   if (error) {
     return (
@@ -211,10 +212,11 @@ const AnimeDetail = ({ route, navigation }) => {
           </View>
         </GlassCard>
 
-        {/* Related Content Carousel */}
-        {animeData.relations && (
-          <RelatedContentCarousel 
+        {/* Season Section - Shows only seasons/sequels/prequels */}
+        {animeData?.relations?.edges && animeData.relations.edges.length > 0 && (
+          <SeasonSection 
             relations={animeData.relations}
+            currentAnime={animeData}
             onItemPress={handleRelatedItemPress}
           />
         )}
@@ -443,6 +445,14 @@ const AnimeDetail = ({ route, navigation }) => {
                 <Text style={styles.noDataText}>No related shows available</Text>
               )}
             </View>
+
+            {/* Additional Related Content Section - Shows side stories, alternatives, etc. */}
+            {animeData?.relations?.edges && animeData.relations.edges.length > 0 && (
+              <RelatedContentCarousel 
+                relations={animeData.relations}
+                onItemPress={handleRelatedItemPress}
+              />
+            )}
           </>
         ) : (
           <GlassCard style={styles.reviewsSectionNative}>

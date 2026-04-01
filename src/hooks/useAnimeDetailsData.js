@@ -94,6 +94,7 @@ const formatAnimeDetails = (data) => {
     voiceActors,
     reviews,
     recommendations,
+    relations: data.relations || null,
     season: data.season,
     format: data.format,
   };
