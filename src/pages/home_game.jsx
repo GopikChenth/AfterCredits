@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, createRef } from 'react';
 import {
   View,
   Text,
@@ -18,14 +18,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getMediaTheme } from '../utils/mediaThemes';
+import { setWishlist, setMediaStatus } from '../services/mediaStatusService';
 import CategoryPill, { PILL_BORDER_RADIUS } from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
+import QuickActionOverlay from '../components/shared/QuickActionOverlay';
 import {
   getTrendingGames,
   getPopularGames,
@@ -116,44 +119,51 @@ const buildPanelPath = (w, h, stepX, stepY) => {
 };
 
 // ─── Game card ─────────────────────────────────────────────────────────────
-const GameCardItem = React.memo(({ game, cardHeight, onPress }) => {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.gameCard,
-        { height: cardHeight },
-        pressed && styles.gameCardPressed,
-      ]}
-      onPress={() => onPress(game)}
-      accessibilityRole="button"
-      accessibilityLabel={`View game: ${game.name}`}
-    >
-      {game.background_image ? (
-        <Image
-          source={{ uri: game.background_image }}
-          style={styles.cardImage}
-          contentFit="cover"
-          recyclingKey={`game-${game.id}`}
+const GameCardItem = React.memo(
+  React.forwardRef(({ game, cardHeight, onPress, onLongPress, columnIndex }, ref) => {
+    return (
+      <Pressable
+        ref={ref}
+        style={({ pressed }) => [
+          styles.gameCard,
+          { height: cardHeight },
+          pressed && styles.gameCardPressed,
+        ]}
+        onPress={() => onPress(game)}
+        onLongPress={() => onLongPress?.(game, columnIndex)}
+        delayLongPress={400}
+        accessibilityRole="button"
+        accessibilityLabel={`View game: ${game.name}`}
+      >
+        {game.background_image ? (
+          <Image
+            source={{ uri: game.background_image }}
+            style={styles.cardImage}
+            contentFit="cover"
+            recyclingKey={`game-${game.id}`}
+          />
+        ) : (
+          <View style={[styles.cardImage, styles.cardPlaceholder]}>
+            <Ionicons name="game-controller-outline" size={32} color={GAME_ACCENT} />
+          </View>
+        )}
+
+        <LinearGradient
+          colors={['transparent', GAME_BG]}
+          style={styles.cardOverlay}
         />
-      ) : (
-        <View style={[styles.cardImage, styles.cardPlaceholder]}>
-          <Ionicons name="game-controller-outline" size={32} color={GAME_ACCENT} />
+
+        <View style={styles.cardContent}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {game.name}
+          </Text>
         </View>
-      )}
+      </Pressable>
+    );
+  })
+);
 
-      <LinearGradient
-        colors={['transparent', GAME_BG]}
-        style={styles.cardOverlay}
-      />
-
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {game.name}
-        </Text>
-      </View>
-    </Pressable>
-  );
-});
+GameCardItem.displayName = 'GameCardItem';
 
 // ─── Main screen ──────────────────────────────────────────────────────────
 const GameHome = ({ navigation }) => {
@@ -230,6 +240,50 @@ const GameHome = ({ navigation }) => {
     const unsub = navigation.addListener('focus', fetchProfile);
     return unsub;
   }, [navigation, fetchProfile]);
+
+  // ── Long-press quick action state ──
+  const [longPressTarget, setLongPressTarget] = useState(null);
+  const [showAuthAlert, setShowAuthAlert] = useState(false);
+  const cardRefsMap = useRef({});
+
+  const getCardRef = useCallback((id) => {
+    if (!cardRefsMap.current[id]) {
+      cardRefsMap.current[id] = createRef();
+    }
+    return cardRefsMap.current[id];
+  }, []);
+
+  const handleCardLongPress = useCallback((game, columnIndex) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const ref = cardRefsMap.current[game.id];
+    if (!ref?.current) return;
+
+    ref.current.measure((x, y, width, height, pageX, pageY) => {
+      setLongPressTarget({
+        game,
+        cardLayout: { x: pageX, y: pageY, width, height },
+        isLeftColumn: columnIndex === 0,
+      });
+    });
+  }, []);
+
+  const handleQuickWishlist = useCallback(async (game, newWishlistState) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setWishlist('games', game.id, newWishlistState);
+  }, [userProfile]);
+
+  const handleQuickCompleted = useCallback(async (game, newStatus) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setMediaStatus('games', game.id, newStatus);
+  }, [userProfile]);
 
   // Check IGDB credentials once — determines which API to use for listings
   useEffect(() => {
@@ -417,9 +471,19 @@ const GameHome = ({ navigation }) => {
     });
   }, [navigation]);
 
-  const renderGameCard = useCallback(({ item }) => (
-    <GameCardItem game={item} cardHeight={cardHeight} onPress={handleGamePress} />
-  ), [cardHeight, handleGamePress]);
+  const renderGameCard = useCallback(({ item, index }) => {
+    const columnIndex = index % gridColumns;
+    return (
+      <GameCardItem 
+        ref={getCardRef(item.id)}
+        game={item} 
+        cardHeight={cardHeight} 
+        onPress={handleGamePress}
+        onLongPress={handleCardLongPress}
+        columnIndex={columnIndex}
+      />
+    );
+  }, [cardHeight, handleGamePress, handleCardLongPress, getCardRef, gridColumns]);
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -680,6 +744,18 @@ const GameHome = ({ navigation }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection="game"
+      />
+
+      {/* ── Quick Action Overlay ─────────────────────────────────────────── */}
+      <QuickActionOverlay
+        visible={!!longPressTarget}
+        onClose={() => setLongPressTarget(null)}
+        media={longPressTarget?.game}
+        mediaType="games"
+        cardLayout={longPressTarget?.cardLayout}
+        isLeftColumn={longPressTarget?.isLeftColumn}
+        onWishlist={handleQuickWishlist}
+        onCompleted={handleQuickCompleted}
       />
     </SafeAreaView>
   );

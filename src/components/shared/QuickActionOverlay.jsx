@@ -33,7 +33,8 @@ const ACTION_GAP = 12;
 const QuickActionOverlay = memo(({
   visible,
   onClose,
-  anime,
+  media,
+  mediaType = 'anime',
   cardLayout,
   cardHeight,
   isLeftColumn,
@@ -49,7 +50,7 @@ const QuickActionOverlay = memo(({
 
   useEffect(() => {
     let active = true;
-    if (visible && anime) {
+    if (visible && media) {
       fadeAnim.setValue(0);
       slideAnim.setValue(0);
       Animated.parallel([
@@ -67,7 +68,7 @@ const QuickActionOverlay = memo(({
       ]).start();
 
       // Fetch actual status
-      getMediaStatus('anime', anime.id).then(res => {
+      getMediaStatus(mediaType, media.id).then(res => {
         if (active && res?.success && res.data) {
           setIsWishlisted(res.data.is_wishlisted);
           setIsCompleted(res.data.status === 'watched');
@@ -80,23 +81,23 @@ const QuickActionOverlay = memo(({
       setIsCompleted(false);
     }
     return () => { active = false; };
-  }, [visible, anime, fadeAnim, slideAnim]);
+  }, [visible, media, mediaType, fadeAnim, slideAnim]);
 
   const handleWishlistPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newVal = !isWishlisted;
     setIsWishlisted(newVal);
-    onWishlist(anime, newVal);
+    onWishlist(media, newVal);
   };
 
   const handleCompletedPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newVal = !isCompleted;
     setIsCompleted(newVal);
-    onCompleted(anime, newVal ? 'watched' : null);
+    onCompleted(media, newVal ? 'watched' : null);
   };
 
-  if (!visible || !anime || !cardLayout) return null;
+  if (!visible || !media || !cardLayout) return null;
 
   // Calculate action button positions
   const actionSlideFrom = isLeftColumn ? 30 : -30;
@@ -139,6 +140,8 @@ const QuickActionOverlay = memo(({
       <Animated.View
         style={[
           styles.ghostCard,
+          // Remove background/border for movies and games
+          (mediaType === 'movies' || mediaType === 'games') && styles.ghostCardNoBorder,
           {
             position: 'absolute',
             left: cardLayout.x,
@@ -152,14 +155,16 @@ const QuickActionOverlay = memo(({
       >
         <View style={styles.ghostCardInner}>
           <Image
-            source={{ uri: anime.coverImage }}
+            source={{ uri: media.coverImage || media.background_image }}
             style={styles.ghostImage}
             contentFit="cover"
           />
           <View style={styles.ghostOverlay} />
           <View style={styles.ghostContent}>
-            <Text style={styles.ghostTitle} numberOfLines={2}>{anime.title}</Text>
-            {anime.year ? <Text style={styles.ghostYear}>{anime.year}</Text> : null}
+            <Text style={styles.ghostTitle} numberOfLines={2}>
+              {media.title || media.name}
+            </Text>
+            {media.year ? <Text style={styles.ghostYear}>{media.year}</Text> : null}
           </View>
         </View>
       </Animated.View>
@@ -225,6 +230,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 10,
+  },
+  ghostCardNoBorder: {
+    backgroundColor: 'transparent',
+    padding: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   ghostCardInner: {
     flex: 1,

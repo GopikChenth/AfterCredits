@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, createRef } from 'react';
 import {
   View,
   Text,
@@ -18,13 +18,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Path as SkiaPath, Skia } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 import { getTrendingMovies, getPopularMovies, getNewMovies, formatMovieData } from '../services/api_tmdb';
 import { searchMedia, debounce } from '../services/search';
+import { setWishlist, setMediaStatus } from '../services/mediaStatusService';
 import SideBar from '../components/home_page/SideBar';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
 import SearchSuggestionsOverlay from '../components/home_page/SearchSuggestionsOverlay';
 import InlineSearchResults from '../components/home_page/InlineSearchResults';
+import MovieCardItem from '../components/home_page/MovieCardItem';
+import QuickActionOverlay from '../components/shared/QuickActionOverlay';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getMediaTheme } from '../utils/mediaThemes';
 
@@ -179,34 +183,6 @@ const FeaturedCarousel = React.memo(({ movies, onPress }) => {
   );
 });
 
-// ── Regular grid card (masonry: accepts explicit height) ─────────────────────
-const MovieCard = React.memo(({ movie, onPress, cardHeight }) => (
-  <Pressable
-    style={({ pressed }) => [styles.movieCard, { height: cardHeight }, pressed && styles.cardPressed]}
-    onPress={() => onPress(movie)}
-    accessibilityRole="button"
-    accessibilityLabel={`View movie: ${movie.title}`}
-  >
-    {movie.coverImage ? (
-      <Image source={{ uri: movie.coverImage }} style={StyleSheet.absoluteFill} contentFit="cover" recyclingKey={`mov-${movie.id}`} />
-    ) : (
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }]}>
-        <Ionicons name="film-outline" size={28} color={C.orange} />
-      </View>
-    )}
-    <LinearGradient
-      colors={['transparent', 'rgba(10,10,10,0.65)', 'rgba(10,10,10,0.98)']}
-      style={StyleSheet.absoluteFill}
-    />
-    {/* Bottom-left orange notch accent */}
-    <View style={styles.cardNotch} />
-    <View style={styles.cardContent}>
-      <Text style={styles.cardTitle} numberOfLines={2}>{movie.title}</Text>
-      {movie.year ? <Text style={styles.cardYear}>{movie.year}</Text> : null}
-    </View>
-  </Pressable>
-));
-
 // ── Main screen ───────────────────────────────────────────────────────────────
 const HomeMovies = ({ navigation }) => {
   const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
@@ -248,6 +224,50 @@ const HomeMovies = ({ navigation }) => {
     const unsub = navigation.addListener('focus', fetchProfile);
     return unsub;
   }, [navigation, fetchProfile]);
+
+  // ── Long-press quick action state ──
+  const [longPressTarget, setLongPressTarget] = useState(null);
+  const [showAuthAlert, setShowAuthAlert] = useState(false);
+  const cardRefsMap = useRef({});
+
+  const getCardRef = useCallback((id) => {
+    if (!cardRefsMap.current[id]) {
+      cardRefsMap.current[id] = createRef();
+    }
+    return cardRefsMap.current[id];
+  }, []);
+
+  const handleCardLongPress = useCallback((movie, columnIndex) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const ref = cardRefsMap.current[movie.id];
+    if (!ref?.current) return;
+
+    ref.current.measure((x, y, width, height, pageX, pageY) => {
+      setLongPressTarget({
+        movie,
+        cardLayout: { x: pageX, y: pageY, width, height },
+        isLeftColumn: columnIndex === 0,
+      });
+    });
+  }, []);
+
+  const handleQuickWishlist = useCallback(async (movie, newWishlistState) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setWishlist('movies', movie.id, newWishlistState);
+  }, [userProfile]);
+
+  const handleQuickCompleted = useCallback(async (movie, newStatus) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setMediaStatus('movies', movie.id, newStatus);
+  }, [userProfile]);
 
   // ── Data fetching ──
   const loadMovies = useCallback(async (category = selectedCategory, page = 1) => {
@@ -514,22 +534,28 @@ const HomeMovies = ({ navigation }) => {
                   {/* Left column */}
                   <View style={styles.masonryCol}>
                     {movies.slice(CAROUSEL_MOVIES).filter((_, i) => i % 2 === 0).map((movie, colIdx) => (
-                      <MovieCard
+                      <MovieCardItem
                         key={movie.id}
+                        ref={getCardRef(movie.id)}
                         movie={movie}
                         onPress={handleMoviePress}
+                        onLongPress={handleCardLongPress}
                         cardHeight={getMasonryHeight(colIdx)}
+                        columnIndex={0}
                       />
                     ))}
                   </View>
                   {/* Right column — offset height sequence by 5 for visual variety */}
                   <View style={styles.masonryCol}>
                     {movies.slice(CAROUSEL_MOVIES).filter((_, i) => i % 2 === 1).map((movie, colIdx) => (
-                      <MovieCard
+                      <MovieCardItem
                         key={movie.id}
+                        ref={getCardRef(movie.id)}
                         movie={movie}
                         onPress={handleMoviePress}
+                        onLongPress={handleCardLongPress}
                         cardHeight={getMasonryHeight(colIdx + 5)}
+                        columnIndex={1}
                       />
                     ))}
                   </View>
@@ -609,6 +635,18 @@ const HomeMovies = ({ navigation }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection="movies"
+      />
+
+      {/* ── Quick Action Overlay ── */}
+      <QuickActionOverlay
+        visible={!!longPressTarget}
+        onClose={() => setLongPressTarget(null)}
+        media={longPressTarget?.movie}
+        mediaType="movies"
+        cardLayout={longPressTarget?.cardLayout}
+        isLeftColumn={longPressTarget?.isLeftColumn}
+        onWishlist={handleQuickWishlist}
+        onCompleted={handleQuickCompleted}
       />
     </View>
   );
@@ -814,46 +852,6 @@ const styles = StyleSheet.create({
     color: C.cream,
     letterSpacing: 0.5,
     lineHeight: 30,
-  },
-
-  // ── Grid card ──
-  movieCard: {
-    margin: GRID_MARGIN / 2,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-    backgroundColor: C.surface,
-    borderWidth: 1,
-    borderColor: C.border,
-  },
-  cardPressed: {
-    transform: [{ scale: 0.96 }],
-    opacity: 0.9,
-  },
-  cardNotch: {
-    position: 'absolute',
-    left: 0, bottom: 0,
-    width: 3,
-    height: 36,
-    backgroundColor: C.orange,
-    borderTopRightRadius: 2,
-  },
-  cardContent: {
-    position: 'absolute',
-    left: 10, right: 10, bottom: 10,
-  },
-  cardTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: C.cream,
-    lineHeight: 16,
-    marginBottom: 2,
-  },
-  cardYear: {
-    fontSize: 10,
-    color: C.muted,
-    fontWeight: '600',
-    letterSpacing: 0.5,
   },
 
   // ── Scroll / masonry ──

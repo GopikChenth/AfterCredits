@@ -528,7 +528,8 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
       <QuickActionOverlay
         visible={!!longPressTarget}
         onClose={() => setLongPressTarget(null)}
-        anime={longPressTarget?.anime}
+        media={longPressTarget?.anime}
+        mediaType="anime"
         cardLayout={longPressTarget?.cardLayout}
         cardHeight={cardHeight}
         isLeftColumn={longPressTarget?.isLeftColumn}
