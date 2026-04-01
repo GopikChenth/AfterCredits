@@ -2,25 +2,33 @@ import React from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 import MediaCard from './Card';
 
-const AnimeCardItem = React.memo(({ anime, onPress, cardHeight }) => {
-  return (
-    <Pressable 
-      style={styles.neumorphicCard}
-      onPress={onPress}
-    >
-      <View style={styles.cardInner}>
-        <MediaCard
-          theme="anime"
-          title={anime.title}
-          year={anime.year}
-          imageUrl={anime.coverImage}
-          width={'100%'}
-          height={cardHeight}
-        />
-      </View>
-    </Pressable>
-  );
-});
+const AnimeCardItem = React.memo(
+  React.forwardRef(({ anime, onPress, onLongPress, cardHeight, columnIndex }, ref) => {
+    return (
+      <Pressable
+        ref={ref}
+        style={({ pressed }) => [
+          styles.neumorphicCard,
+          pressed && styles.cardPressed
+        ]}
+        onPress={onPress}
+        onLongPress={() => onLongPress?.(anime, columnIndex)}
+        delayLongPress={400}
+      >
+        <View style={styles.cardInner}>
+          <MediaCard
+            theme="anime"
+            title={anime.title}
+            year={anime.year}
+            imageUrl={anime.coverImage}
+            width={'100%'}
+            height={cardHeight}
+          />
+        </View>
+      </Pressable>
+    );
+  })
+);
 
 AnimeCardItem.displayName = 'AnimeCardItem';
 
@@ -37,6 +45,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
+  },
+  cardPressed: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   cardInner: {
     borderRadius: 12,

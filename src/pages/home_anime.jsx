@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, createRef } from 'react';
 import { 
   View, 
   Text, 
@@ -14,9 +14,12 @@ import {
 import { Image } from 'expo-image';
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import MediaCard from '../components/home_page/Card';
 import AnimeCardItem from '../components/home_page/AnimeCardItem';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
+import QuickActionOverlay from '../components/shared/QuickActionOverlay';
+import AuthAlertModal from '../components/shared/AuthAlertModal';
 
 import CategoryPill from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
@@ -26,6 +29,7 @@ import InlineSearchResults from '../components/home_page/InlineSearchResults';
 import { getCardDimensions } from '../utils/responsiveCard';
 import { getTrendingAnime, getPopularAnime, getNewAnime, formatAnimeData } from '../services/api_anilist';
 import { searchMedia, debounce } from '../services/search';
+import { setMediaStatus, setWishlist } from '../services/mediaStatusService';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { useMediaType } from '../context/MediaTypeContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -244,19 +248,71 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
     };
   }, [setHomeTabSwipeEnabled]);
 
+  // ── Long-press quick action state ──
+  const [longPressTarget, setLongPressTarget] = useState(null);
+  const [showAuthAlert, setShowAuthAlert] = useState(false);
+  const cardRefsMap = useRef({});
+
+  const getCardRef = useCallback((id) => {
+    if (!cardRefsMap.current[id]) {
+      cardRefsMap.current[id] = createRef();
+    }
+    return cardRefsMap.current[id];
+  }, []);
+
+  const handleCardLongPress = useCallback((anime, columnIndex) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const ref = cardRefsMap.current[anime.id];
+    if (!ref?.current) return;
+
+    ref.current.measure((x, y, width, height, pageX, pageY) => {
+      setLongPressTarget({
+        anime,
+        cardLayout: { x: pageX, y: pageY, width, height },
+        isLeftColumn: columnIndex === 0,
+      });
+    });
+  }, []);
+
+  const handleQuickWishlist = useCallback(async (anime, newWishlistState) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setWishlist('anime', anime.id, newWishlistState);
+  }, [userProfile]);
+
+  const handleQuickCompleted = useCallback(async (anime, newStatus) => {
+    if (!userProfile) {
+      setLongPressTarget(null);
+      setShowAuthAlert(true);
+      return;
+    }
+    await setMediaStatus('anime', anime.id, newStatus);
+  }, [userProfile]);
+
+  const handleAuthSignIn = useCallback(() => {
+    setShowAuthAlert(false);
+    navigation.navigate('AuthPage');
+  }, [navigation]);
+
   // Memoized card width calculation
   const calculatedCardWidth = useMemo(() => {
     return (Dimensions.get('window').width - 56) / 2;
   }, []);
 
   // Memoized FlashList callbacks
-  const renderAnimeCard = useCallback(({ item }) => (
+  const renderAnimeCard = useCallback(({ item, index }) => (
     <AnimeCardItem
+      ref={getCardRef(item.id)}
       anime={item}
       onPress={() => handleAnimePress(item.id)}
+      onLongPress={handleCardLongPress}
       cardHeight={cardHeight}
+      columnIndex={index % 2}
     />
-  ), [handleAnimePress, cardHeight]);
+  ), [handleAnimePress, handleCardLongPress, cardHeight, getCardRef]);
 
   const animeKeyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -466,6 +522,25 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
         isVisible={isSidebarVisible}
         onClose={() => setIsSidebarVisible(false)}
         activeSection={activeSection}
+      />
+
+      {/* Long-press quick action overlay */}
+      <QuickActionOverlay
+        visible={!!longPressTarget}
+        onClose={() => setLongPressTarget(null)}
+        anime={longPressTarget?.anime}
+        cardLayout={longPressTarget?.cardLayout}
+        cardHeight={cardHeight}
+        isLeftColumn={longPressTarget?.isLeftColumn}
+        onWishlist={handleQuickWishlist}
+        onCompleted={handleQuickCompleted}
+      />
+
+      {/* Auth alert for non-logged-in users */}
+      <AuthAlertModal
+        visible={showAuthAlert}
+        onClose={() => setShowAuthAlert(false)}
+        onSignIn={handleAuthSignIn}
       />
     </SafeAreaView>
   );

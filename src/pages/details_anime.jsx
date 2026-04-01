@@ -76,6 +76,27 @@ const AnimeDetail = ({ route, navigation }) => {
     return () => task.cancel?.();
   }, [animeId]);
 
+  // ── Derived data (must be above early returns to satisfy Rules of Hooks) ──
+  const visibleVoiceActors = useMemo(
+    () =>
+      animeData
+        ? isCrewExpanded
+          ? animeData.voiceActors
+          : animeData.voiceActors.slice(0, 5)
+        : [],
+    [animeData, isCrewExpanded]
+  );
+
+  const totalReviewPages = useMemo(
+    () => Math.ceil(dbReviews.length / REVIEWS_PER_PAGE),
+    [dbReviews.length]
+  );
+
+  const currentReviews = useMemo(() => {
+    const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
+    return dbReviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
+  }, [currentReviewPage, dbReviews]);
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -110,24 +131,6 @@ const AnimeDetail = ({ route, navigation }) => {
       />
     );
   }
-
-  const visibleVoiceActors = useMemo(
-    () =>
-      isCrewExpanded
-        ? animeData.voiceActors
-        : animeData.voiceActors.slice(0, 5),
-    [animeData.voiceActors, isCrewExpanded]
-  );
-
-  const totalReviewPages = useMemo(
-    () => Math.ceil(dbReviews.length / REVIEWS_PER_PAGE),
-    [dbReviews.length]
-  );
-
-  const currentReviews = useMemo(() => {
-    const startIndex = (currentReviewPage - 1) * REVIEWS_PER_PAGE;
-    return dbReviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
-  }, [currentReviewPage, dbReviews]);
 
   return (
     <View style={styles.container}>
