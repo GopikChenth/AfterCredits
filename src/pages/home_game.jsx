@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -218,6 +218,8 @@ const GameHome = ({ navigation }) => {
   const [isRawgFallback, setIsRawgFallback]   = useState(false);
   const [credentialsChecked, setCredentialsChecked] = useState(false);
   const [forceRawg, setForceRawg]             = useState(false);
+  const fetchRequestIdRef = useRef(0);
+  const searchRequestIdRef = useRef(0);
 
   const userProfile  = useProfileStore(s => s.profile);
   const fetchProfile = useProfileStore(s => s.fetchProfile);
@@ -240,6 +242,7 @@ const GameHome = ({ navigation }) => {
   // Fetch games — waits for credential check, IGDB-only or RAWG-only
   const fetchGames = useCallback(async (category, page = 1) => {
     if (!credentialsChecked) return; // don't fetch until we know which API
+    const requestId = ++fetchRequestIdRef.current;
 
     setIsLoadingMore(page > 1);
     setIsLoading(page === 1);
@@ -263,11 +266,15 @@ const GameHome = ({ navigation }) => {
         }
       }
 
+      // Ignore stale responses when user changes category/page quickly.
+      if (requestId !== fetchRequestIdRef.current) return;
+
       setGames(page === 1 ? (data?.results || []) : prev => [...prev, ...(data?.results || [])]);
       setCurrentPage(page);
       setHasMore(Boolean(data?.next));
       setIsRawgFallback(forceRawg);
     } catch (err) {
+      if (requestId !== fetchRequestIdRef.current) return;
       console.error('Error loading games:', err);
 
       // If IGDB failed, ask user what to do
@@ -298,22 +305,22 @@ const GameHome = ({ navigation }) => {
 
       setError('Failed to load games. Please try again.');
     } finally {
+      if (requestId !== fetchRequestIdRef.current) return;
       setIsLoading(false);
       setIsLoadingMore(false);
     }
   }, [useIGDB, credentialsChecked, forceRawg, navigation]);
 
-  // Trigger fetch only after credentials are resolved
+  // Trigger fetch when credentials resolve, forceRawg changes, or category changes
   useEffect(() => {
     if (credentialsChecked) fetchGames(selectedCategory);
-  }, [credentialsChecked, forceRawg]);
+  }, [credentialsChecked, forceRawg, selectedCategory, fetchGames]);
 
   const handleCategoryChange = useCallback((cat) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
     setHasMore(true);
-    fetchGames(cat, 1);
-  }, [fetchGames]);
+  }, []);
 
   const handleLoadMore = useCallback(() => {
     if (!isLoadingMore && hasMore) fetchGames(selectedCategory, currentPage + 1);
@@ -326,22 +333,33 @@ const GameHome = ({ navigation }) => {
   // Search
   const performSuggestionSearch = useCallback(
     debounce(async (query) => {
+      const requestId = ++searchRequestIdRef.current;
       if (!query || query.trim().length < 2) {
         setSearchResults([]); setIsSearching(false); return;
       }
       setIsSearching(true);
       try {
-        setSearchResults(await searchMedia(query, 'games', 3));
+        const results = await searchMedia(query, 'games', 3);
+        if (requestId !== searchRequestIdRef.current) return;
+        setSearchResults(results);
       } catch {
+        if (requestId !== searchRequestIdRef.current) return;
         setSearchResults([]);
       } finally {
+        if (requestId !== searchRequestIdRef.current) return;
         setIsSearching(false);
       }
     }, 500),
     [],
   );
 
+  useEffect(() => () => {
+    performSuggestionSearch.cancel?.();
+    searchRequestIdRef.current += 1;
+  }, [performSuggestionSearch]);
+
   const handleSearchChange = useCallback((text) => {
+    searchRequestIdRef.current += 1;
     setSearchQuery(text);
     setIsSearchSubmitted(false);
     if (text.trim().length >= 2) performSuggestionSearch(text);
@@ -350,13 +368,23 @@ const GameHome = ({ navigation }) => {
 
   const handleSearchSubmit = useCallback(async () => {
     if (!searchQuery || searchQuery.trim().length < 2) return;
+    const requestId = ++searchRequestIdRef.current;
+    performSuggestionSearch.cancel?.();
     setIsSearchSubmitted(true);
     Keyboard.dismiss();
     setIsSearching(true);
-    try { setSearchResults(await searchMedia(searchQuery, 'games', 50)); }
-    catch { setSearchResults([]); }
-    finally { setIsSearching(false); }
-  }, [searchQuery]);
+    try {
+      const results = await searchMedia(searchQuery, 'games', 50);
+      if (requestId !== searchRequestIdRef.current) return;
+      setSearchResults(results);
+    } catch {
+      if (requestId !== searchRequestIdRef.current) return;
+      setSearchResults([]);
+    } finally {
+      if (requestId !== searchRequestIdRef.current) return;
+      setIsSearching(false);
+    }
+  }, [searchQuery, performSuggestionSearch]);
 
   const handleSearchCancel = useCallback(() => {
     setSearchQuery(''); setSearchResults([]);

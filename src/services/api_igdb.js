@@ -156,11 +156,7 @@ export const checkIGDBHealth = async () => {
 const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATION.IGDB_DETAILS) => {
   const { clientId, accessToken } = await resolveCredentials();
   if (!clientId || !accessToken) {
-    console.warn(
-      '⚠️  IGDB credentials missing.\n' +
-      '   Add them via Settings > IGDB API in your profile.'
-    );
-    return [];
+    throw new Error('IGDB credentials missing. Add them via Settings > IGDB API in your profile.');
   }
 
   if (cacheKey) {

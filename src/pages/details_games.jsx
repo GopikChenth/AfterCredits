@@ -36,6 +36,10 @@ import { ScreenshotCard } from "../components/details_page/SharedListItems";
 import CompletionChart from "../components/details_page/CompletionChart";
 import CompletedWindow from "../components/details_page/CompletedWindow";
 import PlayingWindow from "../components/details_page/PlayingWindow";
+import CyberpunkFrame from "../components/details_page/CyberpunkFrame";
+import CyberpunkFrame4 from "../components/details_page/CyberpunkFrame4";
+import CyberpunkFrame2 from "../components/details_page/CyberpunkFrame2";
+import CyberpunkFrame3 from "../components/details_page/CyberpunkFrame3";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
@@ -711,14 +715,26 @@ const GameDetail = ({ route, navigation }) => {
 
   // ── Handlers ──
   const handleStatusChange = async (ns) => {
+    const previousStatus = userStatus;
     setUserStatus(ns);
-    await setMediaStatus("games", gameId, ns);
+
+    // Open popup instantly; persist status in the background.
     if (ns === 'watched') {
-      // Story is always 100% when completed; overall is set by user in CompletedWindow
-      await AsyncStorage.setItem(`game_story_progress_${gameId}`, "100");
       setShowCompletionSheet(true);
+      AsyncStorage.setItem(`game_story_progress_${gameId}`, "100").catch(() => {});
     }
-    if (ns === 'watching')  setShowPlayingWindow(true);
+    if (ns === 'watching') {
+      setShowPlayingWindow(true);
+    }
+
+    try {
+      await setMediaStatus("games", gameId, ns);
+    } catch (error) {
+      console.warn("Failed to persist game status:", error);
+      setUserStatus(previousStatus);
+      if (ns === 'watched') setShowCompletionSheet(false);
+      if (ns === 'watching') setShowPlayingWindow(false);
+    }
   };
   const handleWishlistToggle = async (w) => { setIsWishlisted(w); await setWishlist("games", gameId, w); };
   const handleGoBack = useCallback(() => navigation?.goBack(), [navigation]);
@@ -968,23 +984,24 @@ const GameDetail = ({ route, navigation }) => {
         }}>
 
         {/* §0 — Description */}
-        <Animated.View style={[s.sec, sectionCardStyle, secStyle(0)]}>
-          <HudFrame />
-          <SectionHeader title="DESCRIPTION" />
-          <Text style={s.descBody}>{gameDescription}</Text>
+        <Animated.View style={[sectionCardStyle, s.descriptionSection, secStyle(0)]}>
+          <CyberpunkFrame color={ACCENT} style={s.descriptionFrame}>
+            <SectionHeader title="DESCRIPTION" />
+            <Text style={s.descBody}>{gameDescription}</Text>
+          </CyberpunkFrame>
         </Animated.View>
 
         {/* §1 — Completion Time */}
         {igdbData?.timeToBeat && (igdbData.timeToBeat.mainStory || igdbData.timeToBeat.mainExtra || igdbData.timeToBeat.completionist) && (
-          <Animated.View style={[s.sec, sectionCardStyle, secStyle(1)]}>
-            <HudFrame />
-            <CompletionChart data={igdbData.timeToBeat} />
+          <Animated.View style={[sectionCardStyle, s.howLongSection, secStyle(1)]}>
+            <CyberpunkFrame4 color={ACCENT} style={s.howLongFrame}>
+              <CompletionChart data={igdbData.timeToBeat} />
+            </CyberpunkFrame4>
           </Animated.View>
         )}
 
         {/* §2 — My Status */}
-        <Animated.View style={[s.sec, sectionCardStyle, secStyle(2)]}>
-          <HudFrame />
+        <Animated.View style={[sectionCardStyle, s.unboxedSection, secStyle(2)]}>
           <SectionHeader title="MY STATUS" />
           <StatusTag status={userStatus} isWishlisted={isWishlisted}
             onStatusChange={handleStatusChange} onWishlistToggle={handleWishlistToggle} mediaType="games" />
@@ -992,8 +1009,7 @@ const GameDetail = ({ route, navigation }) => {
 
         {/* §3 — Platforms */}
         {platforms.length > 0 && (
-          <Animated.View style={[s.sec, sectionCardStyle, secStyle(3)]}>
-            <HudFrame />
+          <Animated.View style={[sectionCardStyle, s.unboxedSection, secStyle(3)]}>
             <SectionHeader title="PLATFORMS" />
             <View style={s.pillRow}>
               {platforms.map((p, i) => <PlatformPill key={i} name={p.name} abbreviation={p.abbreviation} />)}
@@ -1003,8 +1019,7 @@ const GameDetail = ({ route, navigation }) => {
 
         {/* §4 — Genres, Themes, Modes */}
         {(genres.length > 0 || themes.length > 0 || gameModes.length > 0) && (
-          <Animated.View style={[s.sec, sectionCardStyle, secStyle(4)]}>
-            <HudFrame />
+          <Animated.View style={[sectionCardStyle, s.unboxedSection, secStyle(4)]}>
             <SectionHeader title="GENRES & MODES" />
             {genres.length > 0 && (
               <>
@@ -1031,20 +1046,20 @@ const GameDetail = ({ route, navigation }) => {
           <>
             {/* §5 — Developers & Publishers */}
             {(developers.length > 0 || publishers.length > 0) && (
-              <Animated.View style={[s.sec, sectionCardStyle, secStyle(5)]}>
-                <HudFrame />
-                <SectionHeader title="STUDIO" />
-                <View style={s.companyList}>
-                  {developers.map((d, i) => <CompanyRow key={`d-${i}`} name={d} role="Developer" />)}
-                  {publishers.map((p, i) => <CompanyRow key={`p-${i}`} name={p} role="Publisher" />)}
-                </View>
+              <Animated.View style={[sectionCardStyle, s.framedSection, secStyle(5)]}>
+                <CyberpunkFrame2 color={ACCENT} style={s.studioFrame}>
+                  <SectionHeader title="STUDIO" />
+                  <View style={s.companyList}>
+                    {developers.map((d, i) => <CompanyRow key={`d-${i}`} name={d} role="Developer" />)}
+                    {publishers.map((p, i) => <CompanyRow key={`p-${i}`} name={p} role="Publisher" />)}
+                  </View>
+                </CyberpunkFrame2>
               </Animated.View>
             )}
 
             {/* §6 — Trailers */}
             {trailers.length > 0 && (
-              <Animated.View style={[s.sec, sectionCardStyle, secStyle(6)]}>
-                <HudFrame />
+              <Animated.View style={[sectionCardStyle, s.unboxedSection, secStyle(6)]}>
                 <SectionHeader title="TRAILERS" />
                 <FlatList data={trailers} horizontal showsHorizontalScrollIndicator={false}
                   contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(t) => t.id} renderItem={renderTrailer} />
@@ -1053,8 +1068,7 @@ const GameDetail = ({ route, navigation }) => {
 
             {/* §7 — Screenshots */}
             {screenshots.length > 0 && (
-              <Animated.View style={[s.sec, sectionCardStyle, secStyle(7)]}>
-                <HudFrame />
+              <Animated.View style={[sectionCardStyle, s.unboxedSection, secStyle(7)]}>
                 <SectionHeader title="SCREENSHOTS" />
                 <FlatList data={screenshots} horizontal showsHorizontalScrollIndicator={false}
                   contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(_, i) => `ss-${i}`} renderItem={renderScreenshot} />
@@ -1062,49 +1076,54 @@ const GameDetail = ({ route, navigation }) => {
             )}
 
             {/* §8 — Reviews */}
-            <Animated.View style={[s.sec, sectionCardStyle, secStyle(8)]}>
-              <HudFrame />
-              <View style={s.reviewHeader}>
-                <SectionHeader title="REVIEWS" />
-                <Pressable style={s.addReviewBtn}
-                  onPress={() => navigation?.navigate("ReviewAnime", { animeId: gameId, id: gameId, title: name, coverImage: cover, mediaType: "games" })}
-                  accessibilityRole="button" accessibilityLabel="Write a review" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="add" size={20} color={TEXT_PRIMARY} />
-                </Pressable>
-              </View>
-              {isLoadingReviews ? (
-                <ActivityIndicator color={ACCENT} style={{ marginVertical: 20 }} />
-              ) : visibleReviews.length > 0 ? (
-                <>
-                  {visibleReviews.map((r) => (
-                    <ReviewCard key={r.id}
-                      name={r.profiles?.use_display_name && r.profiles?.display_name ? r.profiles.display_name : r.profiles?.username || `User ${r.user_id?.substring(0, 8)}`}
-                      rating={Math.ceil(r.overall_rating / 2)} text={r.content} avatarUrl={r.profiles?.avatar_url} />
-                  ))}
-                  {dbReviews.length > PER_PAGE && (
-                    <View style={s.pagRow}>
-                      <Pressable style={[s.pagBtn, currentReviewPage === 1 && s.pagBtnOff]}
-                        onPress={() => setCurrentReviewPage((p) => Math.max(1, p - 1))} disabled={currentReviewPage === 1}>
-                        <Ionicons name="chevron-back" size={20} color={currentReviewPage === 1 ? TEXT_DISABLED : TEXT_PRIMARY} />
-                        <Text style={[s.pagText, currentReviewPage === 1 && s.pagTextOff]}>Previous</Text>
-                      </Pressable>
-                      <Text style={s.pagInd}>{currentReviewPage} / {totalPages}</Text>
-                      <Pressable style={[s.pagBtn, currentReviewPage === totalPages && s.pagBtnOff]}
-                        onPress={() => setCurrentReviewPage((p) => Math.min(totalPages, p + 1))} disabled={currentReviewPage === totalPages}>
-                        <Text style={[s.pagText, currentReviewPage === totalPages && s.pagTextOff]}>Next</Text>
-                        <Ionicons name="chevron-forward" size={20} color={currentReviewPage === totalPages ? TEXT_DISABLED : TEXT_PRIMARY} />
-                      </Pressable>
-                    </View>
-                  )}
-                </>
-              ) : (
-                <Text style={s.noData}>No reviews yet. Be the first to review!</Text>
-              )}
+            <Animated.View style={[sectionCardStyle, s.framedSection, secStyle(8)]}>
+              <CyberpunkFrame3 color={ACCENT} style={s.reviewFrame}>
+                <View style={s.reviewHeader}>
+                  <View style={s.reviewTitleRow}>
+                    <View style={s.secSlant} />
+                    <Text style={s.secTitle}>REVIEWS</Text>
+                    <View style={s.secScanLine} />
+                  </View>
+                  <Pressable style={s.addReviewBtn}
+                    onPress={() => navigation?.navigate("ReviewAnime", { animeId: gameId, id: gameId, title: name, coverImage: cover, mediaType: "games" })}
+                    accessibilityRole="button" accessibilityLabel="Write a review" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="add" size={20} color={TEXT_PRIMARY} />
+                  </Pressable>
+                </View>
+                {isLoadingReviews ? (
+                  <ActivityIndicator color={ACCENT} style={{ marginVertical: 20 }} />
+                ) : visibleReviews.length > 0 ? (
+                  <>
+                    {visibleReviews.map((r) => (
+                      <ReviewCard key={r.id}
+                        name={r.profiles?.use_display_name && r.profiles?.display_name ? r.profiles.display_name : r.profiles?.username || `User ${r.user_id?.substring(0, 8)}`}
+                        rating={Math.ceil(r.overall_rating / 2)} text={r.content} avatarUrl={r.profiles?.avatar_url} />
+                    ))}
+                    {dbReviews.length > PER_PAGE && (
+                      <View style={s.pagRow}>
+                        <Pressable style={[s.pagBtn, currentReviewPage === 1 && s.pagBtnOff]}
+                          onPress={() => setCurrentReviewPage((p) => Math.max(1, p - 1))} disabled={currentReviewPage === 1}>
+                          <Ionicons name="chevron-back" size={20} color={currentReviewPage === 1 ? TEXT_DISABLED : TEXT_PRIMARY} />
+                          <Text style={[s.pagText, currentReviewPage === 1 && s.pagTextOff]}>Previous</Text>
+                        </Pressable>
+                        <Text style={s.pagInd}>{currentReviewPage} / {totalPages}</Text>
+                        <Pressable style={[s.pagBtn, currentReviewPage === totalPages && s.pagBtnOff]}
+                          onPress={() => setCurrentReviewPage((p) => Math.min(totalPages, p + 1))} disabled={currentReviewPage === totalPages}>
+                          <Text style={[s.pagText, currentReviewPage === totalPages && s.pagTextOff]}>Next</Text>
+                          <Ionicons name="chevron-forward" size={20} color={currentReviewPage === totalPages ? TEXT_DISABLED : TEXT_PRIMARY} />
+                        </Pressable>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <Text style={s.noData}>No reviews yet. Be the first to review!</Text>
+                )}
+              </CyberpunkFrame3>
             </Animated.View>
 
             {/* §9 — Similar Games */}
             {similarGames.length > 0 && (
-              <Animated.View style={[s.sec, sectionCardStyle, { marginBottom: 32 }, secStyle(9)]}>
+              <Animated.View style={[sectionCardStyle, s.unboxedSection, { marginBottom: 32 }, secStyle(9)]}>
                 <SectionHeader title="SIMILAR GAMES" />
                 <FlatList data={similarGames} horizontal showsHorizontalScrollIndicator={false}
                   contentContainerStyle={[s.hList, { gap: horizontalListGap }]} keyExtractor={(g) => g.id.toString()} renderItem={renderSimilar} />
@@ -1223,7 +1242,57 @@ const s = StyleSheet.create({
   subLabel: { fontSize: 10, letterSpacing: 3, fontWeight: "700", color: hexToRgba(ACCENT, 0.7), marginBottom: 10, textTransform: "uppercase" },
 
   // ── Description ──
-  descBody: { fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22 },
+  descriptionSection: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingTop: 4,
+    paddingHorizontal: 0,
+    paddingBottom: 6,
+    marginBottom: 16,
+    overflow: "visible",
+  },
+  descriptionFrame: {
+    minHeight: 180,
+    width: "100%",
+    backgroundColor: "#071421",
+  },
+  descBody: { fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22, paddingRight: 2 },
+  howLongFrame: {
+    width: "100%",
+    backgroundColor: "#071421",
+  },
+  howLongSection: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingTop: 4,
+    paddingHorizontal: 0,
+    paddingBottom: 6,
+    marginBottom: 16,
+    overflow: "visible",
+  },
+  unboxedSection: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    marginBottom: 16,
+    overflow: "visible",
+  },
+  framedSection: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    paddingTop: 4,
+    paddingHorizontal: 0,
+    paddingBottom: 6,
+    marginBottom: 16,
+    overflow: "visible",
+  },
+  studioFrame: {
+    width: "100%",
+    backgroundColor: "#071421",
+  },
+  reviewFrame: {
+    width: "100%",
+    backgroundColor: "#071421",
+  },
 
   // ── Pills (angular — not rounded) ──
   pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -1282,8 +1351,9 @@ const s = StyleSheet.create({
   relatedTitle: { fontSize: 11, color: TEXT_PRIMARY, fontWeight: "700", letterSpacing: 0.3 },
 
   // ── Reviews ──
-  reviewHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  addReviewBtn: { width: 28, height: 28, borderRadius: 4, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center" },
+  reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
+  reviewTitleRow: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 },
+  addReviewBtn: { width: 28, height: 28, borderRadius: 4, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center", flexShrink: 0 },
   noData: { fontSize: 14, color: TEXT_MUTED, textAlign: "center", paddingVertical: 20 },
 
   // ── Pagination ──

@@ -45,12 +45,14 @@ import Animated, {
 import GenrePill from '../components/details_page/GenrePill';
 import PlayingWindow from '../components/details_page/PlayingWindow';
 import CompletedWindow from '../components/details_page/CompletedWindow';
+import CyberpunkFrame from '../components/details_page/CyberpunkFrame';
 import { fetchIGDBById, fetchIGDBByName, getGameDLCs } from '../services/api_igdb';
 import { hasIGDBCredentials } from '../services/settings';
 import {
   getMediaStatus,
   setMediaStatus,
   setWishlist,
+  saveGameTracking,
 } from '../services/mediaStatusService';
 
 let HapticsModule = null;
@@ -204,6 +206,8 @@ const GameStatPage = ({ route, navigation }) => {
   const [showPlayingWindow, setShowPlayingWindow]     = useState(false);
   const [showCompletedWindow, setShowCompletedWindow] = useState(false);
   const [rating, setRating]                           = useState(0);
+  const [isMultiplayer, setIsMultiplayer]               = useState(false);
+  const [isStory, setIsStory]                           = useState(true);
 
   // ── Derived ──
   const name        = igdbData?.name || routeName || 'Loading…';
@@ -256,6 +260,8 @@ const GameStatPage = ({ route, navigation }) => {
         `game_notes_${gameId}`,
         `game_dlcs_${gameId}`,
         `game_rating_${gameId}`,
+        `game_multiplayer_${gameId}`,
+        `game_story_${gameId}`,
       ];
       const pairs = await AsyncStorage.multiGet(keys);
       setStoryProgress(parseNum(pairs[0][1]) ?? 0);
@@ -270,6 +276,8 @@ const GameStatPage = ({ route, navigation }) => {
         setCheckedDlcs(map);
       } catch (_) {}
       setRating(parseNum(pairs[6][1]) ?? 0);
+      setIsMultiplayer(pairs[7][1] === 'true');
+      setIsStory(pairs[8][1] !== 'false');
     } catch (err) {
       console.warn('loadUserData error:', err.message);
     }
@@ -463,6 +471,36 @@ const GameStatPage = ({ route, navigation }) => {
                     <Text style={s.platformBadgeText}>{platformInfo.label}</Text>
                   </View>
                 )}
+                <Pressable
+                  onPress={async () => {
+                    const next = !isStory;
+                    setIsStory(next);
+                    await AsyncStorage.setItem(`game_story_${gameId}`, String(next));
+                    saveGameTracking(String(gameId), { isStory: next });
+                    try { HapticsModule?.impact?.('light'); } catch (_) {}
+                  }}
+                  style={[s.multiplayerBadge, isStory && { borderColor: 'rgba(15,163,177,0.3)', backgroundColor: 'rgba(15,163,177,0.08)' }]}
+                >
+                  <Ionicons name={isStory ? 'checkmark-circle' : 'ellipse-outline'} size={10} color={isStory ? ACCENT : MUTED} />
+                  <Text style={[s.multiplayerBadgeText, isStory && { color: ACCENT }]}>
+                    Story
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    const next = !isMultiplayer;
+                    setIsMultiplayer(next);
+                    await AsyncStorage.setItem(`game_multiplayer_${gameId}`, String(next));
+                    saveGameTracking(String(gameId), { isMultiplayer: next });
+                    try { HapticsModule?.impact?.('light'); } catch (_) {}
+                  }}
+                  style={[s.multiplayerBadge, isMultiplayer && s.multiplayerBadgeActive]}
+                >
+                  <Ionicons name={isMultiplayer ? 'checkmark-circle' : 'ellipse-outline'} size={10} color={isMultiplayer ? '#A78BFA' : MUTED} />
+                  <Text style={[s.multiplayerBadgeText, isMultiplayer && s.multiplayerBadgeTextActive]}>
+                    Multiplayer
+                  </Text>
+                </Pressable>
               </View>
               {developers.length > 0 && (
                 <Text style={s.heroDev} numberOfLines={1}>{developers.join(' · ')}</Text>
@@ -511,7 +549,9 @@ const GameStatPage = ({ route, navigation }) => {
         {/* ── ABOUT ── */}
         {summary.length > 0 && (
           <Section title="About" icon="information-circle-outline" delay={200}>
-            <Text style={s.aboutText}>{summary}</Text>
+            <CyberpunkFrame color={ACCENT}>
+              <Text style={s.aboutText}>{summary}</Text>
+            </CyberpunkFrame>
           </Section>
         )}
 
@@ -654,6 +694,59 @@ const GameStatPage = ({ route, navigation }) => {
             </View>
           )}
         </Section>
+
+        {/* ── Remove Game ── */}
+        <Animated.View entering={FadeInDown.delay(600).duration(350).easing(Easing.out(Easing.cubic))} style={s.removeBtnOuter}>
+          <TouchableOpacity
+            style={s.removeBtn}
+            activeOpacity={0.7}
+            onPress={() => {
+              Alert.alert(
+                'Remove Game',
+                `Remove "${name}" from your collection? This will clear all your tracking data, progress, notes, and rating for this game.`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        // Clear all AsyncStorage keys for this game
+                        const keys = [
+                          `game_story_progress_${gameId}`,
+                          `game_overall_progress_${gameId}`,
+                          `game_platform_${gameId}`,
+                          `game_playtime_${gameId}`,
+                          `game_dlcs_${gameId}`,
+                          `game_notes_${gameId}`,
+                          `game_rating_${gameId}`,
+                          `game_details_${gameId}`,
+                          `game_multiplayer_${gameId}`,
+                          `game_story_${gameId}`,
+                        ];
+                        await AsyncStorage.multiRemove(keys);
+
+                        // Clear DB status
+                        await setMediaStatus('games', String(gameId), null);
+                        await setWishlist('games', String(gameId), false);
+
+                        try { HapticsModule?.impact?.('medium'); } catch (_) {}
+
+                        navigation.goBack();
+                      } catch (err) {
+                        console.error('Error removing game:', err);
+                        Alert.alert('Error', 'Failed to remove game. Please try again.');
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          >
+            <Ionicons name="trash-outline" size={16} color="#F87171" />
+            <Text style={s.removeBtnText}>Remove Game</Text>
+          </TouchableOpacity>
+        </Animated.View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -861,6 +954,38 @@ const s = StyleSheet.create({
     width: 100, height: 100, borderRadius: 10,
     borderWidth: 1, borderColor: BORDER, borderStyle: 'dashed',
     alignItems: 'center', justifyContent: 'center',
+  },
+
+  // ── Remove Button ──
+  removeBtnOuter: {
+    marginHorizontal: 14, marginTop: 24, marginBottom: 8,
+  },
+  removeBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(248,113,113,0.25)',
+    backgroundColor: 'rgba(248,113,113,0.06)',
+  },
+  removeBtnText: {
+    fontSize: 13, fontWeight: '700', color: '#F87171', letterSpacing: 0.3,
+  },
+
+  // ── Game Type Tags ──
+  multiplayerBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  multiplayerBadgeActive: {
+    borderColor: 'rgba(167,139,250,0.3)',
+    backgroundColor: 'rgba(167,139,250,0.08)',
+  },
+  multiplayerBadgeText: {
+    fontSize: 9, fontWeight: '600', color: MUTED, letterSpacing: 0.2,
+  },
+  multiplayerBadgeTextActive: {
+    color: '#A78BFA',
   },
 });
 

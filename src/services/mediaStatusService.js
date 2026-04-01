@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Media Status Service
@@ -295,6 +296,12 @@ export const saveGameTracking = async (mediaId, payload = {}) => {
     if (payload.totalCompletionTimeHours !== undefined) {
       detailUpdates.total_completion_time_hours = parseHours(payload.totalCompletionTimeHours);
     }
+    if (payload.isMultiplayer !== undefined) {
+      detailUpdates.is_multiplayer = Boolean(payload.isMultiplayer);
+    }
+    if (payload.isStory !== undefined) {
+      detailUpdates.is_story = Boolean(payload.isStory);
+    }
 
     const forceCompletedProgress = payload.forceCompletedProgress || payload.status === 'watched';
     if (forceCompletedProgress) {
@@ -508,5 +515,65 @@ export const getGameUserStats = async () => {
   } catch (e) {
     console.warn('getGameUserStats error:', e.message);
     return null;
+  }
+};
+
+// ==========================================
+// SYNC GAME TAGS (DB → AsyncStorage)
+// ==========================================
+
+/**
+ * One-time sync: reads is_story / is_multiplayer from DB and populates
+ * any missing AsyncStorage keys. Call once at app startup.
+ */
+export const syncGameTagsFromDB = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('user_game_status_details')
+      .select('user_media_status_id, is_story, is_multiplayer')
+      .not('is_story', 'is', null);
+
+    if (error || !data?.length) return;
+
+    // We need the media_id from the parent status row
+    const statusIds = data.map(d => d.user_media_status_id);
+    const { data: statusRows } = await supabase
+      .from('user_media_status')
+      .select('id, media_id')
+      .in('id', statusIds);
+
+    if (!statusRows?.length) return;
+
+    const idMap = {};
+    statusRows.forEach(r => { idMap[r.id] = r.media_id; });
+
+    // Only set keys that don't exist locally yet
+    const setOps = [];
+    for (const row of data) {
+      const mediaId = idMap[row.user_media_status_id];
+      if (!mediaId) continue;
+
+      const storyKey = `game_story_${mediaId}`;
+      const mpKey = `game_multiplayer_${mediaId}`;
+
+      const [existingStory, existingMp] = await AsyncStorage.multiGet([storyKey, mpKey]);
+
+      if (existingStory[1] === null && row.is_story !== null) {
+        setOps.push([storyKey, String(row.is_story)]);
+      }
+      if (existingMp[1] === null && row.is_multiplayer !== null) {
+        setOps.push([mpKey, String(row.is_multiplayer)]);
+      }
+    }
+
+    if (setOps.length > 0) {
+      await AsyncStorage.multiSet(setOps);
+      console.log(`[syncGameTags] Restored ${setOps.length} tags from DB`);
+    }
+  } catch (e) {
+    console.warn('[syncGameTags] error:', e.message);
   }
 };

@@ -11,6 +11,7 @@ import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
 import { getUserReviews } from '../services/reviewService';
@@ -45,6 +46,7 @@ const PodiumPage = ({ navigation }) => {
   const { fetchDetails, formatData } = theme.services;
 
   const [counts, setCounts] = useState({ watching: 0, watched: 0, dropped: 0, wishlist: 0 });
+  const [multiplayerCount, setMultiplayerCount] = useState(0);
   const [genreStats, setGenreStats] = useState({});
   const [secondaryStats, setSecondaryStats] = useState({});
   const [loading, setLoading] = useState(true);
@@ -139,17 +141,63 @@ const PodiumPage = ({ navigation }) => {
         getWishlist(mt),
       ]);
 
-      setCounts({
-        watching: watchingRes.success ? (watchingRes.data?.length || 0) : 0,
-        watched: watchedRes.success ? (watchedRes.data?.length || 0) : 0,
-        dropped: droppedRes.success ? (droppedRes.data?.length || 0) : 0,
-        wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
-      });
+      const watchingItems = watchingRes.success && watchingRes.data ? watchingRes.data : [];
+      const watchedItems = watchedRes.success && watchedRes.data ? watchedRes.data : [];
+      const droppedItems = droppedRes.success && droppedRes.data ? droppedRes.data : [];
 
-      const combinedItems = [
-        ...(watchingRes.success && watchingRes.data ? watchingRes.data : []),
-        ...(watchedRes.success && watchedRes.data ? watchedRes.data : []),
-      ];
+      // For games, filter donut by story flag and count multiplayer separately
+      let mpCount = 0;
+      if (mt === 'games') {
+        const allItems = [...watchingItems, ...watchedItems, ...droppedItems];
+        if (allItems.length > 0) {
+          // Fetch both story and multiplayer keys for all games
+          const storyKeys = allItems.map(item => `game_story_${item.media_id}`);
+          const mpKeys = allItems.map(item => `game_multiplayer_${item.media_id}`);
+          const [storyPairs, mpPairs] = await Promise.all([
+            AsyncStorage.multiGet(storyKeys),
+            AsyncStorage.multiGet(mpKeys),
+          ]);
+
+          // Build sets: story games (default true) and multiplayer games
+          const nonStorySet = new Set();
+          storyPairs.forEach(([key, val]) => {
+            if (val === 'false') {
+              nonStorySet.add(key.replace('game_story_', ''));
+            }
+          });
+          const mpSet = new Set();
+          mpPairs.forEach(([key, val]) => {
+            if (val === 'true') {
+              mpSet.add(key.replace('game_multiplayer_', ''));
+            }
+          });
+
+          mpCount = mpSet.size;
+          setMultiplayerCount(mpCount);
+
+          // Donut chart: only games with story=true (default)
+          const filterStory = (items) => items.filter(item => !nonStorySet.has(String(item.media_id)));
+          setCounts({
+            watching: filterStory(watchingItems).length,
+            watched: filterStory(watchedItems).length,
+            dropped: filterStory(droppedItems).length,
+            wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
+          });
+        } else {
+          setMultiplayerCount(0);
+          setCounts({ watching: 0, watched: 0, dropped: 0, wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0 });
+        }
+      } else {
+        setMultiplayerCount(0);
+        setCounts({
+          watching: watchingItems.length,
+          watched: watchedItems.length,
+          dropped: droppedItems.length,
+          wishlist: wishlistRes.success ? (wishlistRes.data?.length || 0) : 0,
+        });
+      }
+
+      const combinedItems = [...watchingItems, ...watchedItems];
 
       if (combinedItems.length > 0) {
         fetchGenresAndSecondary(combinedItems);
@@ -263,6 +311,27 @@ const PodiumPage = ({ navigation }) => {
             />
           </View>
         </View>
+
+        {/* Multiplayer Games */}
+        {theme.statusMediaType === 'games' && multiplayerCount > 0 && (
+          <Pressable
+            style={styles.statsSection}
+            onPress={() => navigation.navigate('PodiumListPage', { status: 'multiplayer' })}
+          >
+            <Text style={styles.sectionTitle}>Multiplayer Games</Text>
+            <OverviewStats
+              accentColor="#A78BFA"
+              stats={[
+                {
+                  icon: 'people',
+                  value: multiplayerCount,
+                  label: multiplayerCount === 1 ? 'Game' : 'Games',
+                  color: '#A78BFA',
+                },
+              ]}
+            />
+          </Pressable>
+        )}
 
         {/* Top Genres */}
         <View style={styles.statsSection}>
