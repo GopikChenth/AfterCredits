@@ -339,6 +339,73 @@ export const getAnimeDetails = async (id) => {
   return response.data.Media;
 };
 
+const extractSeasonNumber = (title) => {
+  if (!title) return null;
+  const match = title.match(/season\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
+};
+
+/**
+ * Traverse prequel/sequel graph to collect full season chain
+ * @param {number} startId - AniList anime ID
+ * @param {number} maxNodes - Safety cap for traversal size
+ * @returns {Promise<Array>} - Ordered season list including current anime
+ */
+export const getAnimeSeasonChain = async (startId, maxNodes = 12) => {
+  if (!startId) return [];
+
+  const visited = new Set();
+  const queue = [startId];
+  const byId = new Map();
+
+  while (queue.length && byId.size < maxNodes) {
+    const id = queue.shift();
+    if (!id || visited.has(id)) continue;
+    visited.add(id);
+
+    let media;
+    try {
+      media = await getAnimeDetails(id);
+    } catch (error) {
+      continue;
+    }
+
+    if (!media || media.format !== "TV") continue;
+
+    byId.set(media.id, {
+      id: media.id,
+      title: media.title?.english || media.title?.romaji || "Unknown",
+      subtitle: media.title?.romaji || "",
+      coverImage: media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium,
+      episodeCount: media.episodes || 0,
+      seasonYear: media.seasonYear || media.startDate?.year || 0,
+    });
+
+    const edges = Array.isArray(media.relations?.edges) ? media.relations.edges : [];
+    const linkedIds = edges
+      .filter((edge) => edge?.relationType && ["PREQUEL", "PARENT", "SEQUEL", "CHILD"].includes(edge.relationType))
+      .filter((edge) => edge?.node?.id && edge?.node?.format === "TV")
+      .map((edge) => edge.node.id);
+
+    linkedIds.forEach((linkedId) => {
+      if (!visited.has(linkedId)) queue.push(linkedId);
+    });
+  }
+
+  const seasons = Array.from(byId.values());
+  seasons.sort((a, b) => {
+    const aSeason = extractSeasonNumber(a.title);
+    const bSeason = extractSeasonNumber(b.title);
+    if (aSeason != null && bSeason != null) return aSeason - bSeason;
+    if (aSeason != null) return -1;
+    if (bSeason != null) return 1;
+    if (a.seasonYear !== b.seasonYear) return a.seasonYear - b.seasonYear;
+    return a.id - b.id;
+  });
+
+  return seasons;
+};
+
 /**
  * Search anime by title
  * @param {string} searchTerm - Search query

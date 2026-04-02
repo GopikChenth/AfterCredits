@@ -15,6 +15,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.75;
 const CARD_HEIGHT = 120;
 const CARD_MARGIN = 12;
+const HORIZONTAL_INSET = Math.max(0, (SCREEN_WIDTH - CARD_WIDTH - CARD_MARGIN) / 2);
 
 const extractSeasonNumberFromTitle = (title) => {
   if (!title) return null;
@@ -31,56 +32,90 @@ const parseEpisodeCount = (value) => {
   return 0;
 };
 
-const buildSeasonSlides = (relations, currentAnime) => {
+const buildSeasonSlides = (relations, currentAnime, seasonChain) => {
+  if (Array.isArray(seasonChain) && seasonChain.length > 0) {
+    return seasonChain.map((season, index) => ({
+      id: season.id,
+      node: {
+        id: season.id,
+        title: { english: season.title, romaji: season.subtitle },
+        coverImage: { medium: season.coverImage, large: season.coverImage },
+        episodes: season.episodeCount,
+      },
+      seasonNumber: index + 1,
+      episodeCount: parseEpisodeCount(season.episodeCount),
+    }));
+  }
+
   const edges = Array.isArray(relations?.edges) ? relations.edges : [];
   const seasonEdges = edges
-    .filter((edge) => edge?.relationType && ['SEQUEL', 'PREQUEL', 'PARENT'].includes(edge.relationType))
+    .filter((edge) => edge?.relationType && ['SEQUEL', 'PREQUEL', 'PARENT', 'CHILD'].includes(edge.relationType))
     .filter((edge) => edge?.node?.format === 'TV')
     .filter((edge) => edge?.node?.title && (edge.node.title.english || edge.node.title.romaji));
 
-  const prequels = seasonEdges.filter((edge) => edge.relationType === 'PREQUEL' || edge.relationType === 'PARENT');
-  const sequels = seasonEdges.filter((edge) => edge.relationType === 'SEQUEL');
+  const prequels = seasonEdges
+    .filter((edge) => edge.relationType === 'PREQUEL' || edge.relationType === 'PARENT')
+    .map((edge) => edge.node);
+  const sequels = seasonEdges
+    .filter((edge) => edge.relationType === 'SEQUEL' || edge.relationType === 'CHILD')
+    .map((edge) => edge.node);
 
   const currentTitle = currentAnime?.title || '';
   const inferredCurrentSeason = extractSeasonNumberFromTitle(currentTitle) || 1;
   const currentEpisodes = parseEpisodeCount(currentAnime?.episodeCount);
 
-  const slides = [
-    ...prequels.map((edge) => ({
-      id: edge.node.id,
-      node: edge.node,
-      offset: -1,
-    })),
+  const sortBySeasonNumber = (a, b) => {
+    const aTitle = a.title?.english || a.title?.romaji || '';
+    const bTitle = b.title?.english || b.title?.romaji || '';
+    const aSeason = extractSeasonNumberFromTitle(aTitle);
+    const bSeason = extractSeasonNumberFromTitle(bTitle);
+
+    if (aSeason != null && bSeason != null) return aSeason - bSeason;
+    if (aSeason != null) return -1;
+    if (bSeason != null) return 1;
+    return (a.id || 0) - (b.id || 0);
+  };
+
+  const orderedPrequels = [...prequels].sort(sortBySeasonNumber);
+  const orderedSequels = [...sequels].sort(sortBySeasonNumber);
+
+  const nodes = [
+    ...orderedPrequels,
     {
-      id: currentAnime?.id || 'current',
-      node: {
-        id: currentAnime?.id,
-        title: { english: currentAnime?.title, romaji: currentAnime?.subtitle },
-        coverImage: { medium: currentAnime?.coverImage, large: currentAnime?.coverImage },
-        episodes: currentEpisodes,
-      },
-      offset: 0,
-      isCurrent: true,
+      id: currentAnime?.id,
+      title: { english: currentAnime?.title, romaji: currentAnime?.subtitle },
+      coverImage: { medium: currentAnime?.coverImage, large: currentAnime?.coverImage },
+      episodes: currentEpisodes,
     },
-    ...sequels.map((edge) => ({
-      id: edge.node.id,
-      node: edge.node,
-      offset: 1,
-    })),
+    ...orderedSequels,
   ];
 
-  return slides.map((slide, index) => {
-    const seasonNumber = inferredCurrentSeason + (index - prequels.length);
+  const dedupedNodes = nodes.filter((node, index) => {
+    if (!node?.id) return false;
+    return nodes.findIndex((n) => n?.id === node.id) === index;
+  });
+
+  const currentIndex = dedupedNodes.findIndex((node) => node.id === currentAnime?.id);
+
+  return dedupedNodes.map((node, index) => {
+    const title = node.title?.english || node.title?.romaji || '';
+    const explicitSeason = extractSeasonNumberFromTitle(title);
+    const computedSeason = inferredCurrentSeason + (index - currentIndex);
+
     return {
-      ...slide,
-      seasonNumber: seasonNumber > 0 ? seasonNumber : index + 1,
-      episodeCount: parseEpisodeCount(slide.node?.episodes),
+      id: node.id,
+      node,
+      seasonNumber: explicitSeason || (computedSeason > 0 ? computedSeason : index + 1),
+      episodeCount: parseEpisodeCount(node.episodes),
     };
   });
 };
 
-const SeasonSection = ({ relations, currentAnime, onItemPress }) => {
-  const seasons = useMemo(() => buildSeasonSlides(relations, currentAnime), [relations, currentAnime]);
+const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) => {
+  const seasons = useMemo(
+    () => buildSeasonSlides(relations, currentAnime, seasonChain),
+    [relations, currentAnime, seasonChain]
+  );
 
   const renderSeasonItem = useCallback(({ item }) => {
     try {
@@ -117,7 +152,7 @@ const SeasonSection = ({ relations, currentAnime, onItemPress }) => {
                     {`Season ${item.seasonNumber}`}
                   </Text>
                   <Text style={styles.episodesText} numberOfLines={1}>
-                    {`${item.episodeCount || 0}Eps`}
+                    {`${item.episodeCount || 0} episode`}
                   </Text>
                 </View>
               </BlurView>
@@ -129,7 +164,7 @@ const SeasonSection = ({ relations, currentAnime, onItemPress }) => {
                   {`Season ${item.seasonNumber}`}
                 </Text>
                 <Text style={styles.episodesText} numberOfLines={1}>
-                  {`${item.episodeCount || 0}Eps`}
+                  {`${item.episodeCount || 0} episode`}
                 </Text>
               </View>
             </View>
@@ -155,6 +190,8 @@ const SeasonSection = ({ relations, currentAnime, onItemPress }) => {
           decelerationRate="fast"
           snapToInterval={CARD_WIDTH + CARD_MARGIN}
           snapToAlignment="center"
+          disableIntervalMomentum
+          bounces={false}
         >
           {seasons.map((season, index) => (
             <View key={`${season.node?.id || index}-${index}`} style={styles.cardWrapper}>
@@ -184,7 +221,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Agdasima',
   },
   scrollContent: {
-    paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2,
+    paddingHorizontal: HORIZONTAL_INSET,
   },
   cardWrapper: {
     width: CARD_WIDTH,
@@ -211,29 +248,33 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
   cardContent: {
-    padding: 12,
-    justifyContent: 'flex-end',
-    minHeight: 60,
+    width: '100%',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   seasonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A78BFA',
-    marginBottom: 4,
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
-  },
-  episodesText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
-    lineHeight: 18,
+    marginBottom: 8,
+    fontFamily: 'Agdasima',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  episodesText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 16,
+    textAlign: 'center',
   },
 });
 

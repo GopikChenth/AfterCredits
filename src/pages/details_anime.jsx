@@ -57,6 +57,7 @@ const AnimeDetail = ({ route, navigation }) => {
     isWishlisted,
     refreshAnimeDetails,
     reviewStats,
+    seasonChain,
     userStatus,
   } = useAnimeDetailsData(animeId);
 
@@ -216,6 +217,7 @@ const AnimeDetail = ({ route, navigation }) => {
         {animeData?.relations?.edges && animeData.relations.edges.length > 0 && (
           <SeasonSection 
             relations={animeData.relations}
+            seasonChain={seasonChain}
             currentAnime={animeData}
             onItemPress={handleRelatedItemPress}
           />

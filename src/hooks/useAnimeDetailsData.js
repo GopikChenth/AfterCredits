@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 
-import { getAnimeDetails, getStatusText } from "../services/api_anilist";
+import { getAnimeDetails, getAnimeSeasonChain, getStatusText } from "../services/api_anilist";
 import {
   getMediaReviews,
   getMediaReviewStats,
@@ -109,6 +109,7 @@ export const useAnimeDetailsData = (animeId) => {
   const [dbReviews, setDbReviews] = useState([]);
   const [reviewStats, setReviewStats] = useState(getSafeReviewStats());
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [seasonChain, setSeasonChain] = useState([]);
 
   const refreshReviews = useCallback(async () => {
     if (!animeId) return;
@@ -155,6 +156,13 @@ export const useAnimeDetailsData = (animeId) => {
       }
 
       setAnimeData(formatAnimeDetails(data));
+
+      try {
+        const chain = await getAnimeSeasonChain(data.id);
+        setSeasonChain(chain);
+      } catch (seasonError) {
+        setSeasonChain([]);
+      }
     } catch (fetchError) {
       console.error("Error fetching anime details:", fetchError);
       setError("Failed to load anime details. Please try again.");
@@ -208,6 +216,7 @@ export const useAnimeDetailsData = (animeId) => {
       isWishlisted,
       refreshAnimeDetails,
       reviewStats,
+      seasonChain,
       userStatus,
     }),
     [
@@ -221,6 +230,7 @@ export const useAnimeDetailsData = (animeId) => {
       isWishlisted,
       refreshAnimeDetails,
       reviewStats,
+      seasonChain,
       userStatus,
     ]
   );
