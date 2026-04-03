@@ -15,7 +15,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.75;
 const CARD_HEIGHT = 120;
 const CARD_MARGIN = 12;
-const HORIZONTAL_INSET = Math.max(0, (SCREEN_WIDTH - CARD_WIDTH - CARD_MARGIN) / 2);
 
 const extractSeasonNumberFromTitle = (title) => {
   if (!title) return null;
@@ -125,6 +124,8 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
       
       const title = item.node.title?.english || item.node.title?.romaji || 'Unknown Season';
       const imageUri = item.node.coverImage?.medium || item.node.coverImage?.large;
+      const episodeCount = item.episodeCount || 0;
+      const episodeLabel = `${episodeCount} ${episodeCount === 1 ? 'Episode' : 'Episodes'}`;
       
       return (
         <Pressable
@@ -148,11 +149,14 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
                   style={styles.gradientOverlay}
                 />
                 <View style={styles.cardContent}>
-                  <Text style={styles.seasonText} numberOfLines={1}>
+                  <Text style={styles.formatText} numberOfLines={1}>
                     {`Season ${item.seasonNumber}`}
                   </Text>
-                  <Text style={styles.episodesText} numberOfLines={1}>
-                    {`${item.episodeCount || 0} episode`}
+                  <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
+                    {title}
+                  </Text>
+                  <Text style={styles.metaText} numberOfLines={1}>
+                    {episodeLabel}
                   </Text>
                 </View>
               </BlurView>
@@ -160,11 +164,14 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
           ) : (
             <View style={[styles.cardBackground, styles.fallbackBackground]}>
               <View style={styles.cardContent}>
-                <Text style={styles.seasonText} numberOfLines={1}>
+                <Text style={styles.formatText} numberOfLines={1}>
                   {`Season ${item.seasonNumber}`}
                 </Text>
-                <Text style={styles.episodesText} numberOfLines={1}>
-                  {`${item.episodeCount || 0} episode`}
+                <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
+                  {title}
+                </Text>
+                <Text style={styles.metaText} numberOfLines={1}>
+                  {episodeLabel}
                 </Text>
               </View>
             </View>
@@ -221,7 +228,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Agdasima',
   },
   scrollContent: {
-    paddingHorizontal: HORIZONTAL_INSET,
+    paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2,
   },
   cardWrapper: {
     width: CARD_WIDTH,
@@ -248,33 +255,41 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   gradientOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
   cardContent: {
-    width: '100%',
-    paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 12,
+    justifyContent: 'flex-end',
+    minHeight: 64,
+    overflow: 'hidden',
   },
-  seasonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
+  formatText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#A78BFA',
+    marginBottom: 4,
     fontFamily: 'Agdasima',
     letterSpacing: 0.5,
-    textAlign: 'center',
   },
-  episodesText: {
-    fontSize: 13,
+  titleText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
     lineHeight: 16,
-    textAlign: 'center',
+    marginBottom: 3,
+    fontFamily: 'Agdasima',
+    includeFontPadding: false,
+  },
+  metaText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontFamily: 'Agdasima',
+    lineHeight: 12,
+    includeFontPadding: false,
   },
 });
 

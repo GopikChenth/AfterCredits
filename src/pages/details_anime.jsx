@@ -19,7 +19,6 @@ import GenrePill from "../components/details_page/GenrePill";
 import CrewMember from "../components/details_page/CrewMember";
 import ReviewCard from "../components/details_page/ReviewCard";
 import StatusTag from "../components/details_page/StatusTag";
-import RelatedContentCarousel from "../components/details_page/RelatedContentCarousel";
 import SeasonSection from "../components/details_page/SeasonSection";
 import { BackButton } from "../components/details_page/SharedListItems";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
@@ -448,13 +447,6 @@ const AnimeDetail = ({ route, navigation }) => {
               )}
             </View>
 
-            {/* Additional Related Content Section - Shows side stories, alternatives, etc. */}
-            {animeData?.relations?.edges && animeData.relations.edges.length > 0 && (
-              <RelatedContentCarousel 
-                relations={animeData.relations}
-                onItemPress={handleRelatedItemPress}
-              />
-            )}
           </>
         ) : (
           <GlassCard style={styles.reviewsSectionNative}>

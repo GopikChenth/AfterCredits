@@ -50,18 +50,6 @@ const SkeletonProfile = () => (
       <MenuItemSkeleton />
     </View>
 
-    {/* Sync Section */}
-    <ShimmerBlock style={{ width: 40, height: 16, marginLeft: 16, marginTop: 8 }} />
-    <View style={styles.menuCard}>
-      <MenuItemSkeleton />
-    </View>
-
-    {/* Backlog Section */}
-    <ShimmerBlock style={{ width: 60, height: 16, marginLeft: 16, marginTop: 8 }} />
-    <View style={styles.menuCard}>
-      <MenuItemSkeleton />
-    </View>
-
     {/* App Section */}
     <ShimmerBlock style={{ width: 30, height: 16, marginLeft: 16, marginTop: 8 }} />
     <View style={styles.menuCard}>

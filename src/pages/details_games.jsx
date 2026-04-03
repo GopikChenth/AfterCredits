@@ -1288,6 +1288,7 @@ const s = StyleSheet.create({
   studioFrame: {
     width: "100%",
     backgroundColor: "#071421",
+    paddingTop: 8,
   },
   reviewFrame: {
     width: "100%",

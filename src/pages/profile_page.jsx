@@ -494,45 +494,6 @@ const ProfilePage = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Sync Section */}
-        <Text style={styles.sectionTitle}>Sync</Text>
-        
-        <View style={styles.menuCard}>
-          {/* Connect Account */}
-          <Pressable style={styles.menuItem}>
-            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-              <Ionicons name="key-outline" size={20} color={theme.accent} />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Connect Account</Text>
-              <Text style={styles.menuSubtitle}>Connect account and sync your library</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </Pressable>
-        </View>
-
-        {/* Backlog Section */}
-        <Text style={styles.sectionTitle}>Backlog</Text>
-        
-        <View style={styles.menuCard}>
-          {/* Custom Statuses */}
-          <Pressable style={styles.menuItem}>
-            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-              <Ionicons name="flag-outline" size={20} color={theme.accent} />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <View style={styles.menuTitleRow}>
-                <Text style={styles.menuTitle}>Custom Statuses</Text>
-                <View style={[styles.newBadge, { backgroundColor: theme.accent }]}>
-                  <Text style={styles.newBadgeText}>NEW</Text>
-                </View>
-              </View>
-              <Text style={styles.menuSubtitle}>Create custom tracking statuses</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color="#ccc" />
-          </Pressable>
-        </View>
-
         {/* App Info Section */}
         <Text style={styles.sectionTitle}>App</Text>
         
@@ -988,11 +949,6 @@ const styles = StyleSheet.create({
   menuTextContainer: {
     flex: 1,
   },
-  menuTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   mediaIcon: {
     fontSize: 18,
   },
@@ -1011,17 +967,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.08)',
     marginLeft: 70,
-  },
-  newBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderCurve: 'continuous',
-  },
-  newBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
   },
   statusDot: {
     width: 12,
