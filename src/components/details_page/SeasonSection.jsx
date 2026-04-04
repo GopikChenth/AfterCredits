@@ -149,9 +149,6 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
                   style={styles.gradientOverlay}
                 />
                 <View style={styles.cardContent}>
-                  <Text style={styles.formatText} numberOfLines={1}>
-                    {`Season ${item.seasonNumber}`}
-                  </Text>
                   <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
                     {title}
                   </Text>
@@ -164,9 +161,6 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
           ) : (
             <View style={[styles.cardBackground, styles.fallbackBackground]}>
               <View style={styles.cardContent}>
-                <Text style={styles.formatText} numberOfLines={1}>
-                  {`Season ${item.seasonNumber}`}
-                </Text>
                 <Text style={styles.titleText} numberOfLines={1} ellipsizeMode="tail">
                   {title}
                 </Text>
@@ -265,14 +259,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     minHeight: 64,
     overflow: 'hidden',
-  },
-  formatText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#A78BFA',
-    marginBottom: 4,
-    fontFamily: 'Agdasima',
-    letterSpacing: 0.5,
   },
   titleText: {
     fontSize: 14,
