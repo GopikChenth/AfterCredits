@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -26,6 +26,8 @@ import { checkIGDBHealth } from '../services/api_igdb';
 import EditProfileModal from '../components/profile_page/EditProfileModal';
 import SkeletonProfile from '../components/skeletons/SkeletonProfile';
 import { useProfileStore } from '../stores/useProfileStore';
+
+const ANON_MODE_SAVE_DEBOUNCE_MS = 220;
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -55,6 +57,11 @@ const ProfilePage = ({ navigation }) => {
     showComics: true,
     showManga: true,
   });
+  const anonModeTimerRef = useRef(null);
+  const anonModePendingValueRef = useRef(null);
+  const anonModeInFlightRef = useRef(false);
+  const anonModeLastSavedRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   // Reload profile every time screen gains focus (handles login/logout)
   const loadSettings = useCallback(async () => {
@@ -80,22 +87,73 @@ const ProfilePage = ({ navigation }) => {
 
   useEffect(() => {
     setUseDisplayName(profile?.use_display_name || false);
+    anonModeLastSavedRef.current = Boolean(profile?.use_display_name);
   }, [profile]);
 
-  // Handle toggle change
-  const handleToggleChange = async (value) => {
-    setUseDisplayName(value);
-    
-    const result = await updateAnonymousMode(value);
-    
-    if (!result.success) {
-      // Revert on error
-      setUseDisplayName(!value);
-      Alert.alert('Error', 'Failed to update privacy settings');
-      return;
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (anonModeTimerRef.current) {
+        clearTimeout(anonModeTimerRef.current);
+        anonModeTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const flushAnonymousModeUpdate = useCallback(async () => {
+    if (anonModeInFlightRef.current) return;
+    anonModeInFlightRef.current = true;
+
+    let shouldShowError = false;
+    while (typeof anonModePendingValueRef.current === 'boolean') {
+      const nextValue = anonModePendingValueRef.current;
+      anonModePendingValueRef.current = null;
+
+      if (nextValue === anonModeLastSavedRef.current) continue;
+
+      const previousValue = anonModeLastSavedRef.current;
+      const result = await updateAnonymousMode(nextValue);
+
+      if (!result.success) {
+        shouldShowError = true;
+        if (isMountedRef.current) {
+          setUseDisplayName(previousValue);
+        }
+        anonModePendingValueRef.current = null;
+        break;
+      }
+
+      anonModeLastSavedRef.current = nextValue;
+      if (isMountedRef.current) {
+        upsertProfile({ use_display_name: nextValue });
+      }
     }
-    upsertProfile({ use_display_name: value });
-  };
+
+    anonModeInFlightRef.current = false;
+
+    if (shouldShowError && isMountedRef.current) {
+      Alert.alert('Error', 'Failed to update privacy settings');
+    }
+
+    if (typeof anonModePendingValueRef.current === 'boolean' && isMountedRef.current) {
+      flushAnonymousModeUpdate();
+    }
+  }, [upsertProfile]);
+
+  // Handle toggle change
+  const handleToggleChange = useCallback((value) => {
+    setUseDisplayName(value);
+    anonModePendingValueRef.current = value;
+
+    if (anonModeTimerRef.current) {
+      clearTimeout(anonModeTimerRef.current);
+    }
+
+    anonModeTimerRef.current = setTimeout(() => {
+      anonModeTimerRef.current = null;
+      flushAnonymousModeUpdate();
+    }, ANON_MODE_SAVE_DEBOUNCE_MS);
+  }, [flushAnonymousModeUpdate]);
 
   // Handle Logout
   const handleLogout = async () => {

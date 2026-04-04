@@ -19,6 +19,9 @@ const ACCENT_BORDER = 'rgba(167, 139, 250, 0.3)';
 const CARD_BG = '#252525';
 const ACTION_BG = '#1A1A1A';
 const TEXT_PRIMARY = '#FFFFFF';
+const YELLOW_ACCENT = '#FBBF24';
+const YELLOW_DIM = 'rgba(251, 191, 36, 0.18)';
+const YELLOW_BORDER = 'rgba(251, 191, 36, 0.5)';
 const GREEN_ACCENT = '#4ADE80';
 const GREEN_DIM = 'rgba(74, 222, 128, 0.18)';
 const GREEN_BORDER = 'rgba(74, 222, 128, 0.5)';
@@ -46,6 +49,7 @@ const QuickActionOverlay = memo(({
 
   // Local state for toggles
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
@@ -71,6 +75,7 @@ const QuickActionOverlay = memo(({
       getMediaStatus(mediaType, media.id).then(res => {
         if (active && res?.success && res.data) {
           setIsWishlisted(res.data.is_wishlisted);
+          setIsPlaying(res.data.status === 'watching');
           setIsCompleted(res.data.status === 'watched');
         }
       });
@@ -78,6 +83,7 @@ const QuickActionOverlay = memo(({
       fadeAnim.setValue(0);
       slideAnim.setValue(0);
       setIsWishlisted(false);
+      setIsPlaying(false);
       setIsCompleted(false);
     }
     return () => { active = false; };
@@ -93,8 +99,17 @@ const QuickActionOverlay = memo(({
   const handleCompletedPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const newVal = !isCompleted;
+    setIsPlaying(false);
     setIsCompleted(newVal);
     onCompleted(media, newVal ? 'watched' : null);
+  };
+
+  const handlePlayingPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newVal = !isPlaying;
+    setIsPlaying(newVal);
+    setIsCompleted(false);
+    onCompleted(media, newVal ? 'watching' : null);
   };
 
   if (!visible || !media || !cardLayout) return null;
@@ -107,19 +122,20 @@ const QuickActionOverlay = memo(({
   });
 
   let actionsStyle;
+  const actionsTopOffset = 72;
   if (isLeftColumn) {
     // Card is on the left → actions on the right
     actionsStyle = {
       position: 'absolute',
       left: cardLayout.x + cardLayout.width + ACTION_GAP,
-      top: cardLayout.y + (cardLayout.height / 2) - 40, // center vertically
+      top: cardLayout.y + (cardLayout.height / 2) - actionsTopOffset,
     };
   } else {
     // Card is on the right → actions on the left
     actionsStyle = {
       position: 'absolute',
       right: (SCREEN_W - cardLayout.x) + ACTION_GAP,
-      top: cardLayout.y + (cardLayout.height / 2) - 40,
+      top: cardLayout.y + (cardLayout.height / 2) - actionsTopOffset,
     };
   }
 
@@ -181,6 +197,25 @@ const QuickActionOverlay = memo(({
           },
         ]}
       >
+        {/* Playing / Watching button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.actionBtn,
+            isPlaying ? styles.playingBtnActive : styles.btnInactive,
+            pressed && styles.actionBtnPressed,
+          ]}
+          onPress={handlePlayingPress}
+        >
+          <Ionicons
+            name={mediaType === 'games' ? 'game-controller' : 'eye'}
+            size={16}
+            color={isPlaying ? YELLOW_ACCENT : 'rgba(255,255,255,0.45)'}
+          />
+          <Text style={[styles.actionLabel, { color: isPlaying ? YELLOW_ACCENT : 'rgba(255,255,255,0.45)' }]}>
+            {mediaType === 'games' ? 'Playing' : 'Watching'}
+          </Text>
+        </Pressable>
+
         {/* Wishlist button */}
         <Pressable
           style={({ pressed }) => [
@@ -301,6 +336,10 @@ const styles = StyleSheet.create({
   wishlistBtnActive: {
     backgroundColor: PURPLE_DIM,
     borderColor: PURPLE_BORDER,
+  },
+  playingBtnActive: {
+    backgroundColor: YELLOW_DIM,
+    borderColor: YELLOW_BORDER,
   },
   completedBtnActive: {
     backgroundColor: GREEN_DIM,
