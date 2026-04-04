@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  ScrollView,
+  FlatList,
   ImageBackground,
   Dimensions,
 } from 'react-native';
@@ -70,8 +70,8 @@ const buildSeasonSlides = (relations, currentAnime, seasonChain) => {
     const bSeason = extractSeasonNumberFromTitle(bTitle);
 
     if (aSeason != null && bSeason != null) return aSeason - bSeason;
-    if (aSeason != null) return -1;
-    if (bSeason != null) return 1;
+    if (aSeason == null && bSeason != null) return bSeason > 1 ? -1 : 1;
+    if (aSeason != null && bSeason == null) return aSeason > 1 ? 1 : -1;
     return (a.id || 0) - (b.id || 0);
   };
 
@@ -115,6 +115,7 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
     () => buildSeasonSlides(relations, currentAnime, seasonChain),
     [relations, currentAnime, seasonChain]
   );
+  const itemSize = CARD_WIDTH + CARD_MARGIN;
 
   const renderSeasonItem = useCallback(({ item }) => {
     try {
@@ -178,28 +179,47 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
     }
   }, [onItemPress]);
 
+  const keyExtractor = useCallback((item, index) => {
+    if (item?.id != null) return String(item.id);
+    return `season-${index}`;
+  }, []);
+
+  const getItemLayout = useCallback((_, index) => ({
+    length: itemSize,
+    offset: itemSize * index,
+    index,
+  }), [itemSize]);
+
   if (!seasons.length) return null;
 
   try {
     return (
       <View style={styles.container}>
         <Text style={styles.sectionTitle}>SEASON SECTION</Text>
-        <ScrollView
+        <FlatList
+          data={seasons}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           decelerationRate="fast"
-          snapToInterval={CARD_WIDTH + CARD_MARGIN}
-          snapToAlignment="center"
+          snapToInterval={itemSize}
+          snapToAlignment="start"
           disableIntervalMomentum
           bounces={false}
-        >
-          {seasons.map((season, index) => (
-            <View key={`${season.node?.id || index}-${index}`} style={styles.cardWrapper}>
-              {renderSeasonItem({ item: season })}
+          initialNumToRender={4}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
+          ItemSeparatorComponent={() => <View style={styles.cardSeparator} />}
+          renderItem={({ item }) => (
+            <View style={styles.cardWrapper}>
+              {renderSeasonItem({ item })}
             </View>
-          ))}
-        </ScrollView>
+          )}
+        />
       </View>
     );
   } catch (error) {
@@ -226,7 +246,9 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     width: CARD_WIDTH,
-    marginHorizontal: CARD_MARGIN / 2,
+  },
+  cardSeparator: {
+    width: CARD_MARGIN,
   },
   seasonCard: {
     width: '100%',
