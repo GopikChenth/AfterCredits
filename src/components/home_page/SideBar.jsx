@@ -76,7 +76,15 @@ const SideBar = ({
 
   const loadVisibleSections = async () => {
     const settings = await getSettings();
-    const filtered = ALL_SECTIONS.filter(s => settings[s.settingKey]);
+    const order = Array.isArray(settings.sidebarOrder) ? settings.sidebarOrder : [];
+    const rankMap = new Map(order.map((id, index) => [id, index]));
+    const filtered = ALL_SECTIONS
+      .filter(s => settings[s.settingKey])
+      .sort((a, b) => {
+        const aRank = rankMap.has(a.id) ? rankMap.get(a.id) : Number.MAX_SAFE_INTEGER;
+        const bRank = rankMap.has(b.id) ? rankMap.get(b.id) : Number.MAX_SAFE_INTEGER;
+        return aRank - bRank;
+      });
     setVisibleSections(filtered);
   };
 

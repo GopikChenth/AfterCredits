@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
+  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   PanResponder,
@@ -54,6 +55,16 @@ const POPUP_IN_MS = 24;
 const POPUP_OUT_MS = 60;
 const CONTENT_IN_MS = 140;
 const CONTENT_OUT_MS = 80;
+
+const parsePlaytimeHours = (value) => {
+  if (value == null) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(',', '.');
+  const numeric = Number(normalized);
+  if (!Number.isFinite(numeric) || numeric < 0) return null;
+  return Math.round(numeric * 100) / 100;
+};
 
 const PLATFORMS = [
   { id: 'pc', label: 'PC', icon: 'desktop-outline' },
@@ -193,6 +204,7 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
   const [storyPct, setStoryPct] = useState(0);
   const [overallPct, setOverallPct] = useState(0);
   const [selectedPlatform, setSelectedPlatform] = useState('pc');
+  const [hoursPlayed, setHoursPlayed] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isStory, setIsStory] = useState(true);
   const [isMultiplayer, setIsMultiplayer] = useState(false);
@@ -256,12 +268,14 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
         `game_platform_${gameId}`,
         `game_multiplayer_${gameId}`,
         `game_story_${gameId}`,
+        `game_playtime_${gameId}`,
       ]).then((pairs) => {
         setStoryPct(pairs[0][1] != null ? Number(pairs[0][1]) : 0);
         setOverallPct(pairs[1][1] != null ? Number(pairs[1][1]) : 0);
         setSelectedPlatform(pairs[2][1] || 'pc');
         setIsMultiplayer(pairs[3][1] === 'true');
         setIsStory(pairs[4][1] !== 'false');
+        setHoursPlayed(pairs[5][1] || '');
       });
     });
   }, [visible, gameId, scaleAnim, translateYAnim, opacityAnim, backdropAnim, contentOpacityAnim, contentTranslateYAnim, reduceMotion]);
@@ -283,6 +297,7 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
+      const parsedPlaytimeHours = parsePlaytimeHours(hoursPlayed);
       await Promise.all([
         AsyncStorage.multiSet([
           [`game_story_progress_${gameId}`, String(storyPct)],
@@ -293,13 +308,17 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
         selectedPlatform
           ? AsyncStorage.setItem(`game_platform_${gameId}`, selectedPlatform)
           : AsyncStorage.removeItem(`game_platform_${gameId}`),
+        parsedPlaytimeHours != null
+          ? AsyncStorage.setItem(`game_playtime_${gameId}`, String(parsedPlaytimeHours))
+          : AsyncStorage.removeItem(`game_playtime_${gameId}`),
       ]);
 
       const dbResult = await saveGamePlayingProgress(
         String(gameId),
         storyPct,
         overallPct,
-        selectedPlatform
+        selectedPlatform,
+        parsedPlaytimeHours
       );
       if (!dbResult?.success) {
         console.warn('PlayingWindow DB save failed:', dbResult?.error || 'Unknown error');
@@ -310,7 +329,7 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
       setIsSaving(false);
       handleClose();
     }
-  }, [storyPct, overallPct, selectedPlatform, isMultiplayer, isStory, gameId, handleClose]);
+  }, [storyPct, overallPct, selectedPlatform, isMultiplayer, isStory, hoursPlayed, gameId, handleClose]);
 
   const popupWidth = Math.min(vw * 0.9, 420);
 
@@ -399,6 +418,25 @@ const PlayingWindow = ({ visible, gameId, gameName, onClose }) => {
                       </TouchableOpacity>
                     );
                   })}
+                </View>
+
+                <View style={[styles.sectionHeader, { marginTop: 12 }]}>
+                  <Ionicons name="time-outline" size={14} color={ACCENT} />
+                  <Text style={styles.sectionTitle}>Hours Played</Text>
+                </View>
+                <View style={styles.timeRow}>
+                  <TextInput
+                    style={styles.timeInput}
+                    value={hoursPlayed}
+                    onChangeText={setHoursPlayed}
+                    placeholder="0"
+                    placeholderTextColor="#333"
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    maxLength={6}
+                    accessibilityLabel="Hours played"
+                  />
+                  <Text style={styles.timeUnit}>hours</Text>
                 </View>
 
                 <View style={[styles.sectionHeader, { marginTop: 12 }]}>
@@ -537,6 +575,32 @@ const styles = StyleSheet.create({
   },
   platformLabelSelected: {
     color: BG,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  timeInput: {
+    backgroundColor: '#0D0D0D',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 10,
+    color: TEXT,
+    fontSize: 16,
+    fontWeight: '700',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 84,
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  timeUnit: {
+    fontSize: 12,
+    color: MUTED,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   summaryRow: {
     flexDirection: 'row',

@@ -340,9 +340,10 @@ export const saveGamePlayingProgress = async (
   mediaId,
   storyProgress,
   overallProgress,
-  platform = undefined
+  platform = undefined,
+  playtimeHours = undefined
 ) => {
-  return saveGameTracking(mediaId, { storyProgress, overallProgress, platform });
+  return saveGameTracking(mediaId, { storyProgress, overallProgress, platform, playtimeHours });
 };
 
 export const saveGameCompletionDetails = async (

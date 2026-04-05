@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  Image as RNImage,
   Pressable,
   StatusBar,
 } from 'react-native';
@@ -14,8 +13,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { getByStatus, getWishlist } from '../services/mediaStatusService';
-import { getUserReviews } from '../services/reviewService';
-import OverviewStats from '../components/podium_page/OverviewStats';
 
 import { useMediaType } from '../context/MediaTypeContext';
 import { getPodiumPageStyles, getPodiumPageTheme } from '../stylehandler/podiumPageStyles';
@@ -50,7 +47,6 @@ const PodiumPage = ({ navigation }) => {
   const [genreStats, setGenreStats] = useState({});
   const [secondaryStats, setSecondaryStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [avgRating, setAvgRating] = useState(null);
   const userProfile = useProfileStore((state) => state.profile);
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
 
@@ -62,18 +58,6 @@ const PodiumPage = ({ navigation }) => {
     const unsubscribe = navigation.addListener('focus', () => fetchProfile());
     return unsubscribe;
   }, [navigation, fetchProfile]);
-
-  // Fetch avg rating for current media type
-  useEffect(() => {
-    getUserReviews().then(res => {
-      if (!res.success || !res.reviews?.length) { setAvgRating(null); return; }
-      const mt = theme.statusMediaType;
-      const filtered = res.reviews.filter(r => r.media_type === mt && r.overall_rating != null);
-      if (filtered.length === 0) { setAvgRating(null); return; }
-      const avg = filtered.reduce((s, r) => s + r.overall_rating, 0) / filtered.length;
-      setAvgRating(Math.round(avg * 10) / 10);
-    });
-  }, [theme.statusMediaType]);
 
   // ─── Aggregate genres + secondary from detail objects ────
   const fetchGenresAndSecondary = useCallback(async (items) => {
@@ -234,6 +218,8 @@ const PodiumPage = ({ navigation }) => {
     );
   }
 
+  const multiplayerAccent = theme.accentSecondary || theme.accent || '#22D3EE';
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={theme.background} />
@@ -265,40 +251,6 @@ const PodiumPage = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Overview stats */}
-        <View style={styles.statsSection}>
-          <OverviewStats
-            title="Overview"
-            accentColor={theme.accent}
-            stats={[
-              {
-                icon: 'checkmark-circle-outline',
-                value: counts.watched,
-                label: 'Completed',
-                color: theme.accent,
-              },
-              {
-                icon: 'play-circle-outline',
-                value: counts.watching,
-                label: theme.statusLabels.watching,
-                color: theme.accentSecondary,
-              },
-              {
-                icon: 'star-outline',
-                value: avgRating ?? 'N/A',
-                label: 'Avg Rating',
-                color: '#F4C542',
-              },
-              {
-                icon: 'heart-outline',
-                value: counts.wishlist,
-                label: 'Wishlist',
-                color: '#F87171',
-              },
-            ]}
-          />
-        </View>
-
         {/* Donut + Counters */}
         <View style={styles.mainSection}>
           <Text style={styles.sectionTitle}>Status Distribution</Text>
@@ -314,23 +266,58 @@ const PodiumPage = ({ navigation }) => {
 
         {/* Multiplayer Games */}
         {theme.statusMediaType === 'games' && multiplayerCount > 0 && (
-          <Pressable
-            style={styles.statsSection}
-            onPress={() => navigation.navigate('PodiumListPage', { status: 'multiplayer' })}
-          >
-            <Text style={styles.sectionTitle}>Multiplayer Games</Text>
-            <OverviewStats
-              accentColor="#A78BFA"
-              stats={[
+          <View style={[styles.mainSection, { paddingTop: 14 }]}>
+            <Pressable
+              style={({ pressed }) => ([
                 {
-                  icon: 'people',
-                  value: multiplayerCount,
-                  label: multiplayerCount === 1 ? 'Game' : 'Games',
-                  color: '#A78BFA',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  borderRadius: 12,
+                  borderCurve: 'continuous',
+                  backgroundColor: pressed ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.04)',
+                  gap: 10,
                 },
-              ]}
-            />
-          </Pressable>
+                pressed && { transform: [{ scale: 0.97 }] },
+              ])}
+              onPress={() => navigation.navigate('PodiumListPage', { status: 'multiplayer' })}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  borderCurve: 'continuous',
+                  backgroundColor: multiplayerAccent,
+                }}
+              />
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: '#ccc',
+                  fontFamily: theme.fontFamily,
+                  letterSpacing: 0.3,
+                }}
+              >
+                Multiplayer
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '800',
+                  color: multiplayerAccent,
+                  fontFamily: theme.fontFamilyBold || theme.fontFamily,
+                  minWidth: 20,
+                  textAlign: 'right',
+                }}
+              >
+                {multiplayerCount}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.2)" />
+            </Pressable>
+          </View>
         )}
 
         {/* Top Genres */}
