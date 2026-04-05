@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
@@ -28,6 +29,27 @@ import SkeletonProfile from '../components/skeletons/SkeletonProfile';
 import { useProfileStore } from '../stores/useProfileStore';
 
 const ANON_MODE_SAVE_DEBOUNCE_MS = 220;
+const SIDEBAR_MEDIA_OPTIONS = [
+  { id: 'anime', key: 'showAnime', title: 'Anime', icon: 'sparkles-outline' },
+  { id: 'movies', key: 'showMovies', title: 'Movies', icon: 'film-outline' },
+  { id: 'games', key: 'showGames', title: 'Games', icon: 'game-controller-outline' },
+  { id: 'comics', key: 'showComics', title: 'Comics', icon: 'book-outline', locked: true },
+  { id: 'manga', key: 'showManga', title: 'Manga', icon: 'albums-outline', locked: true },
+];
+const SIDEBAR_SHUFFLE_IDS = ['anime', 'movies', 'games'];
+const SIDEBAR_REORDER_TRANSITION = LinearTransition.springify()
+  .damping(18)
+  .stiffness(220)
+  .mass(0.7);
+
+const shuffleArray = (arr) => {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -54,8 +76,9 @@ const ProfilePage = ({ navigation }) => {
     showAnime: true,
     showMovies: true,
     showGames: true,
-    showComics: true,
-    showManga: true,
+    showComics: false,
+    showManga: false,
+    sidebarOrder: ['anime', 'movies', 'games', 'comics', 'manga'],
   });
   const anonModeTimerRef = useRef(null);
   const anonModePendingValueRef = useRef(null);
@@ -197,12 +220,80 @@ const ProfilePage = ({ navigation }) => {
 
   // Handle Media Visibility Toggle
   const handleMediaToggle = async (mediaType, value) => {
+    if (mediaType === 'comics' || mediaType === 'manga') {
+      return;
+    }
     const key = `show${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)}`;
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     
     await updateSettings(newSettings);
   };
+
+  const orderedSidebarOptions = useMemo(() => {
+    const order = Array.isArray(settings.sidebarOrder) ? settings.sidebarOrder : [];
+    const rank = new Map(order.map((id, index) => [id, index]));
+    return [...SIDEBAR_MEDIA_OPTIONS].sort((a, b) => {
+      const aRank = rank.has(a.id) ? rank.get(a.id) : Number.MAX_SAFE_INTEGER;
+      const bRank = rank.has(b.id) ? rank.get(b.id) : Number.MAX_SAFE_INTEGER;
+      return aRank - bRank;
+    });
+  }, [settings.sidebarOrder]);
+
+  const handleShuffleSidebarOrder = useCallback(async () => {
+    const shuffledCore = shuffleArray(SIDEBAR_SHUFFLE_IDS);
+    const nextOrder = [...shuffledCore, 'comics', 'manga'];
+    const newSettings = { ...settings, sidebarOrder: nextOrder, showComics: false, showManga: false };
+    setSettings(newSettings);
+    await updateSettings(newSettings);
+  }, [settings]);
+
+  const renderSidebarSettings = () => (
+    <>
+      <Text style={styles.sectionTitle}>Sidebar</Text>
+      <Pressable
+        style={styles.shuffleButton}
+        onPress={handleShuffleSidebarOrder}
+        accessibilityRole="button"
+        accessibilityLabel="Shuffle sidebar order"
+      >
+        <Ionicons name="shuffle-outline" size={16} color={theme.accent} />
+        <Text style={styles.shuffleButtonText}>Shuffle Sidebar Order</Text>
+      </Pressable>
+      <View style={styles.menuCard}>
+        {orderedSidebarOptions.map((item, index) => {
+          const isLocked = Boolean(item.locked);
+          const value = isLocked ? false : Boolean(settings[item.key]);
+          return (
+            <Animated.View
+              key={item.id}
+              layout={SIDEBAR_REORDER_TRANSITION}
+            >
+              <View style={[styles.menuItem, isLocked && styles.menuItemDisabled]}>
+                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+                  <Ionicons name={item.icon} size={20} color={theme.accent} />
+                </View>
+                <View style={styles.menuTextContainer}>
+                  <Text style={styles.menuTitle}>{item.title}</Text>
+                  <Text style={[styles.menuSubtitle, isLocked && styles.menuSubtitleComingSoon]}>
+                    {isLocked ? 'Coming soon' : (value ? 'Visible' : 'Hidden')}
+                  </Text>
+                </View>
+                <Switch
+                  value={value}
+                  onValueChange={(nextValue) => handleMediaToggle(item.id, nextValue)}
+                  disabled={isLocked}
+                  trackColor={{ false: '#444', true: theme.accent + '80' }}
+                  thumbColor={value ? theme.accent : '#999'}
+                />
+              </View>
+              {index < orderedSidebarOptions.length - 1 ? <View style={styles.menuDivider} /> : null}
+            </Animated.View>
+          );
+        })}
+      </View>
+    </>
+  );
 
   // IGDB credentials save handler
   const handleSaveIGDBCredentials = async () => {
@@ -281,113 +372,7 @@ const ProfilePage = ({ navigation }) => {
                 <Text style={styles.signInButtonText}>Sign In</Text>
               </Pressable>
             </View>
-            {/* Media Visibility Settings */}
-            <Text style={styles.sectionTitle}>Sidebar</Text>
-            
-            <View style={styles.menuCard}>
-              {/* Anime Toggle */}
-              <View style={styles.menuItem}>
-                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Ionicons name="sparkles-outline" size={20} color={theme.accent} />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Anime</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {settings.showAnime ? 'Visible' : 'Hidden'}
-                  </Text>
-                </View>
-                <Switch
-                  value={settings.showAnime}
-                  onValueChange={(value) => handleMediaToggle('anime', value)}
-                  trackColor={{ false: '#444', true: theme.accent + '80' }}
-                  thumbColor={settings.showAnime ? theme.accent : '#999'}
-                />
-              </View>
-
-              <View style={styles.menuDivider} />
-
-              {/* Movies Toggle */}
-              <View style={styles.menuItem}>
-                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Ionicons name="film-outline" size={20} color={theme.accent} />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Movies</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {settings.showMovies ? 'Visible' : 'Hidden'}
-                  </Text>
-                </View>
-                <Switch
-                  value={settings.showMovies}
-                  onValueChange={(value) => handleMediaToggle('movies', value)}
-                  trackColor={{ false: '#444', true: theme.accent + '80' }}
-                  thumbColor={settings.showMovies ? theme.accent : '#999'}
-                />
-              </View>
-
-              <View style={styles.menuDivider} />
-
-              {/* Games Toggle */}
-              <View style={styles.menuItem}>
-                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Ionicons name="game-controller-outline" size={20} color={theme.accent} />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Games</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {settings.showGames ? 'Visible' : 'Hidden'}
-                  </Text>
-                </View>
-                <Switch
-                  value={settings.showGames}
-                  onValueChange={(value) => handleMediaToggle('games', value)}
-                  trackColor={{ false: '#444', true: theme.accent + '80' }}
-                  thumbColor={settings.showGames ? theme.accent : '#999'}
-                />
-              </View>
-
-              <View style={styles.menuDivider} />
-
-              {/* Comics Toggle */}
-              <View style={styles.menuItem}>
-                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Ionicons name="book-outline" size={20} color={theme.accent} />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Comics</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {settings.showComics ? 'Visible' : 'Hidden'}
-                  </Text>
-                </View>
-                <Switch
-                  value={settings.showComics}
-                  onValueChange={(value) => handleMediaToggle('comics', value)}
-                  trackColor={{ false: '#444', true: theme.accent + '80' }}
-                  thumbColor={settings.showComics ? theme.accent : '#999'}
-                />
-              </View>
-
-              <View style={styles.menuDivider} />
-
-              {/* Manga Toggle */}
-              <View style={styles.menuItem}>
-                <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
-                  <Ionicons name="albums-outline" size={20} color={theme.accent} />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Manga</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {settings.showManga ? 'Visible' : 'Hidden'}
-                  </Text>
-                </View>
-                <Switch
-                  value={settings.showManga}
-                  onValueChange={(value) => handleMediaToggle('manga', value)}
-                  trackColor={{ false: '#444', true: theme.accent + '80' }}
-                  thumbColor={settings.showManga ? theme.accent : '#999'}
-                />
-              </View>
-            </View>
+            {renderSidebarSettings()}
 
 
 
@@ -525,6 +510,9 @@ const ProfilePage = ({ navigation }) => {
             </View>
           ) : null}
         </View>
+
+        {/* Sidebar Settings */}
+        {renderSidebarSettings()}
 
         {/* Privacy Section */}
         <Text style={styles.sectionTitle}>Privacy</Text>
@@ -981,6 +969,26 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: 2,
   },
+  shuffleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 12,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
+    backgroundColor: 'rgba(167,139,250,0.12)',
+  },
+  shuffleButtonText: {
+    fontSize: 13,
+    color: '#D8CCFF',
+    fontFamily: 'Agdasima-Bold',
+    letterSpacing: 0.6,
+  },
   menuCard: {
     backgroundColor: '#151521',
     borderRadius: 18,
@@ -994,6 +1002,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+  },
+  menuItemDisabled: {
+    opacity: 0.75,
   },
   menuIconContainer: {
     width: 40,
@@ -1020,6 +1031,9 @@ const styles = StyleSheet.create({
     color: '#9AA0B4',
     marginTop: 2,
     fontFamily: 'Agdasima',
+  },
+  menuSubtitleComingSoon: {
+    color: '#FBBF24',
   },
   menuDivider: {
     height: 1,

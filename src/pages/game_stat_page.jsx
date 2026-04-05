@@ -45,7 +45,6 @@ import Animated, {
 import GenrePill from '../components/details_page/GenrePill';
 import PlayingWindow from '../components/details_page/PlayingWindow';
 import CompletedWindow from '../components/details_page/CompletedWindow';
-import CyberpunkFrame from '../components/details_page/CyberpunkFrame';
 import { fetchIGDBById, fetchIGDBByName, getGameDLCs } from '../services/api_igdb';
 import { hasIGDBCredentials } from '../services/settings';
 import {
@@ -549,9 +548,7 @@ const GameStatPage = ({ route, navigation }) => {
         {/* ── ABOUT ── */}
         {summary.length > 0 && (
           <Section title="About" icon="information-circle-outline" delay={200}>
-            <CyberpunkFrame color={ACCENT}>
-              <Text style={s.aboutText}>{summary}</Text>
-            </CyberpunkFrame>
+            <Text style={s.aboutText}>{summary}</Text>
           </Section>
         )}
 

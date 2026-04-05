@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Animated,
   FlatList,
-  InteractionManager,
   Pressable,
   ScrollView,
   StatusBar,
@@ -58,15 +57,18 @@ const AnimeDetail = ({ route, navigation }) => {
     reviewStats,
     seasonChain,
     userStatus,
-  } = useAnimeDetailsData(animeId);
+  } = useAnimeDetailsData(animeId, { loadDeferred: showDeferredSections });
 
   const handleScroll = useCallback(
     (event) => {
       const offsetY = event.nativeEvent.contentOffset.y;
       const triggerPoint = titleYRef.current > 0 ? titleYRef.current : 100;
       headerOpacity.setValue(offsetY > triggerPoint ? 1 : 0);
+      if (!showDeferredSections && offsetY > 320) {
+        setShowDeferredSections(true);
+      }
     },
-    [headerOpacity]
+    [headerOpacity, showDeferredSections]
   );
 
   const handleRelatedItemPress = useCallback((relatedAnime) => {
@@ -79,11 +81,6 @@ const AnimeDetail = ({ route, navigation }) => {
 
   useEffect(() => {
     setShowDeferredSections(false);
-    const task = InteractionManager.runAfterInteractions(() => {
-      setShowDeferredSections(true);
-    });
-
-    return () => task.cancel?.();
   }, [animeId]);
 
   // ── Derived data (must be above early returns to satisfy Rules of Hooks) ──
@@ -213,7 +210,7 @@ const AnimeDetail = ({ route, navigation }) => {
         </GlassCard>
 
         {/* Season Section - Shows only seasons/sequels/prequels */}
-        {animeData?.relations?.edges && animeData.relations.edges.length > 0 && (
+        {(seasonChain.length > 0 || (animeData?.relations?.edges && animeData.relations.edges.length > 0)) && (
           <SeasonSection 
             relations={animeData.relations}
             seasonChain={seasonChain}

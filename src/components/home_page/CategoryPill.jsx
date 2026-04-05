@@ -104,8 +104,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryText: {
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: 'Agdasima-Bold',
+    fontWeight: '900',
     color: '#101010',
     letterSpacing: 1.2,
   },

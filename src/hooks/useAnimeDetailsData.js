@@ -100,7 +100,8 @@ const formatAnimeDetails = (data) => {
   };
 };
 
-export const useAnimeDetailsData = (animeId) => {
+export const useAnimeDetailsData = (animeId, options = {}) => {
+  const { loadDeferred = true } = options;
   const [animeData, setAnimeData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -146,6 +147,9 @@ export const useAnimeDetailsData = (animeId) => {
 
     setIsLoading(true);
     setError(null);
+    setSeasonChain([]);
+    setDbReviews([]);
+    setReviewStats(getSafeReviewStats());
 
     try {
       const data = await getAnimeDetails(animeId);
@@ -156,13 +160,6 @@ export const useAnimeDetailsData = (animeId) => {
       }
 
       setAnimeData(formatAnimeDetails(data));
-
-      try {
-        const chain = await getAnimeSeasonChain(data.id);
-        setSeasonChain(chain);
-      } catch (seasonError) {
-        setSeasonChain([]);
-      }
     } catch (fetchError) {
       console.error("Error fetching anime details:", fetchError);
       setError("Failed to load anime details. Please try again.");
@@ -170,6 +167,16 @@ export const useAnimeDetailsData = (animeId) => {
       setIsLoading(false);
     }
   }, [animeId]);
+
+  const refreshSeasonChain = useCallback(async () => {
+    if (!animeData?.id) return;
+    try {
+      const chain = await getAnimeSeasonChain(animeData.id);
+      setSeasonChain(chain);
+    } catch (seasonError) {
+      setSeasonChain([]);
+    }
+  }, [animeData?.id]);
 
   const handleStatusChange = useCallback(
     async (newStatus) => {
@@ -192,8 +199,10 @@ export const useAnimeDetailsData = (animeId) => {
 
   useFocusEffect(
     useCallback(() => {
-      refreshReviews();
-    }, [refreshReviews])
+      if (loadDeferred) {
+        refreshReviews();
+      }
+    }, [refreshReviews, loadDeferred])
   );
 
   useEffect(() => {
@@ -203,6 +212,16 @@ export const useAnimeDetailsData = (animeId) => {
   useEffect(() => {
     refreshAnimeDetails();
   }, [refreshAnimeDetails]);
+
+  useEffect(() => {
+    if (!loadDeferred) return;
+    refreshSeasonChain();
+  }, [loadDeferred, refreshSeasonChain]);
+
+  useEffect(() => {
+    if (!loadDeferred || dbReviews.length > 0) return;
+    refreshReviews();
+  }, [loadDeferred, dbReviews.length, refreshReviews]);
 
   return useMemo(
     () => ({

@@ -218,6 +218,8 @@ const PodiumPage = ({ navigation }) => {
     );
   }
 
+  const multiplayerAccent = theme.accentSecondary || theme.accent || '#22D3EE';
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <StatusBar barStyle="light-content" backgroundColor={theme.background} />
@@ -287,7 +289,7 @@ const PodiumPage = ({ navigation }) => {
                   height: 8,
                   borderRadius: 4,
                   borderCurve: 'continuous',
-                  backgroundColor: '#A78BFA',
+                  backgroundColor: multiplayerAccent,
                 }}
               />
               <Text
@@ -305,7 +307,7 @@ const PodiumPage = ({ navigation }) => {
                 style={{
                   fontSize: 16,
                   fontWeight: '800',
-                  color: '#A78BFA',
+                  color: multiplayerAccent,
                   fontFamily: theme.fontFamilyBold || theme.fontFamily,
                   minWidth: 20,
                   textAlign: 'right',
