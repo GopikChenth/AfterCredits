@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, Animated, Easing, Platform, AccessibilityInfo } from 'react-native';
+import {
+  View,
+  Pressable,
+  StyleSheet,
+  Animated,
+  Easing,
+  Platform,
+  AccessibilityInfo,
+} from 'react-native';
+import { HomeSimpleDoor, Post as PostIcon } from 'iconoir-react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMediaType } from '../../context/MediaTypeContext';
 import { getMediaTheme } from '../../utils/mediaThemes';
 
@@ -26,17 +36,35 @@ const DARK_NAV = {
   labelNear: '#BCC2CF',
 };
 
+const TAB_ICON_SIZE = 22;
+const TAB_ICON_COLOR = '#FFFFFF';
+const NAV_HORIZONTAL_PADDING = 10;
+const ACTIVE_INDICATOR_WIDTH = 28;
+const ACTIVE_AURA_WIDTH = 64;
+
 const TAB_CONFIG = {
-  Home: { label: 'Home', icon: '🏠' },
-  PostPage: { label: 'Post', icon: '📝' },
-  DiscoverPage: { label: 'Discover', icon: '🔍' },
-  PodiumPage: { label: 'Podium', icon: '📋' },
+  Home: {
+    label: 'Home',
+    iconLibrary: 'iconoir',
+    iconComponent: HomeSimpleDoor,
+  },
+  PostPage: {
+    label: 'Post',
+    iconLibrary: 'iconoir',
+    iconComponent: PostIcon,
+  },
+  DiscoverPage: {
+    label: 'Discover',
+    iconLibrary: 'ionicons',
+    iconName: 'newspaper-outline',
+  },
+  PodiumPage: {
+    label: 'Podium',
+    iconLibrary: 'ionicons',
+    iconName: 'podium-outline',
+  },
 };
 
-/**
- * Custom Tab Bar for Bottom Tab Navigator
- * Receives props from @react-navigation/bottom-tabs
- */
 const NavBar = ({ state, navigation }) => {
   const { mediaType } = useMediaType();
   const theme = getMediaTheme(MEDIA_THEME_KEY[mediaType] || 'anime');
@@ -101,51 +129,88 @@ const NavBar = ({ state, navigation }) => {
 
   const handleBarLayout = useCallback((event) => {
     const nextWidth = event.nativeEvent.layout.width;
-    setBarWidth((currentWidth) => (currentWidth === nextWidth ? currentWidth : nextWidth));
+    setBarWidth((currentWidth) =>
+      currentWidth === nextWidth ? currentWidth : nextWidth
+    );
   }, []);
 
-  const tabWidth = barWidth && routeCount ? barWidth / routeCount : 0;
+  const innerBarWidth = Math.max(barWidth - NAV_HORIZONTAL_PADDING * 2, 0);
+  const tabWidth = innerBarWidth && routeCount ? innerBarWidth / routeCount : 0;
   const inputRange = useMemo(
     () => Array.from({ length: routeCount }, (_, index) => index),
     [routeCount]
   );
-  const indicatorTranslateX = useMemo(() => (
-    tabWidth
-      ? activeIndexAnim.interpolate({
-        inputRange,
-        outputRange: inputRange.map((index) => index * tabWidth + (tabWidth - 28) / 2),
-      })
-      : 0
-  ), [activeIndexAnim, inputRange, tabWidth]);
-  const auraTranslateX = useMemo(() => (
-    tabWidth
-      ? activeIndexAnim.interpolate({
-        inputRange,
-        outputRange: inputRange.map((index) => index * tabWidth + tabWidth / 2 - 32),
-      })
-      : 0
-  ), [activeIndexAnim, inputRange, tabWidth]);
-  const auraOpacity = useMemo(() => delightAnim.interpolate({
-    inputRange: [0, 0.2, 1],
-    outputRange: [0, 0.26, 0.12],
-    extrapolate: 'clamp',
-  }), [delightAnim]);
-  const auraScale = useMemo(() => delightAnim.interpolate({
-    inputRange: [0, 0.25, 1],
-    outputRange: [0.82, 1.06, 1],
-    extrapolate: 'clamp',
-  }), [delightAnim]);
-  const indicatorScaleX = useMemo(() => delightAnim.interpolate({
-    inputRange: [0, 0.35, 1],
-    outputRange: [0.8, 1.18, 1],
-    extrapolate: 'clamp',
-  }), [delightAnim]);
+
+  const indicatorTranslateX = useMemo(
+    () =>
+      tabWidth
+        ? activeIndexAnim.interpolate({
+            inputRange,
+            outputRange: inputRange.map(
+              (index) =>
+                NAV_HORIZONTAL_PADDING +
+                index * tabWidth +
+                (tabWidth - ACTIVE_INDICATOR_WIDTH) / 2
+            ),
+          })
+        : 0,
+    [activeIndexAnim, inputRange, tabWidth]
+  );
+
+  const auraTranslateX = useMemo(
+    () =>
+      tabWidth
+        ? activeIndexAnim.interpolate({
+            inputRange,
+            outputRange: inputRange.map(
+              (index) =>
+                NAV_HORIZONTAL_PADDING +
+                index * tabWidth +
+                (tabWidth - ACTIVE_AURA_WIDTH) / 2
+            ),
+          })
+        : 0,
+    [activeIndexAnim, inputRange, tabWidth]
+  );
+
+  const auraOpacity = useMemo(
+    () =>
+      delightAnim.interpolate({
+        inputRange: [0, 0.2, 1],
+        outputRange: [0, 0.26, 0.12],
+        extrapolate: 'clamp',
+      }),
+    [delightAnim]
+  );
+
+  const auraScale = useMemo(
+    () =>
+      delightAnim.interpolate({
+        inputRange: [0, 0.25, 1],
+        outputRange: [0.82, 1.06, 1],
+        extrapolate: 'clamp',
+      }),
+    [delightAnim]
+  );
+
+  const indicatorScaleX = useMemo(
+    () =>
+      delightAnim.interpolate({
+        inputRange: [0, 0.35, 1],
+        outputRange: [0.8, 1.18, 1],
+        extrapolate: 'clamp',
+      }),
+    [delightAnim]
+  );
+
   const tabAnimations = useMemo(
     () =>
       inputRange.map((index) => ({
         iconTranslateY: activeIndexAnim.interpolate({
           inputRange,
-          outputRange: inputRange.map((routeIndex) => (routeIndex === index ? -1 : 0)),
+          outputRange: inputRange.map((routeIndex) =>
+            routeIndex === index ? -1 : 0
+          ),
           extrapolate: 'clamp',
         }),
         iconOpacity: activeIndexAnim.interpolate({
@@ -160,12 +225,16 @@ const NavBar = ({ state, navigation }) => {
         }),
         iconScale: activeIndexAnim.interpolate({
           inputRange,
-          outputRange: inputRange.map((routeIndex) => (routeIndex === index ? 1.06 : 1)),
+          outputRange: inputRange.map((routeIndex) =>
+            routeIndex === index ? 1.06 : 1
+          ),
           extrapolate: 'clamp',
         }),
         labelOpacity: activeIndexAnim.interpolate({
           inputRange,
-          outputRange: inputRange.map((routeIndex) => (routeIndex === index ? 1 : 0.72)),
+          outputRange: inputRange.map((routeIndex) =>
+            routeIndex === index ? 1 : 0.72
+          ),
           extrapolate: 'clamp',
         }),
       })),
@@ -181,6 +250,28 @@ const NavBar = ({ state, navigation }) => {
     } catch {
       // No-op when native haptics are unavailable.
     }
+  }, []);
+
+  const renderTabIcon = useCallback((config) => {
+    if (config.iconLibrary === 'iconoir' && config.iconComponent) {
+      const IconComponent = config.iconComponent;
+      return (
+        <IconComponent
+          width={TAB_ICON_SIZE}
+          height={TAB_ICON_SIZE}
+          color={TAB_ICON_COLOR}
+          strokeWidth={1.9}
+        />
+      );
+    }
+
+    return (
+      <Ionicons
+        name={config.iconName}
+        size={TAB_ICON_SIZE}
+        color={TAB_ICON_COLOR}
+      />
+    );
   }, []);
 
   return (
@@ -208,20 +299,25 @@ const NavBar = ({ state, navigation }) => {
           ]}
         />
       ) : null}
+
       {tabWidth ? (
         <Animated.View
           pointerEvents="none"
           style={[
             styles.activeIndicator,
             {
-              width: 28,
+              width: ACTIVE_INDICATOR_WIDTH,
               backgroundColor: theme.accent,
               shadowColor: theme.accent,
-              transform: [{ translateX: indicatorTranslateX }, { scaleX: indicatorScaleX }],
+              transform: [
+                { translateX: indicatorTranslateX },
+                { scaleX: indicatorScaleX },
+              ],
             },
           ]}
         />
       ) : null}
+
       {state.routes.map((route, index) => {
         const config = TAB_CONFIG[route.name];
         if (!config) return null;
@@ -248,18 +344,21 @@ const NavBar = ({ state, navigation }) => {
             style={styles.tab}
             onPress={onPress}
           >
-            <Animated.Text
+            <Animated.View
               style={[
-                styles.icon,
+                styles.iconWrap,
                 {
-                  color: isFocused ? theme.accentLight : DARK_NAV.labelNear,
                   opacity: animations.iconOpacity,
-                  transform: [{ scale: animations.iconScale }, { translateY: animations.iconTranslateY }],
+                  transform: [
+                    { scale: animations.iconScale },
+                    { translateY: animations.iconTranslateY },
+                  ],
                 },
               ]}
             >
-              {config.icon}
-            </Animated.Text>
+              {renderTabIcon(config)}
+            </Animated.View>
+
             <Animated.Text
               style={[
                 styles.label,
@@ -285,7 +384,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingBottom: 10,
     paddingTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: NAV_HORIZONTAL_PADDING,
     elevation: 8,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.28,
@@ -301,9 +400,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
     minHeight: 56,
   },
-  icon: {
-    fontSize: 24,
+  iconWrap: {
     marginBottom: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     fontSize: 12,
@@ -327,7 +427,7 @@ const styles = StyleSheet.create({
   activeAura: {
     position: 'absolute',
     top: 4,
-    width: 64,
+    width: ACTIVE_AURA_WIDTH,
     height: 46,
     borderRadius: 23,
     left: 0,

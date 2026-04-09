@@ -17,7 +17,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  LinearTransition,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
@@ -36,20 +43,130 @@ const SIDEBAR_MEDIA_OPTIONS = [
   { id: 'comics', key: 'showComics', title: 'Comics', icon: 'book-outline', locked: true },
   { id: 'manga', key: 'showManga', title: 'Manga', icon: 'albums-outline', locked: true },
 ];
-const SIDEBAR_SHUFFLE_IDS = ['anime', 'movies', 'games'];
 const SIDEBAR_REORDER_TRANSITION = LinearTransition.springify()
   .damping(18)
   .stiffness(220)
   .mass(0.7);
-
-const shuffleArray = (arr) => {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
+const SIDEBAR_DRAG_ROW_HEIGHT = 44;
+const SIDEBAR_DRAG_DEADZONE = 10;
+const SIDEBAR_DRAG_SPRING = {
+  damping: 18,
+  stiffness: 220,
+  mass: 0.7,
 };
+
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const moveArrayItem = (arr, fromIndex, toIndex) => {
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return arr;
+  const next = [...arr];
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
+};
+
+const getActiveSidebarIdsFromSettings = (settings) => {
+  const enabledIds = SIDEBAR_MEDIA_OPTIONS
+    .filter((item) => !item.locked && Boolean(settings?.[item.key]))
+    .map((item) => item.id);
+
+  const enabledSet = new Set(enabledIds);
+  const currentOrder = Array.isArray(settings?.sidebarOrder) ? settings.sidebarOrder : [];
+  const orderedEnabled = currentOrder.filter((id) => enabledSet.has(id));
+  const missing = enabledIds.filter((id) => !orderedEnabled.includes(id));
+  return [...orderedEnabled, ...missing];
+};
+
+const reorderOnlyActiveSidebarItems = (sidebarOrder, activeIdsInOrder, fromIndex, toIndex) => {
+  if (!Array.isArray(sidebarOrder) || activeIdsInOrder.length <= 1 || fromIndex === toIndex) {
+    return sidebarOrder;
+  }
+
+  const movedActiveIds = moveArrayItem(activeIdsInOrder, fromIndex, toIndex);
+  const activeSet = new Set(activeIdsInOrder);
+  let replacementIndex = 0;
+
+  return sidebarOrder.map((id) => {
+    if (!activeSet.has(id)) return id;
+    const nextId = movedActiveIds[replacementIndex];
+    replacementIndex += 1;
+    return nextId;
+  });
+};
+
+const SidebarDragHandle = React.memo(({
+  itemId,
+  disabled,
+  isDragging,
+  onDragStart,
+  onDragMove,
+  onDragEnd,
+}) => {
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    if (!isDragging) {
+      translateY.value = withSpring(0, SIDEBAR_DRAG_SPRING);
+      scale.value = withSpring(1, SIDEBAR_DRAG_SPRING);
+    }
+  }, [isDragging, scale, translateY]);
+
+  const dragGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!disabled)
+        .minDistance(0)
+        .shouldCancelWhenOutside(false)
+        .onBegin(() => {
+          scale.value = withSpring(1.08, SIDEBAR_DRAG_SPRING);
+          runOnJS(onDragStart)(itemId);
+        })
+        .onUpdate((event) => {
+          translateY.value = event.translationY;
+          runOnJS(onDragMove)(event.translationY);
+        })
+        .onFinalize(() => {
+          translateY.value = withSpring(0, SIDEBAR_DRAG_SPRING);
+          scale.value = withSpring(1, SIDEBAR_DRAG_SPRING);
+          runOnJS(onDragEnd)();
+        }),
+    [disabled, itemId, onDragEnd, onDragMove, onDragStart, scale, translateY]
+  );
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  return (
+    <GestureDetector gesture={dragGesture}>
+      <Animated.View
+        style={[
+          styles.dragHandle,
+          styles.dragHandleInline,
+          disabled && styles.dragHandleDisabled,
+          isDragging && styles.dragHandleActive,
+          animatedStyle,
+        ]}
+      >
+        <Ionicons
+          name="reorder-three-outline"
+          size={20}
+          color={
+            isDragging
+              ? '#FFFFFF'
+              : disabled
+              ? 'rgba(183,190,208,0.35)'
+              : '#B7BED0'
+          }
+        />
+      </Animated.View>
+    </GestureDetector>
+  );
+});
 
 const ProfilePage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -80,11 +197,21 @@ const ProfilePage = ({ navigation }) => {
     showManga: false,
     sidebarOrder: ['anime', 'movies', 'games', 'comics', 'manga'],
   });
+  const [draggingSidebarId, setDraggingSidebarId] = useState(null);
+  const [isSidebarDragging, setIsSidebarDragging] = useState(false);
   const anonModeTimerRef = useRef(null);
   const anonModePendingValueRef = useRef(null);
   const anonModeInFlightRef = useRef(false);
   const anonModeLastSavedRef = useRef(false);
   const isMountedRef = useRef(true);
+  const latestSettingsRef = useRef(settings);
+  const sidebarDragRef = useRef({
+    itemId: null,
+    startIndex: -1,
+    currentIndex: -1,
+    activeCount: 0,
+    hasMoved: false,
+  });
 
   // Reload profile every time screen gains focus (handles login/logout)
   const loadSettings = useCallback(async () => {
@@ -112,6 +239,10 @@ const ProfilePage = ({ navigation }) => {
     setUseDisplayName(profile?.use_display_name || false);
     anonModeLastSavedRef.current = Boolean(profile?.use_display_name);
   }, [profile]);
+
+  useEffect(() => {
+    latestSettingsRef.current = settings;
+  }, [settings]);
 
   useEffect(() => {
     return () => {
@@ -240,36 +371,110 @@ const ProfilePage = ({ navigation }) => {
     });
   }, [settings.sidebarOrder]);
 
-  const handleShuffleSidebarOrder = useCallback(async () => {
-    const shuffledCore = shuffleArray(SIDEBAR_SHUFFLE_IDS);
-    const nextOrder = [...shuffledCore, 'comics', 'manga'];
-    const newSettings = { ...settings, sidebarOrder: nextOrder, showComics: false, showManga: false };
-    setSettings(newSettings);
-    await updateSettings(newSettings);
-  }, [settings]);
+  const activeSidebarIds = useMemo(
+    () => getActiveSidebarIdsFromSettings(settings),
+    [settings]
+  );
+
+  const beginSidebarDrag = useCallback((itemId) => {
+    const currentSettings = latestSettingsRef.current;
+    const activeIds = getActiveSidebarIdsFromSettings(currentSettings);
+    const startIndex = activeIds.indexOf(itemId);
+
+    if (startIndex < 0 || activeIds.length <= 1) return false;
+
+    sidebarDragRef.current = {
+      itemId,
+      startIndex,
+      currentIndex: startIndex,
+      activeCount: activeIds.length,
+      hasMoved: false,
+    };
+    setDraggingSidebarId(itemId);
+    setIsSidebarDragging(true);
+    return true;
+  }, []);
+
+  const moveSidebarDrag = useCallback((dy) => {
+    const dragState = sidebarDragRef.current;
+    if (!dragState.itemId) return;
+
+    if (Math.abs(dy) < SIDEBAR_DRAG_DEADZONE) return;
+
+    const nextIndex = clamp(
+      dragState.startIndex + Math.round(dy / SIDEBAR_DRAG_ROW_HEIGHT),
+      0,
+      dragState.activeCount - 1
+    );
+
+    if (nextIndex === dragState.currentIndex) return;
+
+    setSettings((prev) => {
+      const activeIds = getActiveSidebarIdsFromSettings(prev);
+      const nextSidebarOrder = reorderOnlyActiveSidebarItems(
+        prev.sidebarOrder,
+        activeIds,
+        dragState.currentIndex,
+        nextIndex
+      );
+
+      if (nextSidebarOrder === prev.sidebarOrder) return prev;
+
+      const nextSettings = { ...prev, sidebarOrder: nextSidebarOrder };
+      latestSettingsRef.current = nextSettings;
+      return nextSettings;
+    });
+
+    sidebarDragRef.current = {
+      ...dragState,
+      currentIndex: nextIndex,
+      hasMoved: true,
+    };
+  }, []);
+
+  const endSidebarDrag = useCallback(async () => {
+    const dragState = sidebarDragRef.current;
+    const didDrag =
+      Boolean(dragState.itemId) &&
+      dragState.hasMoved &&
+      dragState.startIndex !== dragState.currentIndex;
+
+    sidebarDragRef.current = {
+      itemId: null,
+      startIndex: -1,
+      currentIndex: -1,
+      activeCount: 0,
+      hasMoved: false,
+    };
+    setDraggingSidebarId(null);
+    setIsSidebarDragging(false);
+
+    if (!didDrag) return;
+
+    await updateSettings(latestSettingsRef.current);
+  }, []);
 
   const renderSidebarSettings = () => (
     <>
       <Text style={styles.sectionTitle}>Sidebar</Text>
-      <Pressable
-        style={styles.shuffleButton}
-        onPress={handleShuffleSidebarOrder}
-        accessibilityRole="button"
-        accessibilityLabel="Shuffle sidebar order"
-      >
-        <Ionicons name="shuffle-outline" size={16} color={theme.accent} />
-        <Text style={styles.shuffleButtonText}>Shuffle Sidebar Order</Text>
-      </Pressable>
       <View style={styles.menuCard}>
         {orderedSidebarOptions.map((item, index) => {
           const isLocked = Boolean(item.locked);
           const value = isLocked ? false : Boolean(settings[item.key]);
+          const isDraggable = activeSidebarIds.length > 1 && !isLocked && value;
+          const isDragging = draggingSidebarId === item.id;
           return (
             <Animated.View
               key={item.id}
               layout={SIDEBAR_REORDER_TRANSITION}
             >
-              <View style={[styles.menuItem, isLocked && styles.menuItemDisabled]}>
+              <View
+                style={[
+                  styles.menuItem,
+                  isLocked && styles.menuItemDisabled,
+                  isDragging && styles.reorderRowDragging,
+                ]}
+              >
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
                   <Ionicons name={item.icon} size={20} color={theme.accent} />
                 </View>
@@ -286,7 +491,18 @@ const ProfilePage = ({ navigation }) => {
                   trackColor={{ false: '#444', true: theme.accent + '80' }}
                   thumbColor={value ? theme.accent : '#999'}
                 />
+                <SidebarDragHandle
+                  itemId={item.id}
+                  disabled={!isDraggable}
+                  isDragging={isDragging}
+                  onDragStart={beginSidebarDrag}
+                  onDragMove={moveSidebarDrag}
+                  onDragEnd={endSidebarDrag}
+                />
               </View>
+              {!isLocked && value && activeSidebarIds.length <= 1 ? (
+                <Text style={styles.reorderHintSingle}>Enable at least 2 active sidebars to reorder.</Text>
+              ) : null}
               {index < orderedSidebarOptions.length - 1 ? <View style={styles.menuDivider} /> : null}
             </Animated.View>
           );
@@ -335,6 +551,7 @@ const ProfilePage = ({ navigation }) => {
       
       <ScrollView 
         style={styles.scrollView}
+        scrollEnabled={!isSidebarDragging}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -969,25 +1186,38 @@ const styles = StyleSheet.create({
     marginTop: 8,
     letterSpacing: 2,
   },
-  shuffleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginBottom: 10,
+  reorderRowDragging: {
+    backgroundColor: 'rgba(167,139,250,0.16)',
+  },
+  dragHandle: {
+    width: 36,
+    height: 36,
     borderRadius: 12,
     borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.35)',
-    backgroundColor: 'rgba(167,139,250,0.12)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
-  shuffleButtonText: {
-    fontSize: 13,
-    color: '#D8CCFF',
-    fontFamily: 'Agdasima-Bold',
-    letterSpacing: 0.6,
+  dragHandleInline: {
+    marginLeft: 10,
+  },
+  dragHandleDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(255,255,255,0.04)',
+  },
+  dragHandleActive: {
+    backgroundColor: '#A78BFA',
+    borderColor: '#A78BFA',
+  },
+  reorderHintSingle: {
+    fontSize: 11,
+    color: '#8FA1BF',
+    marginTop: -6,
+    marginBottom: 8,
+    marginLeft: 70,
+    fontFamily: 'Agdasima',
   },
   menuCard: {
     backgroundColor: '#151521',

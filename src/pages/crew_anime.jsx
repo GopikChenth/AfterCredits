@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import GlassCard from "../components/shared/GlassCard";
 import { getStaffDetails } from "../services/api_anilist";
+import { getMediaTheme } from "../utils/mediaThemes";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const GRID_GAP = 10;
@@ -23,6 +24,9 @@ const NUM_COLUMNS = 3;
 const CARD_WIDTH =
   (SCREEN_WIDTH - 32 - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 const CARD_HEIGHT = CARD_WIDTH * 1.5;
+const ANIME_THEME = getMediaTheme("anime");
+const ANIME_ACCENT = ANIME_THEME.accent;
+const ANIME_ACCENT_LIGHT = ANIME_THEME.accentLight;
 
 const CrewDetailPage = ({ route, navigation }) => {
   const { staffId, staffName } = route.params;
@@ -90,7 +94,7 @@ const CrewDetailPage = ({ route, navigation }) => {
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </Pressable>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFB3C6" />
+          <ActivityIndicator size="large" color={ANIME_ACCENT} />
           <Text style={styles.loadingText}>
             Loading {staffName || "staff"}...
           </Text>
@@ -150,25 +154,25 @@ const CrewDetailPage = ({ route, navigation }) => {
             <View style={styles.quickStats}>
               {birthday ? (
                 <View style={styles.statItem}>
-                  <Ionicons name="calendar-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="calendar-outline" size={14} color={ANIME_ACCENT} />
                   <Text style={styles.statText}>{birthday}</Text>
                 </View>
               ) : null}
               {staffData.age ? (
                 <View style={styles.statItem}>
-                  <Ionicons name="person-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="person-outline" size={14} color={ANIME_ACCENT} />
                   <Text style={styles.statText}>Age {staffData.age}</Text>
                 </View>
               ) : null}
               {staffData.homeTown ? (
                 <View style={styles.statItem}>
-                  <Ionicons name="location-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="location-outline" size={14} color={ANIME_ACCENT} />
                   <Text style={styles.statText}>{staffData.homeTown}</Text>
                 </View>
               ) : null}
               {staffData.bloodType ? (
                 <View style={styles.statItem}>
-                  <Ionicons name="water-outline" size={14} color="#FFB3C6" />
+                  <Ionicons name="water-outline" size={14} color={ANIME_ACCENT} />
                   <Text style={styles.statText}>
                     Blood: {staffData.bloodType}
                   </Text>
@@ -179,7 +183,7 @@ const CrewDetailPage = ({ route, navigation }) => {
             {/* Favourites */}
             {staffData.favourites > 0 && (
               <View style={styles.favourites}>
-                <Ionicons name="heart" size={14} color="#FF6B6B" />
+                <Ionicons name="heart" size={14} color={ANIME_ACCENT} />
                 <Text style={styles.favouritesText}>
                   {staffData.favourites.toLocaleString()} favourites
                 </Text>
@@ -353,7 +357,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   favouritesText: {
-    color: "#FF6B6B",
+    color: ANIME_ACCENT,
     fontSize: 13,
     fontFamily: "Agdasima",
   },
@@ -419,7 +423,7 @@ const styles = StyleSheet.create({
   characterName: {
     fontSize: 13,
     fontFamily: "Agdasima",
-    color: "#FFB3C6",
+    color: ANIME_ACCENT_LIGHT,
     marginTop: 2,
   },
   roleMetaRow: {

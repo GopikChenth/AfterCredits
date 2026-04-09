@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useMediaFonts, initializeFonts } from './src/utils/mediaThemes';
 import { startCacheSweepJob } from './src/services/cacheManager';
 import { syncGameTagsFromDB } from './src/services/mediaStatusService';
@@ -95,39 +96,41 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <MediaTypeProvider>
-        <PagerSwipeProvider>
-          <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="MainTabs"
-              screenOptions={{
-                headerShown: false,
-                gestureEnabled: false,
-                animation: 'none',
-              }}
-            >
-              {/* Tab Navigator */}
-              <Stack.Screen name="MainTabs" component={MainTabs} />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <MediaTypeProvider>
+          <PagerSwipeProvider>
+            <NavigationContainer>
+              <Stack.Navigator
+                initialRouteName="MainTabs"
+                screenOptions={{
+                  headerShown: false,
+                  gestureEnabled: false,
+                  animation: 'none',
+                }}
+              >
+                {/* Tab Navigator */}
+                <Stack.Screen name="MainTabs" component={MainTabs} />
 
-              {/* Push screens (on top of tabs) */}
-              <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
-              <Stack.Screen name="DetailsGames" component={DetailsGames} />
-              <Stack.Screen name="DetailsMovies" component={DetailsMovies} />
-              <Stack.Screen name="ReviewAnime" component={ReviewPage} />
-              <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
-              <Stack.Screen name="NewsPage" component={NewsPage} />
-              <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
-              <Stack.Screen name="ProfilePage" component={ProfilePage} />
-              <Stack.Screen name="AuthPage" component={AuthPage} />
-              <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
-              <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
-              <Stack.Screen name="GameStatPage" component={GameStatPage} />
-            </Stack.Navigator>
-            <StatusBar style="auto" />
-          </NavigationContainer>
-        </PagerSwipeProvider>
-      </MediaTypeProvider>
-    </SafeAreaProvider>
+                {/* Push screens (on top of tabs) */}
+                <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
+                <Stack.Screen name="DetailsGames" component={DetailsGames} />
+                <Stack.Screen name="DetailsMovies" component={DetailsMovies} />
+                <Stack.Screen name="ReviewAnime" component={ReviewPage} />
+                <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
+                <Stack.Screen name="NewsPage" component={NewsPage} />
+                <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
+                <Stack.Screen name="ProfilePage" component={ProfilePage} />
+                <Stack.Screen name="AuthPage" component={AuthPage} />
+                <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
+                <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
+                <Stack.Screen name="GameStatPage" component={GameStatPage} />
+              </Stack.Navigator>
+              <StatusBar style="auto" />
+            </NavigationContainer>
+          </PagerSwipeProvider>
+        </MediaTypeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

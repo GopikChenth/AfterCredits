@@ -345,6 +345,11 @@ const extractSeasonNumber = (title) => {
   return match ? Number(match[1]) : null;
 };
 
+const SEASON_RELATION_TYPES = new Set(["PREQUEL", "PARENT", "SEQUEL", "CHILD"]);
+const SEASON_GRAPH_DEPTH = 5;
+const SEASON_CHAIN_EXPANSION_MAX_REQUESTS = 60;
+const SEASON_CHAIN_CACHE_VERSION = "v2";
+
 const SEASON_CHAIN_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SEASON_CHAIN_CACHE_MAX_ENTRIES = 80;
 const seasonChainCache = new Map();
@@ -376,6 +381,10 @@ const touchSeasonCacheEntry = (cacheKey, entry) => {
 const readSeasonChainFromCache = (animeId) => {
   const cacheKey = animeToSeasonCacheKey.get(animeId);
   if (!cacheKey) return null;
+  if (!cacheKey.startsWith(`${SEASON_CHAIN_CACHE_VERSION}:`)) {
+    animeToSeasonCacheKey.delete(animeId);
+    return null;
+  }
 
   const entry = seasonChainCache.get(cacheKey);
   if (isSeasonCacheEntryExpired(entry)) {
@@ -401,7 +410,10 @@ const writeSeasonChainToCache = (seasons) => {
   const ids = seasons.map((season) => season.id).filter(Boolean);
   if (ids.length === 0) return;
 
-  const cacheKey = ids.slice().sort((a, b) => a - b).join("-");
+  const cacheKey = `${SEASON_CHAIN_CACHE_VERSION}:${ids
+    .slice()
+    .sort((a, b) => a - b)
+    .join("-")}`;
   const entry = {
     ids,
     seasons: cloneSeasonChain(seasons),
@@ -423,6 +435,194 @@ export const getAnimeSeasonChainCacheStats = () => ({
 export const clearAnimeSeasonChainCache = () => {
   seasonChainCache.clear();
   animeToSeasonCacheKey.clear();
+};
+
+const buildSeasonRelationNodeFields = (depth) => `
+  id
+  format
+  title {
+    romaji
+    english
+  }
+  coverImage {
+    extraLarge
+    large
+    medium
+  }
+  episodes
+  season
+  seasonYear
+  startDate {
+    year
+    month
+    day
+  }
+  ${
+    depth > 0
+      ? `
+  relations {
+    edges {
+      relationType
+      node {
+        ${buildSeasonRelationNodeFields(depth - 1)}
+      }
+    }
+  }
+  `
+      : ""
+  }
+`;
+
+const fetchAnimeSeasonGraph = async (id, depth = SEASON_GRAPH_DEPTH) => {
+  const query = `
+    query ($id: Int) {
+      Media(id: $id, type: ANIME) {
+        ${buildSeasonRelationNodeFields(depth)}
+      }
+    }
+  `;
+
+  const response = await executeQuery(query, { id });
+  return response.data.Media;
+};
+
+const mapSeasonMediaNode = (media) => ({
+  id: media.id,
+  title: media.title?.english || media.title?.romaji || "Unknown",
+  subtitle: media.title?.romaji || "",
+  coverImage:
+    media.coverImage?.extraLarge ||
+    media.coverImage?.large ||
+    media.coverImage?.medium,
+  episodeCount: media.episodes || 0,
+  season: media.season || null,
+  seasonYear: media.seasonYear || media.startDate?.year || 0,
+  startMonth: media.startDate?.month || 0,
+  startDay: media.startDate?.day || 0,
+});
+
+const collectSeasonGraphNodes = (
+  media,
+  depth,
+  byId,
+  relationLinks,
+  seenDepthById
+) => {
+  if (!media?.id || depth < 0) return;
+
+  const seenDepth = seenDepthById.get(media.id);
+  if (seenDepth != null && seenDepth >= depth) return;
+  seenDepthById.set(media.id, depth);
+
+  if (media.format === "TV" && !byId.has(media.id)) {
+    byId.set(media.id, mapSeasonMediaNode(media));
+  }
+
+  if (depth === 0) return;
+
+  const edges = Array.isArray(media.relations?.edges) ? media.relations.edges : [];
+  edges.forEach((edge) => {
+    const relationType = edge?.relationType;
+    const node = edge?.node;
+    if (!SEASON_RELATION_TYPES.has(relationType) || !node?.id || node.format !== "TV") return;
+
+    if (media.format === "TV") {
+      if (relationType === "SEQUEL" || relationType === "CHILD") {
+        addRelationLink(relationLinks, media.id, node.id);
+      }
+      if (relationType === "PREQUEL" || relationType === "PARENT") {
+        addRelationLink(relationLinks, node.id, media.id);
+      }
+    }
+
+    collectSeasonGraphNodes(node, depth - 1, byId, relationLinks, seenDepthById);
+  });
+};
+
+const applySeasonChainLimit = (seasons, startId, maxNodes) => {
+  if (!Number.isFinite(maxNodes) || maxNodes <= 0 || seasons.length <= maxNodes) {
+    return seasons;
+  }
+
+  const currentIndex = seasons.findIndex((season) => season.id === startId);
+  if (currentIndex === -1) return seasons.slice(0, maxNodes);
+
+  const halfWindow = Math.floor(maxNodes / 2);
+  let start = Math.max(0, currentIndex - halfWindow);
+  let end = start + maxNodes;
+
+  if (end > seasons.length) {
+    end = seasons.length;
+    start = Math.max(0, end - maxNodes);
+  }
+
+  return seasons.slice(start, end);
+};
+
+const mapSeasonRelationNode = (media) => ({
+  id: media.id,
+  title: media.title?.english || media.title?.romaji || "Unknown",
+  subtitle: media.title?.romaji || "",
+  coverImage:
+    media.coverImage?.extraLarge ||
+    media.coverImage?.large ||
+    media.coverImage?.medium,
+  episodeCount: media.episodes || 0,
+  season: media.season || null,
+  seasonYear: media.seasonYear || media.startDate?.year || 0,
+  startMonth: media.startDate?.month || 0,
+  startDay: media.startDate?.day || 0,
+});
+
+const expandSeasonGraphFromDetails = async (byId, relationLinks, maxNodes) => {
+  const visited = new Set();
+  const queue = Array.from(byId.keys());
+  let requests = 0;
+
+  while (
+    queue.length > 0 &&
+    byId.size < maxNodes &&
+    requests < SEASON_CHAIN_EXPANSION_MAX_REQUESTS
+  ) {
+    const id = queue.shift();
+    if (!id || visited.has(id)) continue;
+    visited.add(id);
+
+    let media;
+    try {
+      media = await getAnimeDetails(id);
+      requests += 1;
+    } catch (error) {
+      continue;
+    }
+
+    if (!media || media.format !== "TV") continue;
+
+    // Replace partial relation node snapshots with full media details.
+    byId.set(media.id, mapSeasonMediaNode(media));
+
+    const edges = Array.isArray(media.relations?.edges) ? media.relations.edges : [];
+    edges.forEach((edge) => {
+      if (!SEASON_RELATION_TYPES.has(edge?.relationType)) return;
+      const node = edge?.node;
+      if (!node?.id || node.format !== "TV") return;
+
+      if (!byId.has(node.id)) {
+        byId.set(node.id, mapSeasonRelationNode(node));
+      }
+
+      if (edge.relationType === "SEQUEL" || edge.relationType === "CHILD") {
+        addRelationLink(relationLinks, media.id, node.id);
+      }
+      if (edge.relationType === "PREQUEL" || edge.relationType === "PARENT") {
+        addRelationLink(relationLinks, node.id, media.id);
+      }
+
+      if (!visited.has(node.id) && queue.length < maxNodes * 3) {
+        queue.push(node.id);
+      }
+    });
+  }
 };
 
 const SEASON_ORDER = {
@@ -514,72 +714,44 @@ const orderSeasonChain = (byId, relationLinks) => {
 };
 
 /**
- * Traverse prequel/sequel graph to collect full season chain
+ * Fetch and order prequel/sequel chain using a single deep AniList query
  * @param {number} startId - AniList anime ID
  * @param {number} maxNodes - Safety cap for traversal size
  * @returns {Promise<Array>} - Ordered season list including current anime
  */
-export const getAnimeSeasonChain = async (startId, maxNodes = 12) => {
+export const getAnimeSeasonChain = async (startId, maxNodes = 50) => {
   if (!startId) return [];
 
   const cachedSeasonChain = readSeasonChainFromCache(startId);
-  if (cachedSeasonChain) {
-    return cachedSeasonChain;
+  if (cachedSeasonChain && (cachedSeasonChain.length >= 4 || maxNodes <= 3)) {
+    return applySeasonChainLimit(cachedSeasonChain, startId, maxNodes);
   }
 
-  const visited = new Set();
-  const queue = [startId];
+  let seasonGraph;
+  try {
+    seasonGraph = await fetchAnimeSeasonGraph(startId);
+  } catch (error) {
+    return [];
+  }
+
+  if (!seasonGraph) return [];
+
   const byId = new Map();
   const relationLinks = new Map();
-
-  while (queue.length && byId.size < maxNodes) {
-    const id = queue.shift();
-    if (!id || visited.has(id)) continue;
-    visited.add(id);
-
-    let media;
-    try {
-      media = await getAnimeDetails(id);
-    } catch (error) {
-      continue;
-    }
-
-    if (!media || media.format !== "TV") continue;
-
-    byId.set(media.id, {
-      id: media.id,
-      title: media.title?.english || media.title?.romaji || "Unknown",
-      subtitle: media.title?.romaji || "",
-      coverImage: media.coverImage?.extraLarge || media.coverImage?.large || media.coverImage?.medium,
-      episodeCount: media.episodes || 0,
-      season: media.season || null,
-      seasonYear: media.seasonYear || media.startDate?.year || 0,
-      startMonth: media.startDate?.month || 0,
-      startDay: media.startDate?.day || 0,
-    });
-
-    const edges = Array.isArray(media.relations?.edges) ? media.relations.edges : [];
-    const linkedEdges = edges
-      .filter((edge) => edge?.relationType && ["PREQUEL", "PARENT", "SEQUEL", "CHILD"].includes(edge.relationType))
-      .filter((edge) => edge?.node?.id && edge?.node?.format === "TV");
-
-    linkedEdges.forEach((edge) => {
-      const linkedId = edge.node.id;
-      if (!visited.has(linkedId)) queue.push(linkedId);
-
-      if (edge.relationType === "SEQUEL" || edge.relationType === "CHILD") {
-        addRelationLink(relationLinks, media.id, linkedId);
-      }
-      if (edge.relationType === "PREQUEL" || edge.relationType === "PARENT") {
-        addRelationLink(relationLinks, linkedId, media.id);
-      }
-    });
-  }
+  const seenDepthById = new Map();
+  collectSeasonGraphNodes(
+    seasonGraph,
+    SEASON_GRAPH_DEPTH,
+    byId,
+    relationLinks,
+    seenDepthById
+  );
+  await expandSeasonGraphFromDetails(byId, relationLinks, maxNodes);
 
   const orderedSeasons = orderSeasonChain(byId, relationLinks);
   writeSeasonChainToCache(orderedSeasons);
 
-  return orderedSeasons;
+  return applySeasonChainLimit(orderedSeasons, startId, maxNodes);
 };
 
 /**
