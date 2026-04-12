@@ -35,6 +35,8 @@ import { useMediaType } from '../context/MediaTypeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useProfileStore } from '../stores/useProfileStore';
 
+const PAGE_SIZE = 20;
+
 const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
   const theme = getMediaTheme('anime');
   const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
@@ -59,6 +61,7 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const fetchRequestIdRef = useRef(0);
 
   // State for search
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,6 +96,7 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
 
   // Fetch anime data based on category
   const fetchAnimeData = useCallback(async (category, page = 1) => {
+    const requestId = ++fetchRequestIdRef.current;
     setIsLoadingMore(page > 1);
     setIsLoading(page === 1);
     setError(null);
@@ -101,30 +105,33 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
       let response;
       switch (category) {
         case 'Popular':
-          response = await getPopularAnime(page, 20);
+          response = await getPopularAnime(page, PAGE_SIZE);
           break;
         case 'New':
-          response = await getNewAnime(page, 20);
+          response = await getNewAnime(page, PAGE_SIZE);
           break;
         case 'Trending':
         default:
-          response = await getTrendingAnime(page, 20);
+          response = await getTrendingAnime(page, PAGE_SIZE);
           break;
       }
+
+      if (requestId !== fetchRequestIdRef.current) return;
       
       // Format the anime data for display
       const formattedAnime = response.media.map(anime => formatAnimeData(anime));
       
-      // Always replace the list
-      setAnimeList(formattedAnime);
+      setAnimeList(prev => (page === 1 ? formattedAnime : [...prev, ...formattedAnime]));
       setCurrentPage(page);
       
       // Check if there's more data
       setHasMore(response.pageInfo?.hasNextPage || false);
     } catch (err) {
+      if (requestId !== fetchRequestIdRef.current) return;
       console.error('Error fetching anime:', err);
       setError('Failed to load anime. Please try again.');
     } finally {
+      if (requestId !== fetchRequestIdRef.current) return;
       setIsLoading(false);
       setIsLoadingMore(false);
     }
@@ -132,32 +139,24 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
 
   // Fetch trending anime on mount
   useEffect(() => {
-    fetchAnimeData(selectedCategory);
-  }, []);
+    fetchAnimeData(selectedCategory, 1);
+  }, [selectedCategory, fetchAnimeData]);
   
   // Handle category change
   const handleCategoryChange = useCallback((category) => {
     setSelectedCategory(category);
     setCurrentPage(1);
     setHasMore(true);
-    fetchAnimeData(category, 1);
-  }, [fetchAnimeData]);
+    setAnimeList([]);
+  }, []);
 
   // Handle load more (next page)
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) {
+    if (!isLoading && !isLoadingMore && hasMore) {
       const nextPage = currentPage + 1;
       fetchAnimeData(selectedCategory, nextPage);
     }
-  }, [isLoadingMore, hasMore, currentPage, selectedCategory, fetchAnimeData]);
-
-  // Handle previous page
-  const handlePrevPage = useCallback(() => {
-    if (!isLoadingMore && currentPage > 1) {
-      const prevPage = currentPage - 1;
-      fetchAnimeData(selectedCategory, prevPage);
-    }
-  }, [isLoadingMore, currentPage, selectedCategory, fetchAnimeData]);
+  }, [isLoading, isLoadingMore, hasMore, currentPage, selectedCategory, fetchAnimeData]);
 
   // Debounced search for suggestions (while typing)
   const performSuggestionSearch = useCallback(
@@ -362,49 +361,15 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
   }, [isLoading, error, cardHeight, fetchAnimeData, selectedCategory]);
 
   const renderListFooter = useMemo(() => {
-    if (!(currentPage > 1 || hasMore)) return null;
+    if (!isLoadingMore) {
+      return <View style={styles.listFooterSpacer} />;
+    }
     return (
-      <View style={styles.paginationContainer}>
-        {currentPage > 1 ? (
-          <Pressable
-            style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
-            onPress={handlePrevPage}
-            accessibilityRole="button"
-            accessibilityLabel="Previous page"
-            disabled={isLoadingMore}
-          >
-            <Ionicons name="chevron-back" size={16} color="#A78BFA" />
-            <Text style={styles.loadMoreText}>Prev</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.loadMoreButtonPlaceholder} />
-        )}
-
-        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-        {hasMore ? (
-          <Pressable
-            style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
-            onPress={handleLoadMore}
-            accessibilityRole="button"
-            accessibilityLabel="Next page"
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <ActivityIndicator size="small" color="#A78BFA" />
-            ) : (
-              <>
-                <Text style={styles.loadMoreText}>Next</Text>
-                <Ionicons name="chevron-forward" size={16} color="#A78BFA" />
-              </>
-            )}
-          </Pressable>
-        ) : (
-          <View style={styles.loadMoreButtonPlaceholder} />
-        )}
+      <View style={styles.loadMoreContainer}>
+        <ActivityIndicator size="small" color="#A78BFA" />
       </View>
     );
-  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+  }, [isLoadingMore]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -480,6 +445,8 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
               ListHeaderComponent={renderListHeader}
               ListEmptyComponent={renderListEmpty}
               ListFooterComponent={renderListFooter}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.4}
               removeClippedSubviews
               initialNumToRender={8}
               maxToRenderPerBatch={8}
@@ -721,6 +688,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  listFooterSpacer: {
+    height: 28,
   },
   paginationContainer: {
     flexDirection: 'row',

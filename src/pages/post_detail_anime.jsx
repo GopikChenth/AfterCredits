@@ -38,6 +38,30 @@ const PostDetailPage = ({ route, navigation }) => {
     return match ? parseInt(match[1]) : null;
   };
 
+  const getMediaNavigationParams = (cover) => {
+    if (mediaType === 'games') {
+      if (!cover?.mediaId) return null;
+      return {
+        gameId: cover.mediaId,
+        gameName: cover.title || post.title,
+        coverImage: cover.imageUrl || null,
+      };
+    }
+
+    if (mediaType === 'movies') {
+      if (!cover?.mediaId) return null;
+      return {
+        movieId: cover.mediaId,
+        movieTitle: cover.title || post.title,
+        coverImage: cover.imageUrl || null,
+      };
+    }
+
+    const animeId = cover?.mediaId || getAnimeIdFromUrl(cover?.imageUrl);
+    if (!animeId) return null;
+    return { animeId };
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={theme.background} />
@@ -86,10 +110,10 @@ const PostDetailPage = ({ route, navigation }) => {
           keyExtractor={(item, index) => item?.imageUrl || `${index}`}
           renderItem={({ item: cover, index }) => {
             if (imageErrors[index]) return null;
-            const animeId = getAnimeIdFromUrl(cover.imageUrl) || cover.mediaId || null;
+            const routeParams = getMediaNavigationParams(cover);
             return (
               <Pressable
-                onPress={() => animeId && navigation.navigate(theme.detailsRoute, { animeId })}
+                onPress={() => routeParams && navigation.navigate(theme.detailsRoute, routeParams)}
               >
                 <Image
                   source={{ uri: cover.imageUrl }}

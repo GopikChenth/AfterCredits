@@ -27,7 +27,9 @@ export const getPosts = async (mediaType = 'anime') => {
       date: row.date,
       title: row.title,
       description: row.description,
-      mediaCovers: row.media_covers || [],
+      mediaCovers: (row.media_covers || []).map((cover) =>
+        typeof cover === 'string' ? { imageUrl: cover } : cover
+      ),
       createdAt: row.created_at,
     }));
 

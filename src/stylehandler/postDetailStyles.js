@@ -126,7 +126,7 @@ const gamesTheme = {
   gridImageBg: '#0A161C',
   fontFamily: 'System',
   fontFamilyBold: 'Blackbots',
-  detailsRoute: 'DetailsAnime', // TODO: Create DetailsGame page
+  detailsRoute: 'DetailsGames',
 };
 
 

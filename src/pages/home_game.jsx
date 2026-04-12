@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { useProfileStore } from '../stores/useProfileStore';
 import { getMediaTheme } from '../utils/mediaThemes';
 import { setWishlist, setMediaStatus } from '../services/mediaStatusService';
-import CategoryPill, { PILL_BORDER_RADIUS } from '../components/home_page/CategoryPill';
+import CategoryPill from '../components/home_page/CategoryPill';
 import SideBar from '../components/home_page/SideBar';
 import SkeletonLoader from '../components/skeletons/SkeletonHome';
 import { KeyboardAwareSearchBar } from '../components/home_page/SearchBar';
@@ -42,6 +42,9 @@ import {
 import { hasIGDBCredentials } from '../services/settings';
 import { searchMedia, debounce } from '../services/search';
 
+const GAME_PILL_HEIGHT = 60;
+const GAME_PILL_RADIUS = 22;
+const PAGE_SIZE = 20;
 const GAME_ACCENT = '#2FD9F5';
 const GAME_ACCENT_LIGHT = '#8EEFFF';
 const GAME_ACCENT2 = '#0E6F88';
@@ -62,19 +65,17 @@ const GAME_THEME = {
 // R matches the pill's own borderRadius so the notch corners look identical.
 // STEP_X and STEP_Y are derived at runtime from the measured pill size so the
 // shape stays flush on every screen width (see heroRow onLayout below).
-const R = PILL_BORDER_RADIUS; // corner radius applied to every corner of the L
+const R = GAME_PILL_RADIUS; // shared radius for the game pill and panel notch
 
 const buildPanelPath = (w, h, stepX, stepY) => {
   const p = Skia.Path.Make();
-  // Align the notch corners to the actual pill radius so both shapes feel matched.
-  // yellow = normal convex curve (same radius as pill)
-  // red = larger inverted curve
-  // green = normal top curve (same radius as pill)
+  // Keep every turn in the panel on the same rounded language as the pill.
+  // Use softer continuous turns so the panel reads closer to a squircle than a
+  // standard rounded rectangle, especially at the inner elbow.
   const outerRadius = Math.min(R, stepY * 0.46, stepX * 0.24);
   const topRadius = Math.min(R, stepY * 0.46, stepX * 0.2);
-  const stemLen = Math.min(R * 0.6, stepY * 0.12);
-  const invCurveX = Math.min(R * 2.9, stepX * 0.36);
-  const invEndY = topRadius + stemLen;
+  const notchRadius = Math.min(R, stepY * 0.34, stepX * 0.18);
+  const smooth = 0.44;
 
   //  Corners (clockwise from top of the step):
   //
@@ -90,35 +91,34 @@ const buildPanelPath = (w, h, stepX, stepY) => {
   p.moveTo(stepX + topRadius, 0);
   // Top edge → B
   p.lineTo(w - R, 0);
-  // B: top-right corner (rounded)
-  p.quadTo(w, 0, w, R);
+  // B: top-right corner
+  p.cubicTo(w - R * smooth, 0, w, R * smooth, w, R);
   // Right edge down to just above F
   p.lineTo(w, h - R);
-  // F: bottom-right corner (rounded)
-  p.quadTo(w, h, w - R, h);
+  // F: bottom-right corner
+  p.cubicTo(w, h - R * smooth, w - R * smooth, h, w - R, h);
   // Bottom edge → E
   p.lineTo(R, h);
-  // E: bottom-left corner (rounded)
-  p.quadTo(0, h, 0, h - R);
+  // E: bottom-left corner
+  p.cubicTo(R * smooth, h, 0, h - R * smooth, 0, h - R);
   // Left edge up to below G
   p.lineTo(0, stepY + outerRadius);
-  // Yellow-mark region: normal convex curve
-  p.quadTo(0, stepY, outerRadius, stepY);
-  // Horizontal ledge before inner notch
-  p.lineTo(stepX - invCurveX, stepY);
-  // Red-mark region: bigger inverted curve
+  // Outer elbow
+  p.cubicTo(0, stepY + outerRadius * smooth, outerRadius * smooth, stepY, outerRadius, stepY);
+  // Inner elbow
+  p.lineTo(stepX - notchRadius, stepY);
   p.cubicTo(
-    stepX - invCurveX * 0.28,
+    stepX - notchRadius * smooth,
     stepY,
     stepX,
-    stepY - (stepY - invEndY) * 0.58,
+    stepY - notchRadius * smooth,
     stepX,
-    invEndY,
+    stepY - notchRadius,
   );
-  // Small vertical segment
+  // Vertical stem back to the top arm
   p.lineTo(stepX, topRadius);
-  // Green-mark region: normal top curve
-  p.quadTo(stepX, 0, stepX + topRadius, 0);
+  // Top-left corner of the narrow arm
+  p.cubicTo(stepX, topRadius * smooth, stepX + topRadius * smooth, 0, stepX + topRadius, 0);
   p.close();
   return p;
 };
@@ -205,8 +205,10 @@ const GameHome = ({ navigation }) => {
 
   const heroRowDynamicStyle = useMemo(() => ({
     gap: isCompactPhone ? 6 : 10,
-    paddingTop: isTablet ? 20 : 16,
+    paddingTop: isTablet ? 18 : 16,
     paddingBottom: isTablet ? 18 : 16,
+    paddingLeft: isTablet ? 18 : 16,
+    paddingRight: isTablet ? 18 : 16,
   }), [isCompactPhone, isTablet]);
 
   const flashListContentStyle = useMemo(() => ({
@@ -312,16 +314,16 @@ const GameHome = ({ navigation }) => {
       if (useIGDB && !forceRawg) {
         // Use IGDB exclusively — no RAWG fallback
         switch (category) {
-          case 'Popular': data = await getIGDBPopular(page, 20);      break;
-          case 'New':     data = await getIGDBNewReleases(page, 20);  break;
-          default:        data = await getIGDBTrending(page, 20);     break;
+          case 'Popular': data = await getIGDBPopular(page, PAGE_SIZE);      break;
+          case 'New':     data = await getIGDBNewReleases(page, PAGE_SIZE);  break;
+          default:        data = await getIGDBTrending(page, PAGE_SIZE);     break;
         }
       } else {
         // Use RAWG (no IGDB credentials or user chose RAWG)
         switch (category) {
-          case 'Popular': data = await getPopularGames(page, 20);  break;
-          case 'New':     data = await getNewReleases(page, 20);   break;
-          default:        data = await getTrendingGames(page, 20); break;
+          case 'Popular': data = await getPopularGames(page, PAGE_SIZE);  break;
+          case 'New':     data = await getNewReleases(page, PAGE_SIZE);   break;
+          default:        data = await getTrendingGames(page, PAGE_SIZE); break;
         }
       }
 
@@ -379,15 +381,12 @@ const GameHome = ({ navigation }) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
     setHasMore(true);
+    setGames([]);
   }, []);
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) fetchGames(selectedCategory, currentPage + 1);
-  }, [isLoadingMore, hasMore, currentPage, selectedCategory, fetchGames]);
-
-  const handlePrevPage = useCallback(() => {
-    if (!isLoadingMore && currentPage > 1) fetchGames(selectedCategory, currentPage - 1);
-  }, [isLoadingMore, currentPage, selectedCategory, fetchGames]);
+    if (!isLoading && !isLoadingMore && hasMore) fetchGames(selectedCategory, currentPage + 1);
+  }, [isLoading, isLoadingMore, hasMore, currentPage, selectedCategory, fetchGames]);
 
   // Search
   const performSuggestionSearch = useCallback(
@@ -503,17 +502,11 @@ const GameHome = ({ navigation }) => {
     const { width, height } = panelSize;
     if (!width || !height || !heroRowHeight || !pillWidth) return null;
 
-    // heroRow has paddingLeft:12. The pill sits flush against the left padding,
-    // so its right edge is at paddingLeft + pillWidth from the panel's left edge.
-    // We add paddingRight:12 as the gap between the pill and the notch wall so
-    // both gaps (below and to the right) are equal.
-    const HERO_PAD_LEFT  = 12;
-    const HERO_PAD_RIGHT = 12;
-    const stepX = HERO_PAD_LEFT + pillWidth + HERO_PAD_RIGHT;
-
-    // stepY equals the full measured height of heroRow so the notch bottom sits
-    // flush with the row bottom on every device.
-    const stepY = heroRowHeight;
+    // Use the same inset around the pill on the top, right, and bottom so the
+    // notch and the category pill run parallel with a consistent gap.
+    const heroInset = Math.max(0, Math.round((heroRowHeight - GAME_PILL_HEIGHT) / 2));
+    const stepX = heroInset + pillWidth + heroInset;
+    const stepY = Math.min(heroRowHeight, heroInset + GAME_PILL_HEIGHT + heroInset);
 
     return buildPanelPath(width, height, stepX, stepY);
   }, [panelSize, heroRowHeight, pillWidth]);
@@ -544,49 +537,15 @@ const GameHome = ({ navigation }) => {
   }, [isLoading, error, cardHeight, fetchGames, selectedCategory]);
 
   const renderListFooter = useMemo(() => {
-    if (!(currentPage > 1 || hasMore)) return null;
+    if (!isLoadingMore) {
+      return <View style={styles.listFooterSpacer} />;
+    }
     return (
-      <View style={[styles.paginationContainer, isTablet && styles.paginationContainerTablet]}>
-        {currentPage > 1 ? (
-          <Pressable
-            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-            onPress={handlePrevPage}
-            accessibilityRole="button"
-            accessibilityLabel="Previous page"
-            disabled={isLoadingMore}
-          >
-            <Ionicons name="chevron-back" size={16} color={GAME_ACCENT} />
-            <Text style={styles.pageButtonText}>Prev</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.pageButtonPlaceholder} />
-        )}
-
-        <Text style={styles.pageIndicator}>Page {currentPage}</Text>
-
-        {hasMore ? (
-          <Pressable
-            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-            onPress={handleLoadMore}
-            accessibilityRole="button"
-            accessibilityLabel="Next page"
-            disabled={isLoadingMore}
-          >
-            {isLoadingMore ? (
-              <ActivityIndicator size="small" color={GAME_ACCENT} />
-            ) : (
-              <>
-                <Text style={styles.pageButtonText}>Next</Text>
-                <Ionicons name="chevron-forward" size={16} color={GAME_ACCENT} />
-              </>
-            )}
-          </Pressable>
-        ) : (
-          <View style={styles.pageButtonPlaceholder} />
-        )}
+      <View style={[styles.loadMoreContainer, isTablet && styles.loadMoreContainerTablet]}>
+        <ActivityIndicator size="small" color={GAME_ACCENT} />
       </View>
     );
-  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore, isTablet]);
+  }, [isLoadingMore, isTablet]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -686,6 +645,8 @@ const GameHome = ({ navigation }) => {
                   categories={['Trending', 'Popular', 'New']}
                   onCategoryChange={handleCategoryChange}
                   width={categoryPillWidth}
+                  height={GAME_PILL_HEIGHT}
+                  borderRadius={GAME_PILL_RADIUS}
                   accentColor={GAME_ACCENT}
                 />
               </View>
@@ -707,6 +668,8 @@ const GameHome = ({ navigation }) => {
               contentContainerStyle={flashListContentStyle}
               ListEmptyComponent={renderListEmpty}
               ListFooterComponent={renderListFooter}
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.35}
               removeClippedSubviews
               initialNumToRender={8}
               maxToRenderPerBatch={8}
@@ -892,10 +855,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 12,
-    paddingRight: 12,
-    paddingTop: 16,
-    paddingBottom: 16,
   },
   gamesText: {
     fontSize: 36,
@@ -983,7 +942,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ── Pagination ──
+  loadMoreContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadMoreContainerTablet: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 760,
+  },
+  listFooterSpacer: {
+    height: 28,
+  },
+
+  // ── Legacy pagination styles ──
   paginationContainer: {
     flexDirection: 'row',
     alignItems: 'center',

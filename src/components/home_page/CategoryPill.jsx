@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { getMediaTheme } from '../../utils/mediaThemes';
 
-// Exported so home_game.jsx can read the same value for its Skia corner radius.
-const PILL_HEIGHT = 56;
+// Exported so home_game.jsx can read the same geometry for its panel path.
+export const PILL_HEIGHT = 56;
 export const PILL_BORDER_RADIUS = PILL_HEIGHT / 2;
 const DEFAULT_THEME = getMediaTheme('anime');
 
@@ -17,6 +17,8 @@ const CategoryPill = ({
   categories = ['Trending', 'Popular', 'New'],
   onCategoryChange,
   width = 180,
+  height = PILL_HEIGHT,
+  borderRadius,
   accentColor = DEFAULT_THEME.accent,
   textColor = '#101010',
 }) => {
@@ -72,7 +74,15 @@ const CategoryPill = ({
   return (
     <View style={styles.container}>
       <Animated.View
-        style={[styles.pill, { width, backgroundColor: accentColor }]}
+        style={[
+          styles.pill,
+          {
+            width,
+            height,
+            borderRadius: borderRadius ?? height / 2,
+            backgroundColor: accentColor,
+          },
+        ]}
         {...panResponder.panHandlers}
       >
         <Animated.View

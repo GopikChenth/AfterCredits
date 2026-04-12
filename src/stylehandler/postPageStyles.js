@@ -110,7 +110,7 @@ const gamesTheme = {
   fontFamily: "System",
   titleFont: "Blackbots",
   headerTitle: "Post",
-  headerSubtitle: "Curated game lists from the community",
+  headerSubtitle: "Game of the Year winners by year",
   detailRoute: "PostDetailAnime", // Shared detail page
 };
 

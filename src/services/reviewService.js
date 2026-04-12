@@ -32,6 +32,36 @@ const isMediaTypeConstraintError = (error) => {
   );
 };
 
+const isUniqueConstraintError = (error) => {
+  if (!error) return false;
+  if (error.code === '23505') return true; // unique_violation
+  const message = String(error.message || '').toLowerCase();
+  return message.includes('duplicate key value violates unique constraint');
+};
+
+const findExistingReviewForUser = async (userId, mediaType, mediaId) => {
+  const mediaTypeCandidates = getMediaTypeCandidates(mediaType);
+
+  let query = supabase
+    .from('reviews')
+    .select('id, media_type')
+    .eq('user_id', userId)
+    .eq('media_id', mediaId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (mediaTypeCandidates.length === 1) {
+    query = query.eq('media_type', mediaTypeCandidates[0]);
+  } else {
+    query = query.in('media_type', mediaTypeCandidates);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return data?.[0] || null;
+};
+
 // ==========================================
 // CREATE REVIEW
 // ==========================================
@@ -46,6 +76,30 @@ export const submitReview = async (reviewData) => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) throw new Error('User not authenticated');
 
+    const existingReview = await findExistingReviewForUser(
+      user.user.id,
+      reviewData.mediaType,
+      reviewData.mediaId,
+    );
+
+    const reviewPayload = {
+      overall_rating: reviewData.overallRating,
+      content: reviewData.content,
+      is_spoiler: reviewData.isSpoiler || false,
+    };
+
+    if (existingReview) {
+      const { data, error: updateError } = await supabase
+        .from('reviews')
+        .update(reviewPayload)
+        .eq('id', existingReview.id)
+        .select()
+        .single();
+
+      if (updateError) throw updateError;
+      return { success: true, review: data };
+    }
+
     const mediaTypeCandidates = getMediaTypeCandidates(reviewData.mediaType);
     let review = null;
     let lastError = null;
@@ -58,9 +112,7 @@ export const submitReview = async (reviewData) => {
           user_id: user.user.id,
           media_type: candidate,
           media_id: reviewData.mediaId,
-          overall_rating: reviewData.overallRating,
-          content: reviewData.content,
-          is_spoiler: reviewData.isSpoiler || false,
+          ...reviewPayload,
         })
         .select()
         .single();
@@ -71,6 +123,27 @@ export const submitReview = async (reviewData) => {
       }
 
       lastError = reviewError;
+      if (isUniqueConstraintError(reviewError)) {
+        const conflictingReview = await findExistingReviewForUser(
+          user.user.id,
+          candidate,
+          reviewData.mediaId,
+        );
+
+        if (conflictingReview) {
+          const { data: updatedReview, error: updateError } = await supabase
+            .from('reviews')
+            .update(reviewPayload)
+            .eq('id', conflictingReview.id)
+            .select()
+            .single();
+
+          if (updateError) throw updateError;
+          review = updatedReview;
+          break;
+        }
+      }
+
       const shouldTryNext =
         isMediaTypeConstraintError(reviewError) &&
         index < mediaTypeCandidates.length - 1;

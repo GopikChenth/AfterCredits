@@ -48,6 +48,7 @@ const C = {
 
 const MOVIE_THEME = getMediaTheme('movie');
 const { width: SW } = Dimensions.get('window');
+const PAGE_SIZE = 20;
 
 // Card sizing
 const GRID_COLS    = 2;
@@ -202,6 +203,7 @@ const HomeMovies = ({ navigation }) => {
   const [searchResults, setSearchResults]         = useState([]);
   const [isSearching, setIsSearching]             = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
+  const fetchRequestIdRef = useRef(0);
 
   const catUnderlineAnim = useRef(new Animated.Value(0)).current;
   const catIdx = CATEGORIES.findIndex(c => c.key === selectedCategory);
@@ -271,23 +273,27 @@ const HomeMovies = ({ navigation }) => {
 
   // ── Data fetching ──
   const loadMovies = useCallback(async (category = selectedCategory, page = 1) => {
+    const requestId = ++fetchRequestIdRef.current;
     if (page === 1) setLoading(true);
     else setIsLoadingMore(true);
     try {
       let data;
-      switch (category) {
-        case 'popular': data = await getPopularMovies(page); break;
-        case 'new':     data = await getNewMovies(page);     break;
-        default:        data = await getTrendingMovies(page);
+      switch (category) {        
+        case 'popular': data = await getPopularMovies(page, PAGE_SIZE); break;
+        case 'new':     data = await getNewMovies(page, PAGE_SIZE);     break;
+        default:        data = await getTrendingMovies(page, PAGE_SIZE);
       }
+      if (requestId !== fetchRequestIdRef.current) return;
       const formatted = (data.results || []).map(formatMovieData);
-      setMovies(formatted);
+      setMovies(prev => (page === 1 ? formatted : [...prev, ...formatted]));
       setCurrentPage(page);
       setHasMore(page < (data.total_pages || 1));
     } catch (err) {
+      if (requestId !== fetchRequestIdRef.current) return;
       console.error('Error loading movies:', err);
-      setMovies([]);
+      if (page === 1) setMovies([]);
     } finally {
+      if (requestId !== fetchRequestIdRef.current) return;
       setLoading(false);
       setIsLoadingMore(false);
     }
@@ -299,16 +305,12 @@ const HomeMovies = ({ navigation }) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
     setHasMore(true);
-    loadMovies(cat, 1);
-  }, [loadMovies]);
+    setMovies([]);
+  }, []);
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore) loadMovies(selectedCategory, currentPage + 1);
-  }, [isLoadingMore, hasMore, currentPage, selectedCategory, loadMovies]);
-
-  const handlePrevPage = useCallback(() => {
-    if (!isLoadingMore && currentPage > 1) loadMovies(selectedCategory, currentPage - 1);
-  }, [isLoadingMore, currentPage, selectedCategory, loadMovies]);
+    if (!loading && !isLoadingMore && hasMore) loadMovies(selectedCategory, currentPage + 1);
+  }, [loading, isLoadingMore, hasMore, currentPage, selectedCategory, loadMovies]);
 
   // ── Search ──
   const performSuggestionSearch = useCallback(
@@ -364,46 +366,24 @@ const HomeMovies = ({ navigation }) => {
     return buildHeaderPath(headerSize.w, headerSize.h);
   }, [headerSize]);
 
+  const handleFeedScroll = useCallback((event) => {
+    if (loading || isLoadingMore || !hasMore || isSearchSubmitted) return;
+
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - (layoutMeasurement.height + contentOffset.y);
+    if (distanceFromBottom < 240) {
+      handleLoadMore();
+    }
+  }, [loading, isLoadingMore, hasMore, isSearchSubmitted, handleLoadMore]);
 
   const renderListFooter = useCallback(() => {
-    if (!(currentPage > 1 || hasMore)) return null;
+    if (!isLoadingMore) return <View style={styles.listFooterSpacer} />;
     return (
-      <View style={styles.paginationContainer}>
-        {currentPage > 1 ? (
-          <Pressable
-            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-            onPress={handlePrevPage}
-            disabled={isLoadingMore}
-            accessibilityRole="button"
-            accessibilityLabel="Previous page"
-          >
-            <Ionicons name="chevron-back" size={16} color={C.orange} />
-            <Text style={styles.pageButtonText}>PREV</Text>
-          </Pressable>
-        ) : <View style={styles.pageButtonPlaceholder} />}
-
-        <Text style={styles.pageIndicator}>PAGE {currentPage}</Text>
-
-        {hasMore ? (
-          <Pressable
-            style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-            onPress={handleLoadMore}
-            disabled={isLoadingMore}
-            accessibilityRole="button"
-            accessibilityLabel="Next page"
-          >
-            {isLoadingMore
-              ? <ActivityIndicator size="small" color={C.orange} />
-              : <>
-                  <Text style={styles.pageButtonText}>NEXT</Text>
-                  <Ionicons name="chevron-forward" size={16} color={C.orange} />
-                </>
-            }
-          </Pressable>
-        ) : <View style={styles.pageButtonPlaceholder} />}
+      <View style={styles.loadMoreContainer}>
+        <ActivityIndicator size="small" color={C.orange} />
       </View>
     );
-  }, [currentPage, hasMore, isLoadingMore, handlePrevPage, handleLoadMore]);
+  }, [isLoadingMore]);
 
   return (
     <View style={styles.container}>
@@ -487,6 +467,8 @@ const HomeMovies = ({ navigation }) => {
             <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
+              onScroll={handleFeedScroll}
+              scrollEventThrottle={16}
             >
               {/* Featured carousel — first 4 movies */}
               {movies.length > 0 && !loading ? (
@@ -562,43 +544,7 @@ const HomeMovies = ({ navigation }) => {
                 </View>
               )}
 
-              {/* Pagination */}
-              {(currentPage > 1 || hasMore) && (
-                <View style={styles.paginationContainer}>
-                  {currentPage > 1 ? (
-                    <Pressable
-                      style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-                      onPress={handlePrevPage}
-                      disabled={isLoadingMore}
-                      accessibilityRole="button"
-                      accessibilityLabel="Previous page"
-                    >
-                      <Ionicons name="chevron-back" size={16} color={C.orange} />
-                      <Text style={styles.pageButtonText}>PREV</Text>
-                    </Pressable>
-                  ) : <View style={styles.pageButtonPlaceholder} />}
-
-                  <Text style={styles.pageIndicator}>PAGE {currentPage}</Text>
-
-                  {hasMore ? (
-                    <Pressable
-                      style={[styles.pageButton, isLoadingMore && styles.pageButtonDisabled]}
-                      onPress={handleLoadMore}
-                      disabled={isLoadingMore}
-                      accessibilityRole="button"
-                      accessibilityLabel="Next page"
-                    >
-                      {isLoadingMore
-                        ? <ActivityIndicator size="small" color={C.orange} />
-                        : <>
-                            <Text style={styles.pageButtonText}>NEXT</Text>
-                            <Ionicons name="chevron-forward" size={16} color={C.orange} />
-                          </>
-                      }
-                    </Pressable>
-                  ) : <View style={styles.pageButtonPlaceholder} />}
-                </View>
-              )}
+              {renderListFooter()}
             </ScrollView>
 
           )}
@@ -866,7 +812,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── Pagination ──
+  loadMoreContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listFooterSpacer: {
+    height: 28,
+  },
+
+  // ── Legacy pagination styles ──
   paginationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
