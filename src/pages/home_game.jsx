@@ -42,16 +42,21 @@ import {
 import { hasIGDBCredentials } from '../services/settings';
 import { searchMedia, debounce } from '../services/search';
 
-const GAME_THEME = getMediaTheme('game');
-const GAME_ACCENT = '#4DAFA4';
-const GAME_ACCENT_LIGHT = '#8FCFC8';
-const GAME_ACCENT2 = '#2F8E86';
-const GAME_BG = '#0F0F0F';
-const GAME_CARD_BG = '#202020';
+const GAME_ACCENT = '#2FD9F5';
+const GAME_ACCENT_LIGHT = '#8EEFFF';
+const GAME_ACCENT2 = '#0E6F88';
+const GAME_BG = '#071118';
+const GAME_CARD_BG = '#0C1D27';
 const GAME_TEXT = '#F8F8F8';
-const GAME_TEXT_MUTED = '#8FB5AE';
-const GAME_BORDER = '#2A2A2A';
+const GAME_TEXT_MUTED = '#78AFC0';
+const GAME_BORDER = '#123341';
 const GAME_DANGER = '#FF6B6B';
+const GAME_THEME = {
+  ...getMediaTheme('game'),
+  accent: GAME_ACCENT,
+  accentLight: GAME_ACCENT_LIGHT,
+  accentGlow: 'rgba(47, 217, 245, 0.55)',
+};
 
 // ── Inverted-L panel constants ──
 // R matches the pill's own borderRadius so the notch corners look identical.
@@ -996,13 +1001,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: 'rgba(47,142,134,0.12)',
+    backgroundColor: 'rgba(14,111,136,0.18)',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 24,
     borderCurve: 'continuous',
     borderWidth: 1,
-    borderColor: 'rgba(47,142,134,0.24)',
+    borderColor: 'rgba(47,217,245,0.26)',
     minWidth: 90,
   },
   pageButtonDisabled: {

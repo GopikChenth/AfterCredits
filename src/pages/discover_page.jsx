@@ -120,7 +120,15 @@ const DiscoverPage = ({ navigation }) => {
         // AniList API — upcoming anime
         const result = await getUpcomingAnime(1, 20);
         if (result?.media) {
-          const formatted = result.media.map(formatAnimeData);
+          const formatted = result.media
+            .map((media) => {
+              try {
+                return formatAnimeData(media);
+              } catch (error) {
+                return null;
+              }
+            })
+            .filter((item) => item?.id);
           const sorted = formatted.sort((a, b) => {
             const yearA = a.year || 9999;
             const yearB = b.year || 9999;
@@ -130,6 +138,8 @@ const DiscoverPage = ({ navigation }) => {
             return seasonA - seasonB;
           });
           setUpcomingItems(sorted);
+        } else {
+          setUpcomingItems([]);
         }
       }
     } catch (error) {

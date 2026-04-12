@@ -1032,27 +1032,36 @@ export const filterHentai = (animeList) => {
  * @returns {object} - Formatted anime object
  */
 export const formatAnimeData = (media) => {
+  if (!media || typeof media !== 'object') {
+    return null;
+  }
+
+  const titleEnglish = media.title?.english || null;
+  const titleRomaji = media.title?.romaji || null;
+  const coverExtraLarge = media.coverImage?.extraLarge || null;
+  const coverLarge = media.coverImage?.large || null;
+
   return {
     id: media.id,
-    title: media.title.english || media.title.romaji,
-    titleRomaji: media.title.romaji,
-    titleNative: media.title.native,
-    coverImage: media.coverImage.extraLarge || media.coverImage.large,
-    bannerImage: media.bannerImage,
+    title: titleEnglish || titleRomaji || 'Unknown Title',
+    titleRomaji: titleRomaji || '',
+    titleNative: media.title?.native || '',
+    coverImage: coverExtraLarge || coverLarge || null,
+    bannerImage: media.bannerImage || null,
     description: media.description?.replace(/<[^>]*>/g, '') || '', // Strip HTML
-    episodes: media.episodes,
-    duration: media.duration,
-    status: media.status,
-    season: media.season,
-    year: media.seasonYear,
-    format: media.format,
-    genres: media.genres,
-    score: media.averageScore,
-    popularity: media.popularity,
-    trending: media.trending,
+    episodes: media.episodes ?? 0,
+    duration: media.duration ?? null,
+    status: media.status || null,
+    season: media.season || null,
+    year: media.seasonYear || null,
+    format: media.format || null,
+    genres: Array.isArray(media.genres) ? media.genres : [],
+    score: media.averageScore ?? 0,
+    popularity: media.popularity ?? 0,
+    trending: media.trending ?? 0,
     studio: media.studios?.nodes?.[0]?.name || 'Unknown',
-    color: media.coverImage.color,
-    tags: media.tags || [],
+    color: media.coverImage?.color || null,
+    tags: Array.isArray(media.tags) ? media.tags : [],
     relations: media.relations || null,
   };
 };

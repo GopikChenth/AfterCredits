@@ -102,15 +102,13 @@ const SidebarDragHandle = React.memo(({
   onDragMove,
   onDragEnd,
 }) => {
-  const translateY = useSharedValue(0);
   const scale = useSharedValue(1);
 
   useEffect(() => {
     if (!isDragging) {
-      translateY.value = withSpring(0, SIDEBAR_DRAG_SPRING);
       scale.value = withSpring(1, SIDEBAR_DRAG_SPRING);
     }
-  }, [isDragging, scale, translateY]);
+  }, [isDragging, scale]);
 
   const dragGesture = useMemo(
     () =>
@@ -123,20 +121,17 @@ const SidebarDragHandle = React.memo(({
           runOnJS(onDragStart)(itemId);
         })
         .onUpdate((event) => {
-          translateY.value = event.translationY;
           runOnJS(onDragMove)(event.translationY);
         })
         .onFinalize(() => {
-          translateY.value = withSpring(0, SIDEBAR_DRAG_SPRING);
           scale.value = withSpring(1, SIDEBAR_DRAG_SPRING);
           runOnJS(onDragEnd)();
         }),
-    [disabled, itemId, onDragEnd, onDragMove, onDragStart, scale, translateY]
+    [disabled, itemId, onDragEnd, onDragMove, onDragStart, scale]
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: translateY.value },
       { scale: scale.value },
     ],
   }));

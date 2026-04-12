@@ -39,7 +39,6 @@ import PlayingWindow from "../components/details_page/PlayingWindow";
 import CyberpunkFrame from "../components/details_page/CyberpunkFrame";
 import CyberpunkFrame4 from "../components/details_page/CyberpunkFrame4";
 import CyberpunkFrame2 from "../components/details_page/CyberpunkFrame2";
-import CyberpunkFrame3 from "../components/details_page/CyberpunkFrame3";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
 import { hasIGDBCredentials } from "../services/settings";
@@ -1077,17 +1076,13 @@ const GameDetail = ({ route, navigation }) => {
 
             {/* §8 — Reviews */}
             <Animated.View style={[sectionCardStyle, s.framedSection, secStyle(8)]}>
-              <CyberpunkFrame3 color={ACCENT} style={s.reviewFrame}>
+              <View style={s.reviewFramePlain}>
                 <View style={s.reviewHeader}>
-                  <View style={s.reviewTitleRow}>
-                    <View style={s.secSlant} />
-                    <Text style={s.secTitle}>REVIEWS</Text>
-                    <View style={s.secScanLine} />
-                  </View>
+                  <Text style={s.reviewTitlePlain}>REVIEWS</Text>
                   <Pressable style={s.addReviewBtn}
                     onPress={() => navigation?.navigate("ReviewAnime", { animeId: gameId, id: gameId, title: name, coverImage: cover, mediaType: "games" })}
                     accessibilityRole="button" accessibilityLabel="Write a review" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Ionicons name="add" size={20} color={TEXT_PRIMARY} />
+                    <Ionicons name="add" size={22} color={ACCENT} />
                   </Pressable>
                 </View>
                 {isLoadingReviews ? (
@@ -1097,7 +1092,11 @@ const GameDetail = ({ route, navigation }) => {
                     {visibleReviews.map((r) => (
                       <ReviewCard key={r.id}
                         name={r.profiles?.use_display_name && r.profiles?.display_name ? r.profiles.display_name : r.profiles?.username || `User ${r.user_id?.substring(0, 8)}`}
-                        rating={Math.ceil(r.overall_rating / 2)} text={r.content} avatarUrl={r.profiles?.avatar_url} />
+                        rating={Math.ceil(r.overall_rating / 2)}
+                        text={r.content}
+                        avatarUrl={r.profiles?.avatar_url}
+                        mediaType="games"
+                      />
                     ))}
                     {dbReviews.length > PER_PAGE && (
                       <View style={s.pagRow}>
@@ -1118,7 +1117,7 @@ const GameDetail = ({ route, navigation }) => {
                 ) : (
                   <Text style={s.noData}>No reviews yet. Be the first to review!</Text>
                 )}
-              </CyberpunkFrame3>
+              </View>
             </Animated.View>
 
             {/* §9 — Similar Games */}
@@ -1290,9 +1289,13 @@ const s = StyleSheet.create({
     backgroundColor: "#071421",
     paddingTop: 8,
   },
-  reviewFrame: {
+  reviewFramePlain: {
     width: "100%",
-    backgroundColor: "#071421",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    borderColor: "transparent",
+    borderRadius: 0,
+    padding: 0,
   },
 
   // ── Pills (angular — not rounded) ──
@@ -1353,12 +1356,12 @@ const s = StyleSheet.create({
 
   // ── Reviews ──
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
-  reviewTitleRow: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 },
-  addReviewBtn: { width: 28, height: 28, borderRadius: 4, backgroundColor: ACCENT, justifyContent: "center", alignItems: "center", flexShrink: 0 },
-  noData: { fontSize: 14, color: TEXT_MUTED, textAlign: "center", paddingVertical: 20 },
+  reviewTitlePlain: { flex: 1, minWidth: 0, color: ACCENT, fontSize: 13, fontFamily: "Blackbots", letterSpacing: 1.8, textTransform: "uppercase" },
+  addReviewBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", flexShrink: 0 },
+  noData: { fontSize: 14, color: hexToRgba(ACCENT, 0.78), textAlign: "center", paddingVertical: 20 },
 
   // ── Pagination ──
-  pagRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.1)" },
+  pagRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: hexToRgba(ACCENT, 0.2) },
   pagBtn: {
     flexDirection: "row",
     alignItems: "center",

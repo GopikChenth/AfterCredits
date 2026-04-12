@@ -108,7 +108,15 @@ const UpcomingPage = ({ navigation }) => {
         // Anime
         const result = await getUpcomingAnime(pageNum, 50);
         if (result?.media) {
-          const formatted = result.media.map(formatAnimeData);
+          const formatted = result.media
+            .map((media) => {
+              try {
+                return formatAnimeData(media);
+              } catch (error) {
+                return null;
+              }
+            })
+            .filter((item) => item?.id);
           const sorted = formatted.sort((a, b) => {
             const yearA = a.year || 9999;
             const yearB = b.year || 9999;
@@ -124,6 +132,9 @@ const UpcomingPage = ({ navigation }) => {
             setItems(prev => [...prev, ...sorted]);
           }
           setHasMore(result.pageInfo?.hasNextPage || false);
+        } else if (pageNum === 1) {
+          setItems([]);
+          setHasMore(false);
         }
       }
     } catch (error) {

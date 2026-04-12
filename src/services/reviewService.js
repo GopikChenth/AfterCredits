@@ -5,6 +5,33 @@ import { supabase } from './supabase';
  * Single reviews table only (no extension tables)
  */
 
+const MEDIA_TYPE_ALIASES = {
+  anime: ['anime'],
+  game: ['games', 'game'],
+  games: ['games', 'game'],
+  movie: ['movies', 'movie'],
+  movies: ['movies', 'movie'],
+};
+
+const getMediaTypeCandidates = (mediaType) => {
+  const key = String(mediaType || '').toLowerCase();
+  const candidates = MEDIA_TYPE_ALIASES[key];
+  if (!candidates) return [key || 'anime'];
+  return [...new Set(candidates)];
+};
+
+const isMediaTypeConstraintError = (error) => {
+  if (!error) return false;
+  if (error.code === '23514') return true; // check_violation
+  const message = String(error.message || '').toLowerCase();
+  const details = String(error.details || '').toLowerCase();
+  return (
+    message.includes('violates check constraint') ||
+    message.includes('reviews_media_type_check') ||
+    details.includes('reviews_media_type_check')
+  );
+};
+
 // ==========================================
 // CREATE REVIEW
 // ==========================================
@@ -19,22 +46,40 @@ export const submitReview = async (reviewData) => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) throw new Error('User not authenticated');
 
+    const mediaTypeCandidates = getMediaTypeCandidates(reviewData.mediaType);
+    let review = null;
+    let lastError = null;
 
-    // Insert review
-    const { data: review, error: reviewError } = await supabase
-      .from('reviews')
-      .insert({
-        user_id: user.user.id,
-        media_type: reviewData.mediaType,
-        media_id: reviewData.mediaId,
-        overall_rating: reviewData.overallRating,
-        content: reviewData.content,
-        is_spoiler: reviewData.isSpoiler || false,
-      })
-      .select()
-      .single();
+    for (let index = 0; index < mediaTypeCandidates.length; index += 1) {
+      const candidate = mediaTypeCandidates[index];
+      const { data, error: reviewError } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: user.user.id,
+          media_type: candidate,
+          media_id: reviewData.mediaId,
+          overall_rating: reviewData.overallRating,
+          content: reviewData.content,
+          is_spoiler: reviewData.isSpoiler || false,
+        })
+        .select()
+        .single();
 
-    if (reviewError) throw reviewError;
+      if (!reviewError) {
+        review = data;
+        break;
+      }
+
+      lastError = reviewError;
+      const shouldTryNext =
+        isMediaTypeConstraintError(reviewError) &&
+        index < mediaTypeCandidates.length - 1;
+      if (!shouldTryNext) {
+        throw reviewError;
+      }
+    }
+
+    if (!review) throw lastError || new Error('Failed to submit review');
 
     return { success: true, review };
   } catch (error) {
@@ -55,13 +100,20 @@ export const submitReview = async (reviewData) => {
  */
 export const getMediaReviews = async (mediaType, mediaId) => {
   try {
+    const mediaTypeCandidates = getMediaTypeCandidates(mediaType);
+
     // Step 1: Fetch reviews
-    const { data: reviews, error: reviewsError } = await supabase
+    let reviewsQuery = supabase
       .from('reviews')
       .select('*')
-      .eq('media_type', mediaType)
       .eq('media_id', mediaId)
       .order('created_at', { ascending: false });
+    if (mediaTypeCandidates.length === 1) {
+      reviewsQuery = reviewsQuery.eq('media_type', mediaTypeCandidates[0]);
+    } else {
+      reviewsQuery = reviewsQuery.in('media_type', mediaTypeCandidates);
+    }
+    const { data: reviews, error: reviewsError } = await reviewsQuery;
 
     if (reviewsError) throw reviewsError;
     if (!reviews || reviews.length === 0) return { success: true, reviews: [] };
@@ -103,13 +155,19 @@ export const getUserReview = async (mediaType, mediaId) => {
     const { data: user } = await supabase.auth.getUser();
     if (!user?.user) return { success: false, error: 'Not authenticated' };
 
-    const { data, error } = await supabase
+    const mediaTypeCandidates = getMediaTypeCandidates(mediaType);
+    let query = supabase
       .from('reviews')
       .select('*')
       .eq('user_id', user.user.id)
-      .eq('media_type', mediaType)
-      .eq('media_id', mediaId)
-      .single();
+      .eq('media_id', mediaId);
+    if (mediaTypeCandidates.length === 1) {
+      query = query.eq('media_type', mediaTypeCandidates[0]);
+    } else {
+      query = query.in('media_type', mediaTypeCandidates);
+    }
+
+    const { data, error } = await query.single();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
 
@@ -289,11 +347,18 @@ export const toggleReviewLike = async (reviewId, desiredLiked = null) => {
  */
 export const getMediaReviewStats = async (mediaType, mediaId) => {
   try {
-    const { data, error } = await supabase
+    const mediaTypeCandidates = getMediaTypeCandidates(mediaType);
+    let query = supabase
       .from('reviews')
       .select('overall_rating')
-      .eq('media_type', mediaType)
       .eq('media_id', mediaId);
+    if (mediaTypeCandidates.length === 1) {
+      query = query.eq('media_type', mediaTypeCandidates[0]);
+    } else {
+      query = query.in('media_type', mediaTypeCandidates);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
