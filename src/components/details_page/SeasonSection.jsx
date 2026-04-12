@@ -195,7 +195,7 @@ const SeasonSection = ({ relations, seasonChain, currentAnime, onItemPress }) =>
   try {
     return (
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>SEASON SECTION</Text>
+        <Text style={styles.sectionTitle}>SEASON</Text>
         <FlatList
           data={seasons}
           horizontal
@@ -234,12 +234,11 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#C4B5FD',
     marginBottom: 16,
     marginHorizontal: 16,
     letterSpacing: 1,
-    fontFamily: 'Agdasima',
+    fontFamily: 'Genjiro',
   },
   scrollContent: {
     paddingHorizontal: (SCREEN_WIDTH - CARD_WIDTH) / 2,
@@ -284,11 +283,10 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     lineHeight: 16,
     marginBottom: 3,
-    fontFamily: 'Agdasima',
     includeFontPadding: false,
   },
   metaText: {

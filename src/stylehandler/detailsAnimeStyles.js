@@ -255,10 +255,9 @@ export const detailsAnimeStyles = StyleSheet.create({
   },
   statusSectionLabel: {
     fontSize: 12,
-    fontFamily: "Agdasima",
+    fontFamily: "Genjiro",
     letterSpacing: 2,
     color: "#999",
-    fontWeight: "600",
     marginBottom: 12,
   },
   genreCrewSectionNative: {
@@ -294,8 +293,7 @@ export const detailsAnimeStyles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     letterSpacing: 1,
-    fontWeight: "bold",
-    fontFamily: "Agdasima",
+    fontFamily: "Genjiro",
     color: "#C4B5FD",
     marginBottom: 10,
   },

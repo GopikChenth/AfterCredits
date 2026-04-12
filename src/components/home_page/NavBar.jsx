@@ -8,6 +8,7 @@ import {
   Platform,
   AccessibilityInfo,
 } from 'react-native';
+import { HomeSimpleDoor, Post as PostIcon } from 'iconoir-react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMediaType } from '../../context/MediaTypeContext';
 import { getMediaTheme } from '../../utils/mediaThemes';
@@ -44,18 +45,22 @@ const ACTIVE_AURA_WIDTH = 64;
 const TAB_CONFIG = {
   Home: {
     label: 'Home',
-    iconName: 'home-outline',
+    iconLibrary: 'iconoir',
+    iconComponent: HomeSimpleDoor,
   },
   PostPage: {
     label: 'Post',
-    iconName: 'add-circle-outline',
+    iconLibrary: 'iconoir',
+    iconComponent: PostIcon,
   },
   DiscoverPage: {
     label: 'Discover',
+    iconLibrary: 'ionicons',
     iconName: 'newspaper-outline',
   },
   PodiumPage: {
     label: 'Podium',
+    iconLibrary: 'ionicons',
     iconName: 'podium-outline',
   },
 };
@@ -248,6 +253,18 @@ const NavBar = ({ state, navigation }) => {
   }, []);
 
   const renderTabIcon = useCallback((config) => {
+    if (config.iconLibrary === 'iconoir' && config.iconComponent) {
+      const IconComponent = config.iconComponent;
+      return (
+        <IconComponent
+          width={TAB_ICON_SIZE}
+          height={TAB_ICON_SIZE}
+          color={TAB_ICON_COLOR}
+          strokeWidth={1.9}
+        />
+      );
+    }
+
     return (
       <Ionicons
         name={config.iconName}

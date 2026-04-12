@@ -348,7 +348,7 @@ const extractSeasonNumber = (title) => {
 const SEASON_RELATION_TYPES = new Set(["PREQUEL", "PARENT", "SEQUEL", "CHILD"]);
 const SEASON_GRAPH_DEPTH = 5;
 const SEASON_CHAIN_EXPANSION_MAX_REQUESTS = 60;
-const SEASON_CHAIN_CACHE_VERSION = "v2";
+const SEASON_CHAIN_CACHE_VERSION = "v3-single";
 
 const SEASON_CHAIN_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SEASON_CHAIN_CACHE_MAX_ENTRIES = 80;
@@ -714,44 +714,34 @@ const orderSeasonChain = (byId, relationLinks) => {
 };
 
 /**
- * Fetch and order prequel/sequel chain using a single deep AniList query
+ * Fetch only the current requested anime season node (no relation traversal)
  * @param {number} startId - AniList anime ID
- * @param {number} maxNodes - Safety cap for traversal size
- * @returns {Promise<Array>} - Ordered season list including current anime
+ * @param {number} maxNodes - Kept for backward compatibility with callers
+ * @returns {Promise<Array>} - Single-item list for the current anime season
  */
 export const getAnimeSeasonChain = async (startId, maxNodes = 50) => {
   if (!startId) return [];
 
   const cachedSeasonChain = readSeasonChainFromCache(startId);
-  if (cachedSeasonChain && (cachedSeasonChain.length >= 4 || maxNodes <= 3)) {
-    return applySeasonChainLimit(cachedSeasonChain, startId, maxNodes);
+  if (cachedSeasonChain && cachedSeasonChain.length > 0) {
+    return applySeasonChainLimit(cachedSeasonChain, startId, Math.max(1, maxNodes));
   }
 
-  let seasonGraph;
+  let currentSeasonMedia;
   try {
-    seasonGraph = await fetchAnimeSeasonGraph(startId);
+    // Fetch only the requested anime season node, without traversing relations.
+    currentSeasonMedia = await fetchAnimeSeasonGraph(startId, 0);
   } catch (error) {
     return [];
   }
 
-  if (!seasonGraph) return [];
+  if (!currentSeasonMedia || currentSeasonMedia.format !== "TV") return [];
 
-  const byId = new Map();
-  const relationLinks = new Map();
-  const seenDepthById = new Map();
-  collectSeasonGraphNodes(
-    seasonGraph,
-    SEASON_GRAPH_DEPTH,
-    byId,
-    relationLinks,
-    seenDepthById
-  );
-  await expandSeasonGraphFromDetails(byId, relationLinks, maxNodes);
+  const currentSeason = mapSeasonMediaNode(currentSeasonMedia);
+  const seasons = [currentSeason];
+  writeSeasonChainToCache(seasons);
 
-  const orderedSeasons = orderSeasonChain(byId, relationLinks);
-  writeSeasonChainToCache(orderedSeasons);
-
-  return applySeasonChainLimit(orderedSeasons, startId, maxNodes);
+  return applySeasonChainLimit(seasons, startId, Math.max(1, maxNodes));
 };
 
 /**

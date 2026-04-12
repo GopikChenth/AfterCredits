@@ -20,10 +20,8 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 12,
     color: '#000',
-    fontWeight: '500',
-    fontFamily: 'Agdasima',
+    fontFamily: 'Agdasima-Bold',
     letterSpacing: 0.5,
-    fontWeight: 'bold',
   },
 });
 

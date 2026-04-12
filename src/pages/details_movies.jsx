@@ -941,13 +941,13 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 20,
-    fontFamily: "Genjiro",
+    fontFamily: "Abroad-Bold",
     color: "#fff",
     flex: 1,
     marginRight: 12,
     letterSpacing: 0.5,
   },
-  releaseYear: { fontSize: 14, color: ACCENT, flexShrink: 0 },
+  releaseYear: { fontSize: 14, color: ACCENT, flexShrink: 0, fontFamily: "Agdasima" },
   taglineText: {
     fontSize: 13,
     color: "#aaa",
@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
   metaChipText: { fontSize: 11, color: ACCENT2, fontWeight: "600" },
 
   // ── Description ──
-  description: { fontSize: 14, color: "#ddd", lineHeight: 22, marginBottom: 8 },
+  description: { fontSize: 14, color: "#ddd", lineHeight: 22, marginBottom: 8, fontFamily: "Agdasima" },
   expandText: {
     fontSize: 13,
     color: ACCENT,
@@ -993,7 +993,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 2,
     color: "#999",
-    fontWeight: "600",
+    fontFamily: "Abroad-Bold",
     marginBottom: 12,
   },
 
@@ -1001,7 +1001,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     letterSpacing: 2,
-    fontWeight: "700",
+    fontFamily: "Abroad-Bold",
     color: ACCENT,
     marginBottom: 12,
   },
@@ -1021,8 +1021,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  companyName: { fontSize: 14, color: "#fff", fontWeight: "600" },
-  companyRole: { fontSize: 12, color: "#888", marginTop: 2 },
+  companyName: { fontSize: 14, color: "#fff", fontFamily: "Agdasima-Bold" },
+  companyRole: { fontSize: 12, color: "#888", marginTop: 2, fontFamily: "Agdasima" },
 
   // ── Cast ──
   castCard: { width: 100, marginRight: 4, alignItems: "center" },
@@ -1037,10 +1037,10 @@ const styles = StyleSheet.create({
   castName: {
     fontSize: 11,
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "Agdasima-Bold",
     textAlign: "center",
   },
-  castRole: { fontSize: 10, color: "#999", textAlign: "center", marginTop: 2 },
+  castRole: { fontSize: 10, color: "#999", textAlign: "center", marginTop: 2, fontFamily: "Agdasima" },
 
   // ── Horizontal sections ──
   sectionOuter: { marginBottom: 20 },
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  trailerName: { fontSize: 12, color: "#ccc", marginTop: 6 },
+  trailerName: { fontSize: 12, color: "#ccc", marginTop: 6, fontFamily: "Agdasima" },
 
   // ── Related / Recommended cards ──
   relatedCard: {
@@ -1093,7 +1093,7 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: "rgba(0,0,0,0.7)",
   },
-  relatedCardTitle: { fontSize: 11, color: "#fff", fontWeight: "600" },
+  relatedCardTitle: { fontSize: 11, color: "#fff", fontFamily: "Agdasima-Bold" },
 
   // ── Reviews ──
   reviewsHeader: {

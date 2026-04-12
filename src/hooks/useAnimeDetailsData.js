@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 
-import { getAnimeDetails, getAnimeSeasonChain, getStatusText } from "../services/api_anilist";
+import { getAnimeDetails, getStatusText } from "../services/api_anilist";
 import {
   getMediaReviews,
   getMediaReviewStats,
@@ -156,13 +156,9 @@ export const useAnimeDetailsData = (animeId) => {
       }
 
       setAnimeData(formatAnimeDetails(data));
-
-      try {
-        const chain = await getAnimeSeasonChain(data.id);
-        setSeasonChain(chain);
-      } catch (seasonError) {
-        setSeasonChain([]);
-      }
+      // Use prequel/sequel relations already included in details response.
+      // No additional traversal request is needed.
+      setSeasonChain([]);
     } catch (fetchError) {
       console.error("Error fetching anime details:", fetchError);
       setError("Failed to load anime details. Please try again.");

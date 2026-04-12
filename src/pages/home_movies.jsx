@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
   },
   titleText: {
     fontSize: 30,
-    fontFamily: 'Genjiro',
+    fontFamily: 'Abroad-Bold',
     color: C.cream,
     letterSpacing: 5,
     textShadowColor: C.orange,
@@ -789,12 +789,12 @@ const styles = StyleSheet.create({
   featYear: {
     fontSize: 11,
     color: C.muted,
-    fontWeight: '600',
+    fontFamily: 'Agdasima',
     letterSpacing: 1,
   },
   featTitle: {
     fontSize: 24,
-    fontWeight: '900',
+    fontFamily: 'Agdasima-Bold',
     color: C.cream,
     letterSpacing: 0.5,
     lineHeight: 30,

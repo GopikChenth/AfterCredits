@@ -21,6 +21,7 @@ const CategoryPill = ({
   borderRadius,
   accentColor = DEFAULT_THEME.accent,
   textColor = '#101010',
+  textFontFamily = 'Agdasima-Bold',
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const currentIndexRef = useRef(0);
@@ -91,7 +92,7 @@ const CategoryPill = ({
             transform: [{ translateX: slideAnim }],
           }}
         >
-          <Text style={[styles.categoryText, { color: textColor }]}>
+          <Text style={[styles.categoryText, { color: textColor, fontFamily: textFontFamily }]}>
             {categories[activeIndex]}
           </Text>
         </Animated.View>
@@ -115,7 +116,6 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 17,
-    fontFamily: 'Agdasima-Bold',
     fontWeight: '900',
     color: '#101010',
     letterSpacing: 1.2,

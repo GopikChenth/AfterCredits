@@ -324,6 +324,7 @@ const HomeAnime = ({ navigation, setHomeTabSwipeEnabled }) => {
             onCategoryChange={handleCategoryChange}
             width={160}
             accentColor={theme.accent}
+            textFontFamily="Genjiro"
             onSwipeGestureStart={handleCategoryGestureStart}
             onSwipeGestureEnd={handleCategoryGestureEnd}
           />

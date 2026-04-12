@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
     color: '#fff',
     marginBottom: 4,
   },

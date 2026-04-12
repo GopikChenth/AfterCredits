@@ -58,8 +58,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Agdasima',
+    fontFamily: 'Agdasima-Bold',
     letterSpacing: 0.5,
     color: '#ffffffff',
   },

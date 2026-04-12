@@ -137,8 +137,7 @@ const styles = StyleSheet.create({
   },
   chipLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    fontFamily: 'Agdasima',
+    fontFamily: 'Agdasima-Bold',
     letterSpacing: 0.4,
   },
 });

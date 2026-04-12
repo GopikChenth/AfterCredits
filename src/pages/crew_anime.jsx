@@ -325,14 +325,13 @@ const styles = StyleSheet.create({
   },
   staffName: {
     fontSize: 26,
-    fontWeight: "800",
     fontFamily: "Agdasima-Bold",
     color: "#fff",
     lineHeight: 30,
   },
   nativeName: {
     fontSize: 15,
-    fontFamily: "Agdasima",
+    fontFamily: "Agdasima-Bold",
     color: "#888",
     marginTop: 2,
   },
@@ -422,7 +421,7 @@ const styles = StyleSheet.create({
   },
   characterName: {
     fontSize: 13,
-    fontFamily: "Agdasima",
+    fontFamily: "Agdasima-Bold",
     color: ANIME_ACCENT_LIGHT,
     marginTop: 2,
   },

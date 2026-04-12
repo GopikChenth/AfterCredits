@@ -8,6 +8,7 @@ import { useEffect } from 'react';
  * Centralized font management for all media types
  */
 const FONT_MAP = {
+  'Abroad-Bold': require('../../assets/font/abroad-bold.otf'),
   'Agdasima': require('../../assets/font/Agdasima-Regular.ttf'),
   'Agdasima-Bold': require('../../assets/font/Agdasima-Bold.ttf'),
   'Genjiro': require('../../assets/font/Genjiro.ttf'),

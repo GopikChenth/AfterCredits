@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
     color: '#fff',
     textShadowColor: 'rgba(0, 0, 0, 0.8)',
     textShadowOffset: { width: 0, height: 1 },

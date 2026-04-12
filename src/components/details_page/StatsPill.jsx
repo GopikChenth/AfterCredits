@@ -25,14 +25,12 @@ const styles = StyleSheet.create({
     color: '#000',
     letterSpacing: 1,
     fontSize: 14,
-    fontWeight: 'bold',
     fontFamily: 'Agdasima',
     marginBottom: 2,
   },
   count: {
     color: '#000',
     fontSize: 14,
-    fontWeight: 'bold',
     fontFamily: 'Agdasima',
   },
 });

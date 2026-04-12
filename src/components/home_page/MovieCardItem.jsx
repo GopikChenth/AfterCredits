@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: 'Agdasima-Bold',
     color: C.cream,
     lineHeight: 16,
     marginBottom: 2,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   cardYear: {
     fontSize: 10,
     color: C.muted,
-    fontWeight: '600',
+    fontFamily: 'Agdasima',
     letterSpacing: 0.5,
   },
 });
