@@ -175,8 +175,8 @@ const animeTheme = {
 const gamesTheme = {
   accent: '#0FA3B1',
   background: '#070B0F',
-  headingFont: 'System',
-  contentFont: 'System',
+  headingFont: 'Agdasima-Bold',
+  contentFont: 'Agdasima-Bold',
   headerText: 'I Played',
   mediaTypeKey: 'games',
   ratingLabel: 'Please rate the game before submitting.',
@@ -192,8 +192,8 @@ const gamesTheme = {
 const moviesTheme = {
   accent: '#FF6B35',
   background: '#0E0A07',
-  headingFont: 'System',
-  contentFont: 'System',
+  headingFont: 'Agdasima-Bold',
+  contentFont: 'Agdasima-Bold',
   headerText: 'I Watched',
   mediaTypeKey: 'movies',
   ratingLabel: 'Please rate the movie before submitting.',
@@ -227,10 +227,12 @@ const buildStyles = (theme) =>
     headerTitle: {
       ...baseStyles.headerTitle,
       fontFamily: theme.headingFont,
+      fontWeight: theme.headingFont === 'Agdasima-Bold' ? 'normal' : baseStyles.headerTitle.fontWeight,
     },
     mediaTitle: {
       ...baseStyles.mediaTitle,
       fontFamily: theme.headingFont,
+      fontWeight: theme.headingFont === 'Agdasima-Bold' ? 'normal' : baseStyles.mediaTitle.fontWeight,
     },
     smallLabel: {
       ...baseStyles.smallLabel,

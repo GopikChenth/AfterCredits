@@ -1116,6 +1116,7 @@ const styles = StyleSheet.create({
     color: "#999",
     textAlign: "center",
     paddingVertical: 20,
+    fontFamily: "Agdasima-Bold",
   },
 
   // ── Pagination ──

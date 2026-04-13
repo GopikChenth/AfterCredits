@@ -911,8 +911,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: GAME_TEXT,
     fontSize: 13,
-    fontFamily: 'Blackbots',
-    fontWeight: '800',
+    fontFamily: 'Agdasima-Bold',
     lineHeight: 18,
   },
 

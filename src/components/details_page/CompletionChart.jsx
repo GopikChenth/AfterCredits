@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     width: 96,
     fontSize: 11,
     color: "#aaa",
-    fontWeight: "600",
+    fontFamily: "Agdasima-Bold",
     letterSpacing: 0.3,
   },
 
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   value: {
     width: 42,
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: "Agdasima-Bold",
     textAlign: "right",
     letterSpacing: 0.3,
     fontVariant: ["tabular-nums"],

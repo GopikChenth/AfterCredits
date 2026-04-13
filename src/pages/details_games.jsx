@@ -1255,7 +1255,7 @@ const s = StyleSheet.create({
     width: "100%",
     backgroundColor: "#071421",
   },
-  descBody: { fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22, paddingRight: 2 },
+  descBody: { fontSize: 14, color: TEXT_SECONDARY, lineHeight: 22, paddingRight: 2, fontFamily: "Agdasima-Bold" },
   howLongFrame: {
     width: "100%",
     backgroundColor: "#071421",
@@ -1308,7 +1308,7 @@ const s = StyleSheet.create({
     borderColor: ACCENT2,
     backgroundColor: hexToRgba(ACCENT, 0.08),
   },
-  platformPillText: { fontSize: 11, color: ACCENT2, fontWeight: "700", letterSpacing: 0.8 },
+  platformPillText: { fontSize: 11, color: ACCENT2, letterSpacing: 0.8, fontFamily: "Agdasima-Bold" },
   modePill: {
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -1317,7 +1317,7 @@ const s = StyleSheet.create({
     borderColor: ACCENT,
     backgroundColor: hexToRgba(ACCENT, 0.08),
   },
-  modePillText: { fontSize: 11, color: ACCENT, fontWeight: "700", letterSpacing: 0.8 },
+  modePillText: { fontSize: 11, color: ACCENT, letterSpacing: 0.8, fontFamily: "Agdasima-Bold" },
 
   // ── Companies ──
   companyList: { gap: 12 },
@@ -1332,8 +1332,8 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  companyName: { fontSize: 13, color: TEXT_PRIMARY, fontWeight: "700", letterSpacing: 0.5 },
-  companyRole: { fontSize: 11, color: ACCENT2, marginTop: 2, letterSpacing: 1 },
+  companyName: { fontSize: 13, color: TEXT_PRIMARY, letterSpacing: 0.5, fontFamily: "Agdasima-Bold" },
+  companyRole: { fontSize: 11, color: ACCENT2, marginTop: 2, letterSpacing: 1, fontFamily: "Agdasima-Bold" },
 
   // ── Trailers ──
   trailerCard: { width: 200 },
@@ -1352,13 +1352,13 @@ const s = StyleSheet.create({
   relatedCard: { width: 120, height: 170, borderRadius: 3, overflow: "hidden", backgroundColor: SURFACE_SUBTLE, borderWidth: 1, borderColor: hexToRgba(ACCENT, 0.12) },
   relatedImg: { width: "100%", height: "100%" },
   relatedOverlay: { position: "absolute", bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: "rgba(0,0,0,0.75)" },
-  relatedTitle: { fontSize: 11, color: TEXT_PRIMARY, fontWeight: "700", letterSpacing: 0.3 },
+  relatedTitle: { fontSize: 11, color: TEXT_PRIMARY, letterSpacing: 0.3, fontFamily: "Agdasima-Bold" },
 
   // ── Reviews ──
   reviewHeader: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   reviewTitlePlain: { flex: 1, minWidth: 0, color: ACCENT, fontSize: 13, fontFamily: "Blackbots", letterSpacing: 1.8, textTransform: "uppercase" },
   addReviewBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: "transparent", justifyContent: "center", alignItems: "center", flexShrink: 0 },
-  noData: { fontSize: 14, color: hexToRgba(ACCENT, 0.78), textAlign: "center", paddingVertical: 20 },
+  noData: { fontSize: 14, color: hexToRgba(ACCENT, 0.78), textAlign: "center", paddingVertical: 20, fontFamily: "Agdasima-Bold" },
 
   // ── Pagination ──
   pagRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: hexToRgba(ACCENT, 0.2) },

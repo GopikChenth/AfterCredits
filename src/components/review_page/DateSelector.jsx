@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { getMediaTheme } from '../../utils/mediaThemes';
+import { getReviewPageTheme } from '../../stylehandler/reviewPageStyles';
 
-const DateSelector = ({ date, onDateChange }) => {
-  const theme = getMediaTheme('anime');
+const DateSelector = ({ date, onDateChange, mediaType = 'anime' }) => {
+  const theme = getReviewPageTheme(mediaType);
   const [show, setShow] = useState(false);
 
   // Toggle picker visibility
@@ -79,7 +79,9 @@ const DateSelector = ({ date, onDateChange }) => {
               style={[styles.closeButton, { backgroundColor: theme.accent }]} 
               onPress={() => setShow(false)}
             >
-              <Text style={styles.closeButtonText}>Done</Text>
+              <Text style={[styles.closeButtonText, { fontFamily: theme.contentFont }]}>
+                Done
+              </Text>
             </Pressable>
           )}
         </View>

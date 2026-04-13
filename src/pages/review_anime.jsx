@@ -21,8 +21,9 @@ import { getReviewPageStyles, getReviewPageTheme } from '../stylehandler/reviewP
 
 const ReviewPage = ({ navigation, route }) => {
   const { mediaType } = useMediaType();
-  const styles = getReviewPageStyles(mediaType);
-  const theme = getReviewPageTheme(mediaType);
+  const activeMediaType = route?.params?.mediaType || mediaType;
+  const styles = getReviewPageStyles(activeMediaType);
+  const theme = getReviewPageTheme(activeMediaType);
 
   // Fallback data if not passed or missing
   const { 
@@ -122,7 +123,7 @@ const ReviewPage = ({ navigation, route }) => {
           <View style={styles.divider} />
 
           {/* Date Row */}
-          <DateSelector date={date} onDateChange={setDate} />
+          <DateSelector date={date} onDateChange={setDate} mediaType={activeMediaType} />
 
           <View style={styles.divider} />
 
