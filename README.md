@@ -54,6 +54,13 @@ AfterCredits/
     seed_game_awards_posts.mjs
 ```
 
+## Licensing
+
+- [EULA](./EULA.md)
+- [Source License](./LICENSE.md)
+
+The current repository license is proprietary / all rights reserved unless you replace it with another license before distribution.
+
 ## Navigation Overview
 
 - `MainTabs` uses material top tabs positioned at bottom with custom `NavBar`.

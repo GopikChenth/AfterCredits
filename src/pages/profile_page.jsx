@@ -673,7 +673,10 @@ const ProfilePage = ({ navigation }) => {
               <View style={styles.menuDivider} />
 
               {/* About */}
-              <Pressable style={styles.menuItem}>
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('LegalPage', { documentKey: 'about' })}
+              >
                 <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
                   <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
                 </View>
@@ -757,13 +760,52 @@ const ProfilePage = ({ navigation }) => {
         
         <View style={styles.menuCard}>
           {/* About */}
-          <Pressable style={styles.menuItem}>
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('LegalPage', { documentKey: 'about' })}
+          >
             <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
               <Ionicons name="information-circle-outline" size={20} color={theme.accent} />
             </View>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuTitle}>About</Text>
               <Text style={styles.menuSubtitle}>Version 1.0.0</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('LegalPage', { documentKey: 'eula' })}
+            accessibilityRole="button"
+            accessibilityLabel="Open end user license agreement"
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name="document-text-outline" size={20} color={theme.accent} />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuTitle}>EULA</Text>
+              <Text style={styles.menuSubtitle}>End User License Agreement</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
+          <Pressable
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('LegalPage', { documentKey: 'license' })}
+            accessibilityRole="button"
+            accessibilityLabel="Open source license"
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={theme.accent} />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuTitle}>License</Text>
+              <Text style={styles.menuSubtitle}>Current app source license</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </Pressable>

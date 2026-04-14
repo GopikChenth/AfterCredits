@@ -28,6 +28,7 @@ import AuthPage from './src/pages/auth_page';
 import PodiumListPage from './src/pages/podium_list_page';
 import CrewDetailPage from './src/pages/crew_anime';
 import GameStatPage from './src/pages/game_stat_page';
+import LegalPage from './src/pages/legal_page';
 
 // Custom Tab Bar
 import NavBar from './src/components/home_page/NavBar';
@@ -125,6 +126,7 @@ export default function App() {
                 <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
                 <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
                 <Stack.Screen name="GameStatPage" component={GameStatPage} />
+                <Stack.Screen name="LegalPage" component={LegalPage} />
               </Stack.Navigator>
               <StatusBar style="auto" />
             </NavigationContainer>

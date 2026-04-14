@@ -49,12 +49,12 @@ ref/
 /android
 
 # project documentation (local only)
-*.md
 ANIME_PROGRESS.md
 DATABASE_SCHEMA.md
 OAUTH_SETUP.md
 SUPABASE_SETUP.md
 WISHLIST.md
+build_apk.md
 
 # local planning & config
 .planning
@@ -62,5 +62,8 @@ WISHLIST.md
 reference/
 supabase/
 consistency.txt
+
+#Temporary
 .tmp/
 scripts/
+
