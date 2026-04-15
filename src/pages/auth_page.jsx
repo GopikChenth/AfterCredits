@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +24,7 @@ import {
   checkUsernameAvailability 
 } from '../services/auth';
 import { useProfileStore } from '../stores/useProfileStore';
+import { useAppDialog } from '../components/shared/AppDialogProvider';
 
 const AuthPage = ({ navigation }) => {
   const theme = getMediaTheme('anime');
@@ -37,11 +37,12 @@ const AuthPage = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
+  const { showDialog } = useAppDialog();
 
   // Handle Login
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showDialog('Error', 'Please fill in all fields');
       return;
     }
 
@@ -51,32 +52,32 @@ const AuthPage = ({ navigation }) => {
 
     if (result.success) {
       await fetchProfile({ force: true });
-      Alert.alert('Success', 'Logged in successfully!');
+      showDialog('Success', 'Logged in successfully!');
       navigation.goBack();
     } else {
-      Alert.alert('Login Failed', result.error);
+      showDialog('Login Failed', result.error);
     }
   };
 
   // Handle Sign Up
   const handleSignUp = async () => {
     if (!email || !password || !confirmPassword || !username) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showDialog('Error', 'Please fill in all required fields');
       return;
     }
 
     if (username.length < 2) {
-      Alert.alert('Error', 'Name must be at least 2 characters');
+      showDialog('Error', 'Name must be at least 2 characters');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      showDialog('Error', 'Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      showDialog('Error', 'Password must be at least 6 characters');
       return;
     }
 
@@ -88,7 +89,7 @@ const AuthPage = ({ navigation }) => {
       
       if (!availabilityCheck.available) {
         setLoading(false);
-        Alert.alert('Callsign Taken', 'This callsign is already taken. Please choose another one.');
+        showDialog('Callsign Taken', 'This callsign is already taken. Please choose another one.');
         return;
       }
     }
@@ -98,10 +99,10 @@ const AuthPage = ({ navigation }) => {
     setLoading(false);
 
     if (result.success) {
-      Alert.alert('Success', 'Account created successfully!');
+      showDialog('Success', 'Account created successfully!');
       setIsLogin(true);
     } else {
-      Alert.alert('Sign Up Failed', result.error);
+      showDialog('Sign Up Failed', result.error);
     }
   };
 
@@ -122,10 +123,10 @@ const AuthPage = ({ navigation }) => {
 
     if (result.success) {
       await fetchProfile({ force: true });
-      Alert.alert('Success', `Logged in with ${provider}!`);
+      showDialog('Success', `Logged in with ${provider}!`);
       navigation.goBack();
     } else {
-      Alert.alert('Login Failed', result.error);
+      showDialog('Login Failed', result.error);
     }
   };
 
@@ -339,9 +340,19 @@ const AuthPage = ({ navigation }) => {
             {!isLogin && (
               <Text style={styles.termsText}>
                 By signing up, you agree to our{' '}
-                <Text style={[styles.link, { color: theme.accent }]}>Terms of Service</Text>
+                <Text
+                  style={[styles.link, { color: theme.accent }]}
+                  onPress={() => navigation.navigate('LegalPage', { documentKey: 'eula' })}
+                >
+                  Terms of Service
+                </Text>
                 {' '}and{' '}
-                <Text style={[styles.link, { color: theme.accent }]}>Privacy Policy</Text>
+                <Text
+                  style={[styles.link, { color: theme.accent }]}
+                  onPress={() => navigation.navigate('LegalPage', { documentKey: 'privacy' })}
+                >
+                  Privacy Policy
+                </Text>
               </Text>
             )}
             </View>
@@ -550,3 +561,4 @@ const styles = StyleSheet.create({
 });
 
 export default AuthPage;
+

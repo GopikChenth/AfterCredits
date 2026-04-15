@@ -7,7 +7,6 @@ import {
   TextInput,
   Pressable,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -17,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { getMediaTheme } from '../../utils/mediaThemes';
 import { supabase } from '../../services/supabase';
+import { useAppDialog } from '../shared/AppDialogProvider';
 
 const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
   const theme = getMediaTheme('anime');
@@ -25,6 +25,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [avatarUri, setAvatarUri] = useState(profile?.avatar_url || null);
   const [loading, setLoading] = useState(false);
+  const { showDialog } = useAppDialog();
 
   // Pick image from gallery
   const pickImage = async () => {
@@ -33,7 +34,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to change your profile picture.');
+        showDialog('Permission Required', 'Please allow access to your photo library to change your profile picture.');
         return;
       }
 
@@ -50,7 +51,7 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
       }
     } catch (error) {
       console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      showDialog('Error', 'Failed to pick image');
     }
   };
 
@@ -107,12 +108,12 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
     const newDisplayName = displayName.trim() || profile?.display_name || '';
 
     if (!newUsername) {
-      Alert.alert('Error', 'Name cannot be empty');
+      showDialog('Error', 'Name cannot be empty');
       return;
     }
 
     if (newUsername.length < 2) {
-      Alert.alert('Error', 'Name must be at least 2 characters');
+      showDialog('Error', 'Name must be at least 2 characters');
       return;
     }
 
@@ -141,15 +142,15 @@ const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
       setLoading(false);
 
       if (result.success) {
-        Alert.alert('Success', 'Profile updated successfully!');
+        showDialog('Success', 'Profile updated successfully!');
         onClose();
       } else {
-        Alert.alert('Error', result.error || 'Failed to update profile');
+        showDialog('Error', result.error || 'Failed to update profile');
       }
     } catch (error) {
       setLoading(false);
       console.error('Save error:', error);
-      Alert.alert('Error', 'Failed to upload avatar. Please try again.');
+      showDialog('Error', 'Failed to upload avatar. Please try again.');
     }
   };
 
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
     color: '#000',
   },
   avatarSection: {
@@ -307,13 +308,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     color: '#999',
+    fontFamily: 'Agdasima',
   },
   inputContainer: {
     marginBottom: 20,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
     color: '#333',
     marginBottom: 8,
   },
@@ -335,12 +337,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
+    fontFamily: 'Agdasima',
   },
   hintText: {
     fontSize: 12,
     color: '#999',
     marginTop: 6,
     fontStyle: 'italic',
+    fontFamily: 'Agdasima',
   },
   saveButton: {
     paddingVertical: 16,
@@ -352,8 +356,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'Agdasima-Bold',
   },
 });
 
 export default EditProfileModal;
+

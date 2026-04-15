@@ -1,7 +1,7 @@
 export const LEGAL_DOCUMENTS = {
   about: {
     title: 'About AfterCredits',
-    updatedAt: 'April 14, 2026',
+    updatedAt: 'April 15, 2026',
     sections: [
       {
         heading: 'What It Is',
@@ -16,13 +16,13 @@ export const LEGAL_DOCUMENTS = {
       {
         heading: 'Legal Documents',
         body:
-          'Use the EULA and Source License sections in this screen for the baseline user license and repository licensing terms currently attached to this app.',
+          'Use the EULA, Privacy Policy, and Source License sections in this screen for the baseline user license, privacy summary, and repository licensing terms currently attached to this app.',
       },
     ],
   },
   eula: {
     title: 'End User License Agreement',
-    updatedAt: 'April 14, 2026',
+    updatedAt: 'April 15, 2026',
     sections: [
       {
         heading: 'License Grant',
@@ -50,15 +50,46 @@ export const LEGAL_DOCUMENTS = {
           'The app is provided on an AS IS and AS AVAILABLE basis, without warranties, and liability is limited to the maximum extent permitted by law.',
       },
       {
-        heading: 'Release Note',
+        heading: 'Contact',
         body:
-          'Before store release, replace placeholder legal contact details with your actual support or legal contact channel.',
+          'Support and legal notices for AfterCredits should be directed through the publisher contact channel listed on the official store listing or official support page for the app.',
+      },
+    ],
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    updatedAt: 'April 15, 2026',
+    sections: [
+      {
+        heading: 'Information You Provide',
+        body:
+          'AfterCredits may process account details, profile information, reviews, ratings, notes, and list activity that you choose to submit while using the app.',
+      },
+      {
+        heading: 'Operational Data',
+        body:
+          'The app may process authentication state, settings, media status records, cached content, and app activity needed to provide core features and preserve your experience across sessions.',
+      },
+      {
+        heading: 'Third-Party Services',
+        body:
+          'AfterCredits depends on external providers such as Supabase, AniList, TMDB, RAWG, IGDB, Twitch, RSS providers, and app-store services. Their services may process data according to their own terms and privacy policies.',
+      },
+      {
+        heading: 'Your Controls',
+        body:
+          'You can manage certain profile and privacy behaviors inside the app, including anonymous display options where supported.',
+      },
+      {
+        heading: 'Contact',
+        body:
+          'Privacy-related questions or requests should be directed through the publisher contact channel listed on the official store listing or official support page for AfterCredits.',
       },
     ],
   },
   license: {
     title: 'Source License',
-    updatedAt: 'April 14, 2026',
+    updatedAt: 'April 15, 2026',
     sections: [
       {
         heading: 'Current Model',

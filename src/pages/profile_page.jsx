@@ -7,7 +7,6 @@ import {
   Pressable,
   StatusBar,
   Switch,
-  Alert,
   ActivityIndicator,
   Modal,
   TextInput,
@@ -34,6 +33,7 @@ import { checkIGDBHealth } from '../services/api_igdb';
 import EditProfileModal from '../components/profile_page/EditProfileModal';
 import SkeletonProfile from '../components/skeletons/SkeletonProfile';
 import { useProfileStore } from '../stores/useProfileStore';
+import { useAppDialog } from '../components/shared/AppDialogProvider';
 
 const ANON_MODE_SAVE_DEBOUNCE_MS = 220;
 const SIDEBAR_MEDIA_OPTIONS = [
@@ -171,6 +171,7 @@ const ProfilePage = ({ navigation }) => {
   const fetchProfile = useProfileStore((state) => state.fetchProfile);
   const upsertProfile = useProfileStore((state) => state.upsertProfile);
   const clearProfile = useProfileStore((state) => state.clearProfile);
+  const { showDialog } = useAppDialog();
   const [showEditModal, setShowEditModal] = useState(false);
   
   // IGDB health check
@@ -281,7 +282,7 @@ const ProfilePage = ({ navigation }) => {
     anonModeInFlightRef.current = false;
 
     if (shouldShowError && isMountedRef.current) {
-      Alert.alert('Error', 'Failed to update privacy settings');
+      showDialog('Error', 'Failed to update privacy settings');
     }
 
     if (typeof anonModePendingValueRef.current === 'boolean' && isMountedRef.current) {
@@ -306,7 +307,7 @@ const ProfilePage = ({ navigation }) => {
 
   // Handle Logout
   const handleLogout = async () => {
-    Alert.alert(
+    showDialog(
       'Log Out',
       'Are you sure you want to log out?',
       [
@@ -324,7 +325,7 @@ const ProfilePage = ({ navigation }) => {
               setUseDisplayName(false);
               navigation.navigate('AuthPage');
             } else {
-              Alert.alert('Error', 'Failed to log out');
+              showDialog('Error', 'Failed to log out');
             }
           },
         },
@@ -516,14 +517,14 @@ const ProfilePage = ({ navigation }) => {
       setIgdbCredentialsSaved(hasCredentials);
       setIgdbStatus(null); // reset health status so it re-checks with new creds
       setShowIGDBModal(false);
-      Alert.alert(
+      showDialog(
         hasCredentials ? 'Saved' : 'Credentials Cleared',
         hasCredentials
           ? 'IGDB credentials saved. Tap "Check IGDB" to verify them.'
           : 'IGDB credentials have been cleared.'
       );
     } else {
-      Alert.alert('Error', 'Failed to save credentials. Please try again.');
+      showDialog('Error', 'Failed to save credentials. Please try again.');
     }
   };
 
@@ -796,6 +797,24 @@ const ProfilePage = ({ navigation }) => {
 
           <Pressable
             style={styles.menuItem}
+            onPress={() => navigation.navigate('LegalPage', { documentKey: 'privacy' })}
+            accessibilityRole="button"
+            accessibilityLabel="Open privacy policy"
+          >
+            <View style={[styles.menuIconContainer, { backgroundColor: theme.accent + '20' }]}>
+              <Ionicons name="eye-outline" size={20} color={theme.accent} />
+            </View>
+            <View style={styles.menuTextContainer}>
+              <Text style={styles.menuTitle}>Privacy</Text>
+              <Text style={styles.menuSubtitle}>How app data is handled</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+          </Pressable>
+
+          <View style={styles.menuDivider} />
+
+          <Pressable
+            style={styles.menuItem}
             onPress={() => navigation.navigate('LegalPage', { documentKey: 'license' })}
             accessibilityRole="button"
             accessibilityLabel="Open source license"
@@ -922,7 +941,7 @@ const ProfilePage = ({ navigation }) => {
               <Ionicons name="information-circle-outline" size={16} color="#A78BFA" style={{ marginRight: 6, marginTop: 1 }} />
               <Text style={styles.igdbInfoText}>
                 Get a free Client ID and Access Token from{' '}
-                <Text style={{ color: '#A78BFA' }}>dev.twitch.tv/console/apps</Text>
+                <Text style={{ color: '#A78BFA', fontFamily: 'Agdasima-Bold' }}>dev.twitch.tv/console/apps</Text>
                 {' '}by registering a new application.
               </Text>
             </View>
@@ -1030,7 +1049,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: 'Genjiro',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     letterSpacing: 2,
   },
@@ -1080,7 +1099,7 @@ const styles = StyleSheet.create({
   questionMarkText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
   },
   loginPromptTitle: {
     fontSize: 20,
@@ -1099,7 +1118,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 26,
-    fontWeight: 'bold',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
     marginBottom: 12,
     textAlign: 'center',
@@ -1110,6 +1129,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
+    fontFamily: 'Agdasima',
   },
   signInButton: {
     flexDirection: 'row',
@@ -1137,6 +1157,7 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 20,
+    fontFamily: 'Agdasima',
   },
   loadingContainer: {
     flex: 1,
@@ -1147,6 +1168,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: '#999',
+    fontFamily: 'Agdasima',
   },
   avatarSection: {
     alignItems: 'center',
@@ -1212,7 +1234,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
     color: '#FFFFFF',
   },
   sectionTitle: {
@@ -1398,7 +1420,7 @@ const styles = StyleSheet.create({
   igdbClearBtnText: {
     color: '#aaa',
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'Agdasima-Bold',
   },
   igdbSaveBtn: {
     backgroundColor: '#A78BFA',
@@ -1406,9 +1428,10 @@ const styles = StyleSheet.create({
   igdbSaveBtnText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: 'Agdasima-Bold',
   },
 });
 
 export default ProfilePage;
+
 

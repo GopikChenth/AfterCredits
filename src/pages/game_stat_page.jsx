@@ -16,7 +16,6 @@ import {
   Pressable,
   StatusBar,
   TextInput,
-  Alert,
   TouchableOpacity,
   FlatList,
   useWindowDimensions,
@@ -53,6 +52,7 @@ import {
   setWishlist,
   saveGameTracking,
 } from '../services/mediaStatusService';
+import { useAppDialog } from '../components/shared/AppDialogProvider';
 
 let HapticsModule = null;
 try {
@@ -185,6 +185,7 @@ const UserMediaCard = ({ uri, onDelete }) => (
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 const GameStatPage = ({ route, navigation }) => {
+  const { showDialog } = useAppDialog();
   const { gameId, gameName: routeName, coverImage: routeCover, status: routeStatus, igdbId: routeIgdbId } = route.params || {};
   const { width: vw } = useWindowDimensions();
 
@@ -340,7 +341,7 @@ const GameStatPage = ({ route, navigation }) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow access to your photo library.');
+        showDialog('Permission needed', 'Please allow access to your photo library.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -367,7 +368,7 @@ const GameStatPage = ({ route, navigation }) => {
 
   // ── Delete user media ──
   const deleteMedia = useCallback(async (uri) => {
-    Alert.alert('Delete media?', 'This cannot be undone.', [
+    showDialog('Delete media?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
@@ -698,7 +699,7 @@ const GameStatPage = ({ route, navigation }) => {
             style={s.removeBtn}
             activeOpacity={0.7}
             onPress={() => {
-              Alert.alert(
+              showDialog(
                 'Remove Game',
                 `Remove "${name}" from your collection? This will clear all your tracking data, progress, notes, and rating for this game.`,
                 [
@@ -732,7 +733,7 @@ const GameStatPage = ({ route, navigation }) => {
                         navigation.goBack();
                       } catch (err) {
                         console.error('Error removing game:', err);
-                        Alert.alert('Error', 'Failed to remove game. Please try again.');
+                        showDialog('Error', 'Failed to remove game. Please try again.');
                       }
                     },
                   },
@@ -987,3 +988,4 @@ const s = StyleSheet.create({
 });
 
 export default GameStatPage;
+

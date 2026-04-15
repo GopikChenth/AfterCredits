@@ -1,6 +1,6 @@
 AfterCredits End User License Agreement
 
-Last updated: April 14, 2026
+Last updated: April 15, 2026
 
 1. Scope
 
@@ -56,4 +56,4 @@ If a provision of this agreement is unenforceable, the remaining provisions rema
 
 13. Contact
 
-For production release, add your real support or legal contact details before publishing store builds.
+Support and legal notices for AfterCredits should be directed through the publisher contact channel listed on the official store listing or official support page for the app.

@@ -32,6 +32,7 @@ import LegalPage from './src/pages/legal_page';
 
 // Custom Tab Bar
 import NavBar from './src/components/home_page/NavBar';
+import { AppDialogProvider } from './src/components/shared/AppDialogProvider';
 
 // Context
 import { MediaTypeProvider } from './src/context/MediaTypeContext';
@@ -101,35 +102,37 @@ export default function App() {
       <SafeAreaProvider>
         <MediaTypeProvider>
           <PagerSwipeProvider>
-            <NavigationContainer>
-              <Stack.Navigator
-                initialRouteName="MainTabs"
-                screenOptions={{
-                  headerShown: false,
-                  gestureEnabled: false,
-                  animation: 'none',
-                }}
-              >
-                {/* Tab Navigator */}
-                <Stack.Screen name="MainTabs" component={MainTabs} />
+            <AppDialogProvider>
+              <NavigationContainer>
+                <Stack.Navigator
+                  initialRouteName="MainTabs"
+                  screenOptions={{
+                    headerShown: false,
+                    gestureEnabled: false,
+                    animation: 'none',
+                  }}
+                >
+                  {/* Tab Navigator */}
+                  <Stack.Screen name="MainTabs" component={MainTabs} />
 
-                {/* Push screens (on top of tabs) */}
-                <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
-                <Stack.Screen name="DetailsGames" component={DetailsGames} />
-                <Stack.Screen name="DetailsMovies" component={DetailsMovies} />
-                <Stack.Screen name="ReviewAnime" component={ReviewPage} />
-                <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
-                <Stack.Screen name="NewsPage" component={NewsPage} />
-                <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
-                <Stack.Screen name="ProfilePage" component={ProfilePage} />
-                <Stack.Screen name="AuthPage" component={AuthPage} />
-                <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
-                <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
-                <Stack.Screen name="GameStatPage" component={GameStatPage} />
-                <Stack.Screen name="LegalPage" component={LegalPage} />
-              </Stack.Navigator>
-              <StatusBar style="auto" />
-            </NavigationContainer>
+                  {/* Push screens (on top of tabs) */}
+                  <Stack.Screen name="DetailsAnime" component={DetailsAnime} />
+                  <Stack.Screen name="DetailsGames" component={DetailsGames} />
+                  <Stack.Screen name="DetailsMovies" component={DetailsMovies} />
+                  <Stack.Screen name="ReviewAnime" component={ReviewPage} />
+                  <Stack.Screen name="UpcomingPage" component={UpcomingPage} />
+                  <Stack.Screen name="NewsPage" component={NewsPage} />
+                  <Stack.Screen name="PostDetailAnime" component={PostDetailAnime} />
+                  <Stack.Screen name="ProfilePage" component={ProfilePage} />
+                  <Stack.Screen name="AuthPage" component={AuthPage} />
+                  <Stack.Screen name="PodiumListPage" component={PodiumListPage} />
+                  <Stack.Screen name="CrewDetailPage" component={CrewDetailPage} />
+                  <Stack.Screen name="GameStatPage" component={GameStatPage} />
+                  <Stack.Screen name="LegalPage" component={LegalPage} />
+                </Stack.Navigator>
+                <StatusBar style="auto" />
+              </NavigationContainer>
+            </AppDialogProvider>
           </PagerSwipeProvider>
         </MediaTypeProvider>
       </SafeAreaProvider>

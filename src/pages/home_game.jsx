@@ -9,7 +9,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   useWindowDimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -41,6 +40,7 @@ import {
 } from '../services/api_igdb';
 import { hasIGDBCredentials } from '../services/settings';
 import { searchMedia, debounce } from '../services/search';
+import { useAppDialog } from '../components/shared/AppDialogProvider';
 
 const GAME_PILL_HEIGHT = 60;
 const GAME_PILL_RADIUS = 22;
@@ -172,6 +172,7 @@ GameCardItem.displayName = 'GameCardItem';
 
 // ─── Main screen ──────────────────────────────────────────────────────────
 const GameHome = ({ navigation }) => {
+  const { showDialog } = useAppDialog();
   const tabBarHeight = 60; // NavBar height (material-top-tabs has no useBottomTabBarHeight)
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const isLandscape = viewportWidth > viewportHeight;
@@ -342,7 +343,7 @@ const GameHome = ({ navigation }) => {
       if (useIGDB && !forceRawg) {
         setIsLoading(false);
         setIsLoadingMore(false);
-        Alert.alert(
+        showDialog(
           'IGDB API Error',
           'Could not fetch games from IGDB. Your API credentials may be invalid or the server is unavailable.',
           [
@@ -1003,3 +1004,4 @@ const styles = StyleSheet.create({
 });
 
 export default GameHome;
+

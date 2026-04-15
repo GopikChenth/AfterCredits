@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
   Animated,
   InteractionManager,
   StatusBar,
@@ -48,6 +47,7 @@ import {
   setMediaStatus,
   setWishlist,
 } from "../services/mediaStatusService";
+import { useAppDialog } from "../components/shared/AppDialogProvider";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 const ACCENT = "#0FA3B1";
@@ -478,6 +478,7 @@ const HudFrame = () => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GameDetail = ({ route, navigation }) => {
+  const { showDialog } = useAppDialog();
   const {
     gameId: rawGameId, gameName, coverImage, genres: rawgGenres = [], playtime,
     igdbId,  // present when navigated from IGDB home (skip name search)
@@ -659,7 +660,7 @@ const GameDetail = ({ route, navigation }) => {
       setIgdbData(result);
     } catch (err) {
       console.error("GameDetail IGDB fetch error:", err);
-      Alert.alert("IGDB API Not Found",
+      showDialog("IGDB API Not Found",
         "Could not load game details from IGDB. Please check your API credentials and try again.",
         [{ text: "Go Back", onPress: () => navigation?.goBack(), style: "cancel" },
          { text: "Retry", onPress: () => fetchAll() }]);
@@ -1401,3 +1402,4 @@ const s = StyleSheet.create({
 });
 
 export default GameDetail;
+

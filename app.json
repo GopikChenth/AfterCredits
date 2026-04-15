@@ -1,27 +1,27 @@
 {
   "expo": {
     "name": "AfterCredits",
-    "slug": "AfterCredits",
+    "slug": "aftercredits",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-icon-rounded.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0B1020"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/icon-adaptive-foreground.png",
+        "backgroundColor": "#FBB53A"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.AfterCredits"
+      "package": "com.gopik.aftercredits"
     },
     "web": {
       "favicon": "./assets/favicon.png"

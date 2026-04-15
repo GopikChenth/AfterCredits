@@ -20,7 +20,6 @@ import {
   Dimensions,
   Pressable,
   ActivityIndicator,
-  Alert,
   Platform,
   Animated,
   StatusBar,
@@ -47,6 +46,7 @@ import {
   setMediaStatus,
   setWishlist,
 } from "../services/mediaStatusService";
+import { useAppDialog } from "../components/shared/AppDialogProvider";
 
 const { width } = Dimensions.get("window");
 
@@ -157,6 +157,7 @@ const CompanyRow = ({ name, role }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MovieDetail = ({ route, navigation }) => {
+  const { showDialog } = useAppDialog();
   // Route params (instant display while loading)
   const { movieId, movieTitle, coverImage: routeCover } = route?.params || {};
 
@@ -194,7 +195,7 @@ const MovieDetail = ({ route, navigation }) => {
       setMovieData(data);
     } catch (err) {
       console.error("MovieDetail fetch error:", err);
-      Alert.alert(
+      showDialog(
         "TMDB Error",
         "Could not load movie details. Please check your API key and try again.",
         [
@@ -1148,3 +1149,4 @@ const styles = StyleSheet.create({
 });
 
 export default MovieDetail;
+

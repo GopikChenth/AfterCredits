@@ -9,7 +9,6 @@ import {
   Platform,
   KeyboardAvoidingView,
   StatusBar,
-  Alert,
   ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,12 +17,14 @@ import DateSelector from '../components/review_page/DateSelector';
 import { submitReview, getUserReview } from '../services/reviewService';
 import { useMediaType } from '../context/MediaTypeContext';
 import { getReviewPageStyles, getReviewPageTheme } from '../stylehandler/reviewPageStyles';
+import { useAppDialog } from '../components/shared/AppDialogProvider';
 
 const ReviewPage = ({ navigation, route }) => {
   const { mediaType } = useMediaType();
   const activeMediaType = route?.params?.mediaType || mediaType;
   const styles = getReviewPageStyles(activeMediaType);
   const theme = getReviewPageTheme(activeMediaType);
+  const { showDialog } = useAppDialog();
 
   // Fallback data if not passed or missing
   const { 
@@ -49,12 +50,12 @@ const ReviewPage = ({ navigation, route }) => {
   const handleSave = async () => {
     // Validation
     if (rating === 0) {
-      Alert.alert('Rating Required', theme.ratingLabel);
+      showDialog('Rating Required', theme.ratingLabel);
       return;
     }
 
     if (!reviewText.trim()) {
-      Alert.alert('Review Required', 'Please write a review.');
+      showDialog('Review Required', 'Please write a review.');
       return;
     }
 
@@ -74,17 +75,17 @@ const ReviewPage = ({ navigation, route }) => {
       const result = await submitReview(reviewData);
 
       if (result.success) {
-        Alert.alert(
+        showDialog(
           'Success!', 
           'Your review has been submitted.',
           [{ text: 'OK', onPress: () => navigation.goBack() }]
         );
       } else {
-        Alert.alert('Error', result.error || 'Failed to submit review. Please try again.');
+        showDialog('Error', result.error || 'Failed to submit review. Please try again.');
       }
     } catch (error) {
       console.error('Submit error:', error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      showDialog('Error', 'An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -211,3 +212,4 @@ const ReviewPage = ({ navigation, route }) => {
 };
 
 export default ReviewPage;
+
