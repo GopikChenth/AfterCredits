@@ -45,7 +45,6 @@ import GenrePill from '../components/details_page/GenrePill';
 import PlayingWindow from '../components/details_page/PlayingWindow';
 import CompletedWindow from '../components/details_page/CompletedWindow';
 import { fetchIGDBById, fetchIGDBByName, getGameDLCs } from '../services/api_igdb';
-import { hasIGDBCredentials } from '../services/settings';
 import {
   getMediaStatus,
   setMediaStatus,
@@ -232,13 +231,10 @@ const GameStatPage = ({ route, navigation }) => {
   useEffect(() => {
     if (!gameId) return;
     setIsLoading(true);
-    hasIGDBCredentials().then(has => {
-      if (!has) { setIsLoading(false); return; }
-      (routeIgdbId ? fetchIGDBById(routeIgdbId) : fetchIGDBByName(routeName))
-        .then(result => { if (result) setIgdbData(result); })
-        .catch(err => console.warn('GameStatPage IGDB error:', err.message))
-        .finally(() => setIsLoading(false));
-    });
+    (routeIgdbId ? fetchIGDBById(routeIgdbId) : fetchIGDBByName(routeName))
+      .then(result => { if (result) setIgdbData(result); })
+      .catch(err => console.warn('GameStatPage IGDB error:', err.message))
+      .finally(() => setIsLoading(false));
   }, [gameId, routeIgdbId, routeName]);
 
   // ── Fetch DLCs ──

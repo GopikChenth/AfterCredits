@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SETTINGS_KEY = '@aftercredits_settings';
-const IGDB_CREDENTIALS_KEY = '@aftercredits_igdb_credentials';
 const SIDEBAR_SECTION_IDS = ['anime', 'movies', 'games', 'comics', 'manga'];
 
 /**
@@ -127,63 +126,4 @@ export const resetSettings = async () => {
     console.error('Error resetting settings:', error);
     return { success: false, error: error.message };
   }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// IGDB CREDENTIALS  (user-supplied Client ID + Access Token)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Get user-supplied IGDB credentials.
- * Returns { clientId: string, accessToken: string } — both may be empty strings.
- */
-export const getIGDBCredentials = async () => {
-  try {
-    const raw = await AsyncStorage.getItem(IGDB_CREDENTIALS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.clientId && parsed.accessToken) return parsed;
-    }
-    // Fall back to environment variables if AsyncStorage is empty
-    const envClientId = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID || '';
-    const envAccessToken = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN || '';
-    if (envClientId && envAccessToken) {
-      return { clientId: envClientId, accessToken: envAccessToken };
-    }
-    return { clientId: '', accessToken: '' };
-  } catch (error) {
-    console.error('Error loading IGDB credentials:', error);
-    // Still try env vars on error
-    const envClientId = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID || '';
-    const envAccessToken = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN || '';
-    if (envClientId && envAccessToken) {
-      return { clientId: envClientId, accessToken: envAccessToken };
-    }
-    return { clientId: '', accessToken: '' };
-  }
-};
-
-/**
- * Save user-supplied IGDB credentials.
- * @param {{ clientId: string, accessToken: string }} credentials
- */
-export const saveIGDBCredentials = async ({ clientId, accessToken }) => {
-  try {
-    await AsyncStorage.setItem(
-      IGDB_CREDENTIALS_KEY,
-      JSON.stringify({ clientId: clientId.trim(), accessToken: accessToken.trim() })
-    );
-    return { success: true };
-  } catch (error) {
-    console.error('Error saving IGDB credentials:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-/**
- * Returns true if the user has supplied non-empty IGDB credentials.
- */
-export const hasIGDBCredentials = async () => {
-  const { clientId, accessToken } = await getIGDBCredentials();
-  return clientId.length > 0 && accessToken.length > 0;
 };

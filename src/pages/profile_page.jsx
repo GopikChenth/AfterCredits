@@ -8,8 +8,6 @@ import {
   StatusBar,
   Switch,
   ActivityIndicator,
-  Modal,
-  TextInput,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +26,7 @@ import { getMediaTheme } from '../utils/mediaThemes';
 import { updateAnonymousMode, updateProfile } from '../services/profile';
 import { signOut } from '../services/auth';
 import { getPublicName, getFirstName } from '../utils/userUtils';
-import { getSettings, updateSettings, getIGDBCredentials, saveIGDBCredentials } from '../services/settings';
+import { getSettings, updateSettings } from '../services/settings';
 import { checkIGDBHealth } from '../services/api_igdb';
 import EditProfileModal from '../components/profile_page/EditProfileModal';
 import SkeletonProfile from '../components/skeletons/SkeletonProfile';
@@ -176,13 +174,6 @@ const ProfilePage = ({ navigation }) => {
   
   // IGDB health check
   const [igdbStatus, setIgdbStatus] = useState(null); // null | 'checking' | { ok, message }
-
-  // IGDB credentials modal
-  const [showIGDBModal, setShowIGDBModal] = useState(false);
-  const [igdbClientId, setIgdbClientId] = useState('');
-  const [igdbAccessToken, setIgdbAccessToken] = useState('');
-  const [igdbCredentialsSaved, setIgdbCredentialsSaved] = useState(false); // whether non-empty creds are stored
-  const [isSavingIGDB, setIsSavingIGDB] = useState(false);
   
   // Settings state
   const [settings, setSettings] = useState({
@@ -213,11 +204,6 @@ const ProfilePage = ({ navigation }) => {
   const loadSettings = useCallback(async () => {
     const userSettings = await getSettings();
     setSettings(userSettings);
-    // Load stored IGDB credentials
-    const creds = await getIGDBCredentials();
-    setIgdbClientId(creds.clientId || '');
-    setIgdbAccessToken(creds.accessToken || '');
-    setIgdbCredentialsSaved(!!(creds.clientId && creds.accessToken));
   }, []);
 
   const loadProfile = useCallback(async () => {
@@ -507,27 +493,6 @@ const ProfilePage = ({ navigation }) => {
     </>
   );
 
-  // IGDB credentials save handler
-  const handleSaveIGDBCredentials = async () => {
-    setIsSavingIGDB(true);
-    const result = await saveIGDBCredentials({ clientId: igdbClientId, accessToken: igdbAccessToken });
-    setIsSavingIGDB(false);
-    if (result.success) {
-      const hasCredentials = igdbClientId.trim().length > 0 && igdbAccessToken.trim().length > 0;
-      setIgdbCredentialsSaved(hasCredentials);
-      setIgdbStatus(null); // reset health status so it re-checks with new creds
-      setShowIGDBModal(false);
-      showDialog(
-        hasCredentials ? 'Saved' : 'Credentials Cleared',
-        hasCredentials
-          ? 'IGDB credentials saved. Tap "Check IGDB" to verify them.'
-          : 'IGDB credentials have been cleared.'
-      );
-    } else {
-      showDialog('Error', 'Failed to save credentials. Please try again.');
-    }
-  };
-
   // IGDB health check handler
   const handleCheckIGDB = useCallback(async () => {
     setIgdbStatus('checking');
@@ -621,42 +586,21 @@ const ProfilePage = ({ navigation }) => {
 
               <View style={styles.menuDivider} />
 
-              {/* IGDB API Credentials */}
-              <Pressable
-                style={styles.menuItem}
-                onPress={() => setShowIGDBModal(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Configure IGDB API credentials"
-              >
-                <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
-                  <Ionicons name="key-outline" size={20} color="#A78BFA" />
-                </View>
-                <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>IGDB API</Text>
-                  <Text style={styles.menuSubtitle}>
-                    {igdbCredentialsSaved ? 'Credentials saved' : 'Add your Client ID & Access Token'}
-                  </Text>
-                </View>
-                <View style={[styles.statusDot, { backgroundColor: igdbCredentialsSaved ? '#10B981' : '#EF4444' }]} />
-              </Pressable>
-
-              <View style={styles.menuDivider} />
-
-              {/* Check IGDB */}
+              {/* Game Data Server Health */}
               <Pressable
                 style={styles.menuItem}
                 onPress={handleCheckIGDB}
                 accessibilityRole="button"
-                accessibilityLabel="Check IGDB API connection"
+                accessibilityLabel="Check game data API connection"
               >
                 <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
                   <Ionicons name="game-controller-outline" size={20} color="#A78BFA" />
                 </View>
                 <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuTitle}>Check IGDB</Text>
+                  <Text style={styles.menuTitle}>Game Data API</Text>
                   <Text style={styles.menuSubtitle}>
                     {igdbStatus === null
-                      ? 'Tap to test game details API'
+                      ? 'Tap to test the server proxy cache'
                       : igdbStatus === 'checking'
                       ? 'Checking...'
                       : igdbStatus.message}
@@ -831,42 +775,21 @@ const ProfilePage = ({ navigation }) => {
 
           <View style={styles.menuDivider} />
 
-          {/* IGDB API Credentials */}
-          <Pressable
-            style={styles.menuItem}
-            onPress={() => setShowIGDBModal(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Configure IGDB API credentials"
-          >
-            <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
-              <Ionicons name="key-outline" size={20} color="#A78BFA" />
-            </View>
-            <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>IGDB API</Text>
-              <Text style={styles.menuSubtitle}>
-                {igdbCredentialsSaved ? 'Credentials saved' : 'Add your Client ID & Access Token'}
-              </Text>
-            </View>
-            <View style={[styles.statusDot, { backgroundColor: igdbCredentialsSaved ? '#10B981' : '#EF4444' }]} />
-          </Pressable>
-
-          <View style={styles.menuDivider} />
-
-          {/* Check IGDB */}
+          {/* Game Data Server Health */}
           <Pressable
             style={styles.menuItem}
             onPress={handleCheckIGDB}
             accessibilityRole="button"
-            accessibilityLabel="Check IGDB API connection"
+            accessibilityLabel="Check game data API connection"
           >
             <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20' }]}>
               <Ionicons name="game-controller-outline" size={20} color="#A78BFA" />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Check IGDB</Text>
+              <Text style={styles.menuTitle}>Game Data API</Text>
               <Text style={styles.menuSubtitle}>
                 {igdbStatus === null
-                  ? 'Tap to test game details API'
+                  ? 'Tap to test the server proxy cache'
                   : igdbStatus === 'checking'
                   ? 'Checking...'
                   : igdbStatus.message}
@@ -912,89 +835,6 @@ const ProfilePage = ({ navigation }) => {
         profile={profile}
         onSave={handleSaveProfile}
       />
-
-      {/* IGDB Credentials Modal */}
-      <Modal
-        visible={showIGDBModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowIGDBModal(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setShowIGDBModal(false)}
-        >
-          <Pressable style={styles.igdbModalCard} onPress={() => {}}>
-            {/* Modal Header */}
-            <View style={styles.igdbModalHeader}>
-              <View style={[styles.menuIconContainer, { backgroundColor: '#A78BFA20', marginRight: 12 }]}>
-                <Ionicons name="key-outline" size={20} color="#A78BFA" />
-              </View>
-              <Text style={styles.igdbModalTitle}>IGDB API Credentials</Text>
-              <Pressable onPress={() => setShowIGDBModal(false)} style={styles.igdbModalClose}>
-                <Ionicons name="close" size={20} color="#999" />
-              </Pressable>
-            </View>
-
-            {/* Info Banner */}
-            <View style={styles.igdbInfoBanner}>
-              <Ionicons name="information-circle-outline" size={16} color="#A78BFA" style={{ marginRight: 6, marginTop: 1 }} />
-              <Text style={styles.igdbInfoText}>
-                Get a free Client ID and Access Token from{' '}
-                <Text style={{ color: '#A78BFA', fontFamily: 'Agdasima-Bold' }}>dev.twitch.tv/console/apps</Text>
-                {' '}by registering a new application.
-              </Text>
-            </View>
-
-            {/* Client ID Field */}
-            <Text style={styles.igdbFieldLabel}>Client ID</Text>
-            <TextInput
-              style={styles.igdbInput}
-              value={igdbClientId}
-              onChangeText={setIgdbClientId}
-              placeholder="Paste your Twitch Client ID"
-              placeholderTextColor="#555"
-              autoCapitalize="none"
-              autoCorrect={false}
-              selectionColor="#A78BFA"
-            />
-
-            {/* Access Token Field */}
-            <Text style={styles.igdbFieldLabel}>Access Token</Text>
-            <TextInput
-              style={styles.igdbInput}
-              value={igdbAccessToken}
-              onChangeText={setIgdbAccessToken}
-              placeholder="Paste your OAuth Access Token"
-              placeholderTextColor="#555"
-              autoCapitalize="none"
-              autoCorrect={false}
-              secureTextEntry
-              selectionColor="#A78BFA"
-            />
-
-            {/* Actions */}
-            <View style={styles.igdbModalActions}>
-              <Pressable
-                style={[styles.igdbActionBtn, styles.igdbClearBtn]}
-                onPress={() => { setIgdbClientId(''); setIgdbAccessToken(''); }}
-              >
-                <Text style={styles.igdbClearBtnText}>Clear</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.igdbActionBtn, styles.igdbSaveBtn]}
-                onPress={handleSaveIGDBCredentials}
-                disabled={isSavingIGDB}
-              >
-                {isSavingIGDB
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Text style={styles.igdbSaveBtnText}>Save</Text>
-                }
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </Modal>
       
     </SafeAreaView>
   );
@@ -1334,101 +1174,6 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderCurve: 'continuous',
-  },
-  // ── IGDB Modal ───────────────────────────────────────────────────────────────
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  igdbModalCard: {
-    backgroundColor: '#151521',
-    borderRadius: 18,
-    borderCurve: 'continuous',
-    padding: 20,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#A78BFA33',
-  },
-  igdbModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  igdbModalTitle: {
-    flex: 1,
-    fontSize: 17,
-    fontFamily: 'Agdasima-Bold',
-    color: '#FFFFFF',
-  },
-  igdbModalClose: {
-    padding: 4,
-  },
-  igdbInfoBanner: {
-    flexDirection: 'row',
-    backgroundColor: '#A78BFA15',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    padding: 10,
-    marginBottom: 18,
-  },
-  igdbInfoText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#B7BED0',
-    lineHeight: 18,
-    fontFamily: 'Agdasima',
-  },
-  igdbFieldLabel: {
-    fontSize: 13,
-    fontFamily: 'Agdasima-Bold',
-    color: '#D4D8E5',
-    marginBottom: 6,
-    marginTop: 2,
-  },
-  igdbInput: {
-    backgroundColor: '#0F111A',
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    borderWidth: 1,
-    borderColor: '#24273A',
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Agdasima',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 14,
-  },
-  igdbModalActions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  igdbActionBtn: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  igdbClearBtn: {
-    backgroundColor: '#2A2A2A',
-  },
-  igdbClearBtnText: {
-    color: '#aaa',
-    fontSize: 15,
-    fontFamily: 'Agdasima-Bold',
-  },
-  igdbSaveBtn: {
-    backgroundColor: '#A78BFA',
-  },
-  igdbSaveBtnText: {
-    color: '#fff',
-    fontSize: 15,
-    fontFamily: 'Agdasima-Bold',
   },
 });
 

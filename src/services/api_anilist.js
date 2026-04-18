@@ -6,19 +6,62 @@
  * GraphQL Endpoint: https://graphql.anilist.co
  */
 
-import axios from 'axios';
 import { runRequestWithPolicy } from './requestPolicy';
+import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
+import { supabase } from './supabase';
 
 // ===========================================
 // BASE CONFIGURATION
 // ===========================================
 
-const ANILIST_API_URL = 'https://graphql.anilist.co';
+const ANILIST_PROXY_FUNCTION = 'anilist-proxy';
 
-// Default headers for AniList API
-const defaultHeaders = {
-  'Content-Type': 'application/json',
-  'Accept': 'application/json',
+const CACHE_DURATION = {
+  ANILIST_DEFAULT: 6 * 60 * 60 * 1000,         // 6h
+  ANILIST_TRENDING: 6 * 60 * 60 * 1000,        // 6h
+  ANILIST_POPULAR: 6 * 60 * 60 * 1000,         // 6h
+  ANILIST_NEW: 6 * 60 * 60 * 1000,             // 6h
+  ANILIST_TOP: 6 * 60 * 60 * 1000,             // 6h
+  ANILIST_UPCOMING: 6 * 60 * 60 * 1000,        // 6h
+  ANILIST_GENRE: 6 * 60 * 60 * 1000,           // 6h
+  ANILIST_DETAILS: 24 * 60 * 60 * 1000,        // 24h
+  ANILIST_STAFF: 24 * 60 * 60 * 1000,          // 24h
+  ANILIST_SEARCH: 1 * 60 * 60 * 1000,          // 1h
+  ANILIST_REVIEWS: 1 * 60 * 60 * 1000,         // 1h
+  ANILIST_RECOMMENDATIONS: 6 * 60 * 60 * 1000, // 6h
+  ANILIST_SEASON_GRAPH: 12 * 60 * 60 * 1000,   // 12h
+};
+
+const getCacheTtlForKey = (cacheKey) => {
+  const prefix = String(cacheKey || '').split(':')[0];
+  return CACHE_DURATION[prefix] || CACHE_DURATION.ANILIST_DEFAULT;
+};
+
+const normalizeKeyPart = (value) =>
+  encodeURIComponent(
+    String(value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+  );
+
+const stableStringify = (value) => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(',')}}`;
+};
+
+const hashString = (input) => {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ input.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
 };
 
 // ===========================================
@@ -29,23 +72,52 @@ const defaultHeaders = {
  * Execute a GraphQL query against AniList API
  * @param {string} query - GraphQL query string
  * @param {object} variables - Query variables
+ * @param {object} options
+ * @param {string|null} options.cacheKey - Cache key override
+ * @param {number|null} options.ttl - TTL override in ms
  * @returns {Promise<object>} - API response data
  */
-const executeQuery = async (query, variables = {}) => {
-  const requestKey = `anilist:${query}:${JSON.stringify(variables)}`;
+const executeQuery = async (query, variables = {}, options = {}) => {
+  const fingerprint = hashString(`${query}::${stableStringify(variables)}`);
+  const cacheKey = options.cacheKey || `ANILIST_Q:${fingerprint}`;
+  const ttl = typeof options.ttl === 'number' ? options.ttl : getCacheTtlForKey(cacheKey);
 
   try {
-    return await runRequestWithPolicy({
+    const cached = await cacheGet(cacheKey, { ttl });
+    if (cached) {
+      return cached;
+    }
+  } catch (cacheError) {
+    console.warn('AniList cache read error:', cacheError?.message || cacheError);
+  }
+
+  const requestKey = `anilist:${cacheKey}`;
+
+  try {
+    const data = await runRequestWithPolicy({
       dedupeKey: requestKey,
       requestFn: async () => {
-        const response = await axios.post(
-          ANILIST_API_URL,
-          { query, variables },
-          { headers: defaultHeaders }
-        );
-        return response.data;
+        const { data, error } = await supabase.functions.invoke(ANILIST_PROXY_FUNCTION, {
+          body: { query, variables },
+        });
+
+        if (error) {
+          const err = new Error(error.message || 'AniList proxy request failed.');
+          err.status = error.status || 500;
+          throw err;
+        }
+
+        return data;
       },
     });
+
+    try {
+      await cacheSet(cacheKey, data, { ttl, namespace: 'ANILIST' });
+    } catch (cacheError) {
+      console.warn('AniList cache write error:', cacheError?.message || cacheError);
+    }
+
+    return data;
   } catch (error) {
     console.error('AniList API Error:', error.response?.data || error.message);
     throw error;
@@ -249,7 +321,11 @@ export const getTrendingAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage, excludedGenres: ['Hentai'] });
+  const response = await executeQuery(
+    query,
+    { page, perPage, excludedGenres: ['Hentai'] },
+    { cacheKey: `ANILIST_TRENDING:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -277,7 +353,11 @@ export const getPopularAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage, excludedGenres: ['Hentai'] });
+  const response = await executeQuery(
+    query,
+    { page, perPage, excludedGenres: ['Hentai'] },
+    { cacheKey: `ANILIST_POPULAR:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -316,7 +396,11 @@ export const getNewAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage, season, seasonYear: currentYear, excludedGenres: ['Hentai'] });
+  const response = await executeQuery(
+    query,
+    { page, perPage, season, seasonYear: currentYear, excludedGenres: ['Hentai'] },
+    { cacheKey: `ANILIST_NEW:${season}_${currentYear}:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -335,7 +419,11 @@ export const getAnimeDetails = async (id) => {
     ${MEDIA_DETAIL_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { id });
+  const response = await executeQuery(
+    query,
+    { id },
+    { cacheKey: `ANILIST_DETAILS:${id}` }
+  );
   return response.data.Media;
 };
 
@@ -437,6 +525,16 @@ export const clearAnimeSeasonChainCache = () => {
   animeToSeasonCacheKey.clear();
 };
 
+export const clearAnimeApiCache = async () => {
+  try {
+    const removed = await clearCacheByPrefixes(['ANILIST_']);
+    return removed;
+  } catch (error) {
+    console.warn('Failed to clear AniList API cache:', error?.message || error);
+    return 0;
+  }
+};
+
 const buildSeasonRelationNodeFields = (depth) => `
   id
   format
@@ -482,7 +580,11 @@ const fetchAnimeSeasonGraph = async (id, depth = SEASON_GRAPH_DEPTH) => {
     }
   `;
 
-  const response = await executeQuery(query, { id });
+  const response = await executeQuery(
+    query,
+    { id },
+    { cacheKey: `ANILIST_SEASON_GRAPH:id${id}:depth${depth}` }
+  );
   return response.data.Media;
 };
 
@@ -769,7 +871,11 @@ export const searchAnime = async (searchTerm, page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { search: searchTerm, page, perPage, excludedGenres: ['Hentai'] });
+  const response = await executeQuery(
+    query,
+    { search: searchTerm, page, perPage, excludedGenres: ['Hentai'] },
+    { cacheKey: `ANILIST_SEARCH:${normalizeKeyPart(searchTerm)}:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -798,7 +904,11 @@ export const getAnimeByGenre = async (genre, page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { genre, page, perPage });
+  const response = await executeQuery(
+    query,
+    { genre, page, perPage },
+    { cacheKey: `ANILIST_GENRE:${normalizeKeyPart(genre)}:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -825,7 +935,11 @@ export const getAnimeRecommendations = async (id, perPage = 10) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { id, perPage });
+  const response = await executeQuery(
+    query,
+    { id, perPage },
+    { cacheKey: `ANILIST_RECOMMENDATIONS:${id}:size${perPage}` }
+  );
   return response.data.Media.recommendations.nodes;
 };
 
@@ -853,7 +967,11 @@ export const getTopRatedAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage });
+  const response = await executeQuery(
+    query,
+    { page, perPage },
+    { cacheKey: `ANILIST_TOP:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -881,7 +999,11 @@ export const getUpcomingAnime = async (page = 1, perPage = 20) => {
     ${MEDIA_FRAGMENT}
   `;
 
-  const response = await executeQuery(query, { page, perPage });
+  const response = await executeQuery(
+    query,
+    { page, perPage },
+    { cacheKey: `ANILIST_UPCOMING:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -922,7 +1044,11 @@ export const getAnimeReviews = async (mediaId, page = 1, perPage = 10) => {
     }
   `;
 
-  const response = await executeQuery(query, { mediaId, page, perPage });
+  const response = await executeQuery(
+    query,
+    { mediaId, page, perPage },
+    { cacheKey: `ANILIST_REVIEWS:${mediaId}:page${page}:size${perPage}` }
+  );
   return response.data.Page;
 };
 
@@ -989,7 +1115,11 @@ export const getStaffDetails = async (id) => {
     }
   `;
 
-  const response = await executeQuery(query, { id });
+  const response = await executeQuery(
+    query,
+    { id },
+    { cacheKey: `ANILIST_STAFF:${id}` }
+  );
   return response.data.Staff;
 };
 
@@ -1111,4 +1241,5 @@ export default {
   getFormatText,
   isHentai,
   filterHentai,
+  clearAnimeApiCache,
 };

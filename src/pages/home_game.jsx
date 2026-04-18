@@ -38,7 +38,6 @@ import {
   getIGDBPopular,
   getIGDBNewReleases,
 } from '../services/api_igdb';
-import { hasIGDBCredentials } from '../services/settings';
 import { searchMedia, debounce } from '../services/search';
 import { useAppDialog } from '../components/shared/AppDialogProvider';
 
@@ -232,9 +231,8 @@ const GameHome = ({ navigation }) => {
   const [searchResults, setSearchResults]     = useState([]);
   const [isSearching, setIsSearching]         = useState(false);
   const [isSearchSubmitted, setIsSearchSubmitted] = useState(false);
-  const [useIGDB, setUseIGDB]                 = useState(false);
+  const useIGDB                                = true;
   const [isRawgFallback, setIsRawgFallback]   = useState(false);
-  const [credentialsChecked, setCredentialsChecked] = useState(false);
   const [forceRawg, setForceRawg]             = useState(false);
   const fetchRequestIdRef = useRef(0);
   const searchRequestIdRef = useRef(0);
@@ -293,17 +291,8 @@ const GameHome = ({ navigation }) => {
     await setMediaStatus('games', game.id, newStatus);
   }, [userProfile]);
 
-  // Check IGDB credentials once — determines which API to use for listings
-  useEffect(() => {
-    hasIGDBCredentials().then(has => {
-      setUseIGDB(!!has);
-      setCredentialsChecked(true);
-    });
-  }, []);
-
-  // Fetch games — waits for credential check, IGDB-only or RAWG-only
+  // Fetch games — IGDB through server proxy by default, RAWG on explicit fallback.
   const fetchGames = useCallback(async (category, page = 1) => {
-    if (!credentialsChecked) return; // don't fetch until we know which API
     const requestId = ++fetchRequestIdRef.current;
 
     setIsLoadingMore(page > 1);
@@ -320,7 +309,7 @@ const GameHome = ({ navigation }) => {
           default:        data = await getIGDBTrending(page, PAGE_SIZE);     break;
         }
       } else {
-        // Use RAWG (no IGDB credentials or user chose RAWG)
+        // Use RAWG when user explicitly opts out of IGDB for this session.
         switch (category) {
           case 'Popular': data = await getPopularGames(page, PAGE_SIZE);  break;
           case 'New':     data = await getNewReleases(page, PAGE_SIZE);   break;
@@ -344,13 +333,9 @@ const GameHome = ({ navigation }) => {
         setIsLoading(false);
         setIsLoadingMore(false);
         showDialog(
-          'IGDB API Error',
-          'Could not fetch games from IGDB. Your API credentials may be invalid or the server is unavailable.',
+          'Game Data API Error',
+          'Could not fetch games from the server right now.',
           [
-            {
-              text: 'Check API Settings',
-              onPress: () => navigation.navigate('ProfilePage'),
-            },
             {
               text: 'Continue with RAWG',
               style: 'destructive',
@@ -358,6 +343,11 @@ const GameHome = ({ navigation }) => {
                 setForceRawg(true);
                 setIsRawgFallback(true);
               },
+            },
+            {
+              text: 'Retry',
+              style: 'cancel',
+              onPress: () => fetchGames(category, page),
             },
           ],
           { cancelable: false }
@@ -371,12 +361,12 @@ const GameHome = ({ navigation }) => {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
-  }, [useIGDB, credentialsChecked, forceRawg, navigation]);
+  }, [useIGDB, forceRawg, navigation]);
 
-  // Trigger fetch when credentials resolve, forceRawg changes, or category changes
+  // Trigger fetch on category change / fallback mode change.
   useEffect(() => {
-    if (credentialsChecked) fetchGames(selectedCategory);
-  }, [credentialsChecked, forceRawg, selectedCategory, fetchGames]);
+    fetchGames(selectedCategory);
+  }, [forceRawg, selectedCategory, fetchGames]);
 
   const handleCategoryChange = useCallback((cat) => {
     setSelectedCategory(cat);

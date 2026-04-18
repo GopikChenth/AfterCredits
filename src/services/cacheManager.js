@@ -35,6 +35,11 @@ const CACHE_NAMESPACE_CONFIG = {
     maxBytes: 8 * MB,
     maxEntries: 260,
   },
+  ANILIST: {
+    prefixes: ['ANILIST_'],
+    maxBytes: 7 * MB,
+    maxEntries: 240,
+  },
   NEWS: {
     prefixes: ['NEWS_CACHE:'],
     maxBytes: 2 * MB,

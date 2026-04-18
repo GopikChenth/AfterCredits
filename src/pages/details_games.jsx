@@ -40,7 +40,6 @@ import CyberpunkFrame4 from "../components/details_page/CyberpunkFrame4";
 import CyberpunkFrame2 from "../components/details_page/CyberpunkFrame2";
 import DetailsSkeleton from "../components/skeletons/SkeletonDetails";
 import { fetchIGDBByName, fetchIGDBById } from "../services/api_igdb";
-import { hasIGDBCredentials } from "../services/settings";
 import { getMediaReviews } from "../services/reviewService";
 import {
   getMediaStatus,
@@ -514,7 +513,6 @@ const GameDetail = ({ route, navigation }) => {
   // ── State ──
   const [igdbData, setIgdbData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [noCredentials, setNoCredentials] = useState(null);
   const [userStatus, setUserStatus] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [dbReviews, setDbReviews] = useState([]);
@@ -643,10 +641,7 @@ const GameDetail = ({ route, navigation }) => {
   // ── Data fetching ──
   useEffect(() => {
     if (!gameId) return;
-    hasIGDBCredentials().then((has) => {
-      if (!has) { setNoCredentials(true); setIsLoading(false); }
-      else { setNoCredentials(false); fetchAll(); }
-    });
+    fetchAll();
   }, [gameId]);
 
   const fetchAll = async () => {
@@ -660,8 +655,8 @@ const GameDetail = ({ route, navigation }) => {
       setIgdbData(result);
     } catch (err) {
       console.error("GameDetail IGDB fetch error:", err);
-      showDialog("IGDB API Not Found",
-        "Could not load game details from IGDB. Please check your API credentials and try again.",
+      showDialog("Game Data API Unavailable",
+        "Could not load game details from the server. Please try again.",
         [{ text: "Go Back", onPress: () => navigation?.goBack(), style: "cancel" },
          { text: "Retry", onPress: () => fetchAll() }]);
     } finally { setIsLoading(false); }
@@ -828,34 +823,6 @@ const GameDetail = ({ route, navigation }) => {
     () => ({ marginHorizontal: sectionHorizontalInset, padding: sectionPadding }),
     [sectionHorizontalInset, sectionPadding],
   );
-
-  // ── No credentials ──
-  if (noCredentials === true) {
-    return (
-      <View style={s.container}>
-        <StatusBar barStyle="light-content" backgroundColor={BG} />
-        <Blobs />
-        <SafeAreaView style={s.noCredSafe} edges={["top", "bottom"]}>
-          <View style={s.noCredBox}>
-            <View style={s.noCredIcon}><Ionicons name="game-controller-outline" size={56} color={ACCENT} /></View>
-            <Text style={s.noCredTitle}>IGDB API Key Required</Text>
-            <Text style={s.noCredBody}>
-              Game details are powered by the IGDB database. To view this page you need to add your own Twitch / IGDB Client ID and Access Token in Settings.
-            </Text>
-            <Pressable style={s.noCredPrimBtn} onPress={() => navigation?.navigate("ProfilePage")}
-              accessibilityRole="button" accessibilityLabel="Go to Settings">
-              <Ionicons name="settings-outline" size={18} color={TEXT_PRIMARY} style={{ marginRight: 8 }} />
-              <Text style={s.noCredPrimText}>Go to Settings</Text>
-            </Pressable>
-            <Pressable style={s.noCredSecBtn} onPress={() => navigation?.goBack()}
-              accessibilityRole="button" accessibilityLabel="Go back">
-              <Text style={s.noCredSecText}>Go Back</Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   // ── Loading ──
   if (isLoading) {
@@ -1378,27 +1345,6 @@ const s = StyleSheet.create({
   pagText: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "500" },
   pagTextOff: { color: TEXT_DISABLED },
   pagInd: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "500" },
-
-  // ── No credentials ──
-  noCredSafe: { flex: 1, justifyContent: "center", alignItems: "center" },
-  noCredBox: { alignItems: "center", paddingHorizontal: 32, maxWidth: 380, width: "100%" },
-  noCredIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: hexToRgba(ACCENT, 0.12),
-    borderWidth: 1,
-    borderColor: hexToRgba(ACCENT, 0.3),
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  noCredTitle: { fontSize: 22, fontFamily: "Genjiro", color: TEXT_PRIMARY, letterSpacing: 0.5, textAlign: "center", marginBottom: 16 },
-  noCredBody: { fontSize: 14, color: "#aaa", lineHeight: 22, textAlign: "center", marginBottom: 32 },
-  noCredPrimBtn: { flexDirection: "row", alignItems: "center", backgroundColor: ACCENT, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, width: "100%", justifyContent: "center", marginBottom: 12 },
-  noCredPrimText: { color: TEXT_PRIMARY, fontSize: 16, fontWeight: "700" },
-  noCredSecBtn: { paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)", width: "100%", alignItems: "center" },
-  noCredSecText: { color: "#888", fontSize: 15, fontWeight: "500" },
 });
 
 export default GameDetail;

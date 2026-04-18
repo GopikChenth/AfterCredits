@@ -18,24 +18,24 @@
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
- * ║  SETUP                                                           ║
+ * ║  SETUP — SERVER PROXY FLOW                                       ║
  * ║  ─────────────────────────────────────────────────────────────   ║
- * ║  1. Register at https://rawg.io/apidocs                          ║
- * ║  2. Add to .env:  EXPO_PUBLIC_RAWG_API_KEY=your_key_here         ║
+ * ║  1. Deploy Supabase Edge Function: rawg-proxy                    ║
+ * ║  2. Set RAWG_API_KEY as function secret                          ║
+ * ║  3. App calls Supabase Function (never calls RAWG directly)      ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
-import axios from 'axios';
 import { runRequestWithPolicy } from './requestPolicy';
 import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
+import { supabase } from './supabase';
 
 // ===========================================
 // BASE CONFIGURATION
 // ===========================================
 
-const RAWG_API_URL = 'https://api.rawg.io/api';
-const RAWG_API_KEY = process.env.EXPO_PUBLIC_RAWG_API_KEY || 'YOUR_API_KEY_HERE';
+const RAWG_PROXY_FUNCTION = 'rawg-proxy';
 
 // Cache configuration (in milliseconds)
 const CACHE_DURATION = {
@@ -93,6 +93,12 @@ const setCachedData = async (key, data) => {
   }
 };
 
+const normalizeSearchTerm = (term) =>
+  String(term || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
 // ===========================================
 // API REQUEST HELPER
 // ===========================================
@@ -117,13 +123,17 @@ const executeRequest = async (endpoint, params = {}, cacheKey = null) => {
     const data = await runRequestWithPolicy({
       dedupeKey: requestKey,
       requestFn: async () => {
-        const response = await axios.get(`${RAWG_API_URL}${endpoint}`, {
-          params: {
-            key: RAWG_API_KEY,
-            ...params,
-          },
+        const { data, error } = await supabase.functions.invoke(RAWG_PROXY_FUNCTION, {
+          body: { endpoint, params },
         });
-        return response.data;
+
+        if (error) {
+          const err = new Error(error.message || 'RAWG proxy request failed.');
+          err.status = error.status || 500;
+          throw err;
+        }
+
+        return data;
       },
     });
 
@@ -275,7 +285,8 @@ export const searchGames = async (query, page = 1, pageSize = 20) => {
     return { results: [], count: 0 };
   }
 
-  const cacheKey = `SEARCH:${query}_page${page}_size${pageSize}`;
+  const normalizedQuery = normalizeSearchTerm(query);
+  const cacheKey = `SEARCH:${encodeURIComponent(normalizedQuery)}_page${page}_size${pageSize}`;
   
   return executeRequest('/games', {
     search: query,
