@@ -14,6 +14,7 @@ import { supabase } from './supabase';
 // BASE CONFIGURATION
 // ===========================================
 
+const ANILIST_API_URL = 'https://graphql.anilist.co';
 const ANILIST_PROXY_FUNCTION = 'anilist-proxy';
 
 const CACHE_DURATION = {
@@ -64,6 +65,36 @@ const hashString = (input) => {
   return (hash >>> 0).toString(36);
 };
 
+const shouldFallbackToDirectAniList = (error) => {
+  const status = Number(error?.status);
+  const message = String(error?.message || '').toLowerCase();
+
+  if (status === 404 || status === 503 || status === 504) return true;
+  if (message.includes('function') && message.includes('not found')) return true;
+  if (message.includes('failed to send a request')) return true;
+  if (message.includes('network')) return true;
+  if (message.includes('fetch')) return true;
+  return false;
+};
+
+const runDirectAniListRequest = async (query, variables = {}) => {
+  const response = await fetch(ANILIST_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`AniList direct request failed (${response.status}): ${text}`);
+  }
+
+  return JSON.parse(text);
+};
+
 // ===========================================
 // GRAPHQL QUERY HELPER
 // ===========================================
@@ -102,6 +133,10 @@ const executeQuery = async (query, variables = {}, options = {}) => {
         });
 
         if (error) {
+          if (shouldFallbackToDirectAniList(error)) {
+            console.warn('[AniList] Proxy unavailable, falling back to direct AniList request.');
+            return runDirectAniListRequest(query, variables);
+          }
           const err = new Error(error.message || 'AniList proxy request failed.');
           err.status = error.status || 500;
           throw err;
