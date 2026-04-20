@@ -18,24 +18,24 @@
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
- * ║  SETUP — SERVER PROXY FLOW                                       ║
+ * ║  SETUP                                                           ║
  * ║  ─────────────────────────────────────────────────────────────   ║
- * ║  1. Deploy Supabase Edge Function: rawg-proxy                    ║
- * ║  2. Set RAWG_API_KEY as function secret                          ║
- * ║  3. App calls Supabase Function (never calls RAWG directly)      ║
+ * ║  1. Register at https://rawg.io/apidocs                          ║
+ * ║  2. Add to .env:  EXPO_PUBLIC_RAWG_API_KEY=your_key_here         ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
+import axios from 'axios';
 import { runRequestWithPolicy } from './requestPolicy';
 import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
-import { supabase } from './supabase';
 
 // ===========================================
 // BASE CONFIGURATION
 // ===========================================
 
-const RAWG_PROXY_FUNCTION = 'rawg-proxy';
+const RAWG_API_URL = 'https://api.rawg.io/api';
+const RAWG_API_KEY = process.env.EXPO_PUBLIC_RAWG_API_KEY || 'YOUR_API_KEY_HERE';
 
 // Cache configuration (in milliseconds)
 const CACHE_DURATION = {
@@ -123,17 +123,13 @@ const executeRequest = async (endpoint, params = {}, cacheKey = null) => {
     const data = await runRequestWithPolicy({
       dedupeKey: requestKey,
       requestFn: async () => {
-        const { data, error } = await supabase.functions.invoke(RAWG_PROXY_FUNCTION, {
-          body: { endpoint, params },
+        const response = await axios.get(`${RAWG_API_URL}${endpoint}`, {
+          params: {
+            key: RAWG_API_KEY,
+            ...params,
+          },
         });
-
-        if (error) {
-          const err = new Error(error.message || 'RAWG proxy request failed.');
-          err.status = error.status || 500;
-          throw err;
-        }
-
-        return data;
+        return response.data;
       },
     });
 

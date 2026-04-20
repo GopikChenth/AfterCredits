@@ -600,7 +600,7 @@ const ProfilePage = ({ navigation }) => {
                   <Text style={styles.menuTitle}>Game Data API</Text>
                   <Text style={styles.menuSubtitle}>
                     {igdbStatus === null
-                      ? 'Tap to test the server proxy cache'
+                      ? 'Tap to test game data API'
                       : igdbStatus === 'checking'
                       ? 'Checking...'
                       : igdbStatus.message}
@@ -789,7 +789,7 @@ const ProfilePage = ({ navigation }) => {
               <Text style={styles.menuTitle}>Game Data API</Text>
               <Text style={styles.menuSubtitle}>
                 {igdbStatus === null
-                  ? 'Tap to test the server proxy cache'
+                  ? 'Tap to test game data API'
                   : igdbStatus === 'checking'
                   ? 'Checking...'
                   : igdbStatus.message}

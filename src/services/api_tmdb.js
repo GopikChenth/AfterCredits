@@ -15,25 +15,25 @@
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
- * ║  SETUP — SERVER PROXY FLOW                                       ║
+ * ║  SETUP                                                           ║
  * ║  ─────────────────────────────────────────────────────────────   ║
- * ║  1. Deploy Supabase Edge Function: tmdb-proxy                    ║
- * ║  2. Set TMDB_API_KEY as function secret                          ║
- * ║  3. App calls Supabase Function (never calls TMDB directly)      ║
+ * ║  1. Register at https://www.themoviedb.org/settings/api          ║
+ * ║  2. Add to .env:  EXPO_PUBLIC_TMDB_API_KEY=your_key_here         ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
+import axios from 'axios';
 import { runRequestWithPolicy } from './requestPolicy';
 import { cacheGet, cacheSet } from './cacheManager';
-import { supabase } from './supabase';
 
 // ===========================================
 // BASE CONFIGURATION
 // ===========================================
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
-const TMDB_PROXY_FUNCTION = 'tmdb-proxy';
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+const TMDB_API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY || '';
 
 // Image size presets
 const IMAGE_SIZES = {
@@ -100,17 +100,14 @@ const tmdbRequest = async (endpoint, params = {}, cacheKey = null) => {
     const data = await runRequestWithPolicy({
       dedupeKey: requestKey,
       requestFn: async () => {
-        const { data, error } = await supabase.functions.invoke(TMDB_PROXY_FUNCTION, {
-          body: { endpoint, params: { language: 'en-US', ...params } },
+        const response = await axios.get(`${TMDB_BASE_URL}${endpoint}`, {
+          params: {
+            api_key: TMDB_API_KEY,
+            language: 'en-US',
+            ...params,
+          },
         });
-
-        if (error) {
-          const err = new Error(error.message || 'TMDB proxy request failed.');
-          err.status = error.status || 500;
-          throw err;
-        }
-
-        return data;
+        return response.data;
       },
     });
 

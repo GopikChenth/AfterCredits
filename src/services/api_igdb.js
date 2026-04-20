@@ -18,27 +18,28 @@
  * ║                                                                  ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║                                                                  ║
- * ║  SETUP — SERVER PROXY FLOW                                       ║
+ * ║  SETUP — DIRECT API FLOW                                         ║
  * ║  ─────────────────────────────────────────────────────────────  ║
  * ║                                                                  ║
- * ║  1. Deploy Supabase Edge Function: igdb-proxy                   ║
- * ║     → Store Twitch Client ID/Secret as function secrets         ║
+ * ║  1. Add to .env:                                                 ║
+ * ║     EXPO_PUBLIC_IGDB_CLIENT_ID=your_twitch_client_id            ║
+ * ║     EXPO_PUBLIC_IGDB_ACCESS_TOKEN=your_twitch_access_token      ║
  * ║                                                                  ║
- * ║  2. App calls Supabase Function (never calls IGDB directly)     ║
- * ║     → Function caches responses in Postgres for reuse            ║
+ * ║  2. App calls IGDB directly with local on-device caching         ║
  * ║                                                                  ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
 import { runRequestWithPolicy } from './requestPolicy';
 import { cacheGet, cacheSet, clearCacheByPrefixes } from './cacheManager';
-import { supabase } from './supabase';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-const IGDB_PROXY_FUNCTION = 'igdb-proxy';
+const IGDB_BASE_URL = 'https://api.igdb.com/v4';
+const IGDB_CLIENT_ID = process.env.EXPO_PUBLIC_IGDB_CLIENT_ID || '';
+const IGDB_ACCESS_TOKEN = process.env.EXPO_PUBLIC_IGDB_ACCESS_TOKEN || '';
 
 /** Cache durations in milliseconds */
 const CACHE_DURATION = {
@@ -80,12 +81,16 @@ const setCached = async (key, data, ttl) => {
  * @returns {Promise<{ ok: boolean, message: string, latencyMs: number }>}
  */
 export const checkIGDBHealth = async () => {
+  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
+    return { ok: false, message: 'IGDB credentials missing in .env', latencyMs: 0 };
+  }
+
   const start = Date.now();
   try {
     const data = await igdbRequest('games', 'fields name; limit 1;', null, CACHE_DURATION.IGDB_SEARCH);
     const latencyMs = Date.now() - start;
     if (Array.isArray(data) && data.length > 0) {
-      return { ok: true, message: `Connected via server cache — ${latencyMs}ms`, latencyMs };
+      return { ok: true, message: `Connected — ${latencyMs}ms`, latencyMs };
     }
     return { ok: false, message: 'Unexpected empty response', latencyMs };
   } catch (error) {
@@ -108,6 +113,10 @@ export const checkIGDBHealth = async () => {
  * @param {number} [ttl]     - Cache TTL in ms
  */
 const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATION.IGDB_DETAILS) => {
+  if (!IGDB_CLIENT_ID || !IGDB_ACCESS_TOKEN) {
+    throw new Error('IGDB credentials missing in .env');
+  }
+
   if (cacheKey) {
     const cached = await getCached(cacheKey);
     if (cached) return cached;
@@ -119,17 +128,25 @@ const igdbRequest = async (endpoint, query, cacheKey = null, ttl = CACHE_DURATIO
     const data = await runRequestWithPolicy({
       dedupeKey: requestKey,
       requestFn: async () => {
-        const { data, error } = await supabase.functions.invoke(IGDB_PROXY_FUNCTION, {
-          body: { endpoint, query },
+        const response = await fetch(`${IGDB_BASE_URL}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Client-ID': IGDB_CLIENT_ID,
+            Authorization: `Bearer ${IGDB_ACCESS_TOKEN}`,
+            'Content-Type': 'text/plain',
+            Accept: 'application/json',
+          },
+          body: query,
         });
 
-        if (error) {
-          const err = new Error(error.message || 'IGDB proxy request failed.');
-          err.status = error.status || 500;
+        if (!response.ok) {
+          const text = await response.text();
+          const err = new Error(`IGDB ${response.status}: ${text}`);
+          err.status = response.status;
           throw err;
         }
 
-        return data;
+        return response.json();
       },
     });
 
