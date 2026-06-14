@@ -40,7 +40,6 @@ ref/
 
 # local env files
 .env
-.env.example
 .env*.local
 
 # typescript
